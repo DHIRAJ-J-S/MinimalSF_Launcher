@@ -1,10 +1,9 @@
 # ⚡ MinimalSF
 
-**Super Fast. Minimal. Monochrome.**
+**Super Fast. Minimal. Monochrome. Just 1.5Mb**
 
 A lightweight, black & white Android home launcher built purely for speed. Type to search, auto-launch apps instantly. No bloat, no ads, no tracking, no network calls.
 
-> 100% Open Source · By THE.404GUY ;)
 
 ---
 
@@ -19,17 +18,14 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 
 ### 🚀 Auto-Launch
 - When only one app matches your search, it opens automatically
-- Adjustable delay via step slider: 0ms, 100ms, 200ms, 300ms, 404ms, 500ms, 600ms
-- 404ms is a little easter egg
+- Adjustable delay
 
 ### 📱 All Apps
 - Tap "all apps" to browse every installed app in a scrollable list
-- Displays inline on the home screen — no separate drawer or popup
 - Long press any app for app info or uninstall
 
 ### 🔽 Pull-Down Notifications
 - Swipe down anywhere on the home screen to open the notification panel
-- Instant — no animation or delay
 
 ### 🔒 Double-Tap to Lock Screen
 - Double-tap the empty black space to lock your device
@@ -46,13 +42,11 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 - Tap to play/pause
 - Swipe left for next track, right for previous
 - Long press to open the music player
-- First-time usage tip appears inline with controls hint
 
 ### ☐ Inline Todo Checklist
 - Always visible at the bottom of the home screen
 - Add tasks, mark as done, mark as important (red), or remove
 - Tap the `!` button to toggle important
-- Persisted across app restarts
 
 ### 🕐 Clock
 - Large monospace bold clock on home screen
@@ -63,20 +57,9 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 - Small text in the top-right showing free/total RAM
 - Updates every 2 seconds
 
-### 💡 First-Use Tips
-- Inline hints on the home screen on first launch: pull down for notifications, double tap to lock
-- Inline music control hint on first music play with close button
-- Tips auto-dismiss after first use
-
-### 🏁 First Launch Setup
-- Prompt to set MinimalSF as default launcher (dismissible, won't ask again)
-- Prompt to enable music bar with privacy notice
-- Lock screen permission prompt with clear explanation on first double-tap
-
 ### 🎨 Custom UI
 - Every dialog, prompt, menu, and picker uses a custom-built monochrome UI system
 - Black background, thin grey borders, monospace font throughout
-- No Android system dialogs — fully consistent visual language
 
 ---
 
@@ -119,20 +102,6 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 
 ---
 
-## 🔍 Static Analysis Note
-
-Automated scanners (VirusTotal, Zenbox, etc.) may flag this app for:
-- **"Queries installed applications"** — required for any launcher to list apps
-- **"Deletes other packages"** — the uninstall feature uses the standard Android uninstall intent
-- **"Uses reflection"** — used to expand the notification panel via StatusBarManager
-- **"Obfuscates method names"** — R8/ProGuard minification, standard for release builds
-- **"Device administrator"** — optional lock screen feature, only locks the screen
-- **"Networking/Location"** — false positives from AndroidX/Material library internals, not from app code
-
-These are all expected behaviors for a home launcher application. The app contains no malicious code.
-
----
-
 ## 🔨 Build
 
 1. Clone the repository
@@ -145,8 +114,6 @@ These are all expected behaviors for a home launcher application. The app contai
 ## 📦 Install
 
 Download the latest APK from [Releases](../../releases).
-
-> ⚠️ Play Protect may show a warning for sideloaded apps. This is normal for apps not distributed via Play Store. Tap "More details" → "Install anyway".
 
 ---
 
