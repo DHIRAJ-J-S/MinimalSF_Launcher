@@ -1,10 +1,12 @@
 package com.minimal.launcher
 
 import android.annotation.SuppressLint
+import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Intent
-import android.content.pm.ResolveInfo
 import android.graphics.Color
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
 import android.media.MediaMetadata
 import android.media.session.MediaController
@@ -17,13 +19,17 @@ import android.os.Looper
 import android.provider.Settings
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.TypedValue
 import android.view.GestureDetector
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.widget.EditText
+import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -39,15 +45,19 @@ class LauncherActivity : AppCompatActivity() {
     private lateinit var dateText: TextView
     private lateinit var searchInput: EditText
     private lateinit var clearBtn: TextView
+    private lateinit var searchTopSlot: FrameLayout
+    private lateinit var searchBottomSlot: FrameLayout
     private lateinit var appList: RecyclerView
     private lateinit var noMatch: TextView
     private lateinit var autoLaunchBar: LinearLayout
-    private lateinit var autoLaunchIcon: TextView
+    private lateinit var autoLaunchIcon: ImageView
     private lateinit var autoLaunchName: TextView
     private lateinit var musicBar: LinearLayout
     private lateinit var musicTitle: TextView
     private lateinit var musicIconView: TextView
     private lateinit var ramText: TextView
+    private lateinit var homeTipView: TextView
+    private lateinit var musicTipView: LinearLayout
 
     private lateinit var todoList: RecyclerView
     private lateinit var todoInput: EditText
@@ -59,22 +69,23 @@ class LauncherActivity : AppCompatActivity() {
     private var allApps: List<AppInfo> = emptyList()
     private val handler = Handler(Looper.getMainLooper())
     private var autoLaunchRunnable: Runnable? = null
+    private var showingAllApps = false
 
     private var activeController: MediaController? = null
     private var mediaCallback: MediaController.Callback? = null
+    private var musicEverPlayed = false
 
     private var pullStartY = 0f
     private var pullTriggered = false
 
-    private val clockRunnable = object : Runnable {
-        override fun run() { updateClock(); handler.postDelayed(this, 30_000) }
-    }
-    private val musicPollRunnable = object : Runnable {
-        override fun run() { updateNowPlaying(); handler.postDelayed(this, 3_000) }
-    }
-    private val statsPollRunnable = object : Runnable {
-        override fun run() { updateSystemStats(); handler.postDelayed(this, 2_000) }
-    }
+    private val grayscaleFilter = ColorMatrixColorFilter(ColorMatrix().apply { setSaturation(0f) })
+
+    private val clockRunnable = object : Runnable { override fun run() { updateClock(); handler.postDelayed(this, 30_000) } }
+    private val musicPollRunnable = object : Runnable { override fun run() { updateNowPlaying(); handler.postDelayed(this, 3_000) } }
+    private val statsPollRunnable = object : Runnable { override fun run() { updateSystemStats(); handler.postDelayed(this, 2_000) } }
+
+    // Home screen gesture detector for double-tap and long-press on empty space
+    private lateinit var homeGestureDetector: GestureDetector
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -84,6 +95,8 @@ class LauncherActivity : AppCompatActivity() {
         rootLayout = findViewById(R.id.rootLayout)
         clockText = findViewById(R.id.clockText)
         dateText = findViewById(R.id.dateText)
+        searchTopSlot = findViewById(R.id.searchTopSlot)
+        searchBottomSlot = findViewById(R.id.searchBottomSlot)
         searchInput = findViewById(R.id.searchInput)
         clearBtn = findViewById(R.id.clearBtn)
         appList = findViewById(R.id.appList)
@@ -95,9 +108,17 @@ class LauncherActivity : AppCompatActivity() {
         musicTitle = findViewById(R.id.musicTitle)
         musicIconView = findViewById(R.id.musicIcon)
         ramText = findViewById(R.id.ramText)
+        homeTipView = findViewById(R.id.homeTipView)
+        musicTipView = findViewById(R.id.musicTipView)
         todoList = findViewById(R.id.todoList)
         todoInput = findViewById(R.id.todoInput)
         todoCount = findViewById(R.id.todoCount)
+
+        applySearchPosition()
+
+        // Home tips
+        if (!Prefs.homeTipShown(this)) { homeTipView.visibility = View.VISIBLE }
+        findViewById<TextView>(R.id.musicTipClose).setOnClickListener { dismissMusicTip() }
 
         clockText.setOnClickListener {
             try { startActivity(Intent("android.intent.action.SHOW_ALARMS")) }
@@ -110,7 +131,25 @@ class LauncherActivity : AppCompatActivity() {
             }
         }
 
-        rootLayout.setOnTouchListener { _, event -> handlePullDown(event) }
+        // Home gesture: double-tap & long-press on empty space
+        homeGestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDoubleTap(e: MotionEvent): Boolean {
+                dismissHomeTip()
+                executeDoubleTapAction()
+                return true
+            }
+            override fun onLongPress(e: MotionEvent) {
+                executeLongPressAction()
+            }
+        })
+        homeGestureDetector.setIsLongpressEnabled(true)
+
+        appList.setOnTouchListener { _, event -> homeGestureDetector.onTouchEvent(event); false }
+
+        rootLayout.setOnTouchListener { _, event ->
+            homeGestureDetector.onTouchEvent(event)
+            handlePullDown(event)
+        }
         clockText.setOnTouchListener { v, event -> if (handlePullDown(event)) true else { v.performClick(); false } }
         dateText.setOnTouchListener { v, event -> if (handlePullDown(event)) true else { v.performClick(); false } }
 
@@ -142,35 +181,173 @@ class LauncherActivity : AppCompatActivity() {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
 
-        val gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+        val allAppsBtn = findViewById<TextView>(R.id.allAppsBtn)
+        allAppsBtn.setOnClickListener {
+            if (showingAllApps) {
+                showingAllApps = false; allAppsBtn.text = "⊞ all apps"
+                adapter.update(emptyList(), ""); searchInput.text.clear(); searchInput.requestFocus()
+            } else {
+                showingAllApps = true; allAppsBtn.text = "⊟ close"
+                adapter.update(allApps, ""); appList.visibility = View.VISIBLE
+                noMatch.visibility = View.GONE; autoLaunchBar.visibility = View.GONE
+            }
+        }
+
+        // Music bar gestures
+        val musicGesture = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
             override fun onSingleTapConfirmed(e: MotionEvent): Boolean { togglePlayPause(); return true }
             override fun onLongPress(e: MotionEvent) { openMusicPlayer() }
             override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
                 val dx = e2.x - (e1?.x ?: e2.x)
                 if (Math.abs(dx) > 80 && Math.abs(velocityX) > 150) {
+                    dismissMusicTip()
                     if (dx < 0) skipNext() else skipPrev(); return true
                 }
                 return false
             }
         })
-        gestureDetector.setIsLongpressEnabled(true)
-        musicBar.setOnTouchListener { _, event -> gestureDetector.onTouchEvent(event); true }
+        musicGesture.setIsLongpressEnabled(true)
+        musicBar.setOnTouchListener { _, event -> musicGesture.onTouchEvent(event); true }
 
         loadApps(); updateClock(); refreshTodo()
 
-        if (Prefs.isFirstLaunch(this)) {
-            Prefs.setFirstLaunchDone(this)
-            showFirstLaunchSetup()
+        if (Prefs.isFirstLaunch(this)) { Prefs.setFirstLaunchDone(this); showFirstLaunchSetup() }
+    }
+
+    // --- Tips ---
+
+    private fun dismissHomeTip() {
+        if (!Prefs.homeTipShown(this)) {
+            Prefs.setHomeTipShown(this)
+            homeTipView.visibility = View.GONE
+        }
+    }
+
+    private fun showMusicTip() {
+        if (!Prefs.musicTipShown(this) && !musicEverPlayed) {
+            musicEverPlayed = true
+            musicTipView.visibility = View.VISIBLE
+        }
+    }
+
+    private fun dismissMusicTip() {
+        if (musicTipView.visibility == View.VISIBLE) {
+            Prefs.setMusicTipShown(this)
+            musicTipView.visibility = View.GONE
+        }
+    }
+
+    // --- Gestures ---
+
+    private fun executeDoubleTapAction() {
+        val action = Prefs.doubleTapAction(this)
+        if (action == "lock") {
+            lockScreen()
+        } else if (action.isNotEmpty()) {
+            launchPackage(action)
+        }
+    }
+
+    private fun executeLongPressAction() {
+        val action = Prefs.longPressAction(this)
+        if (action.isNotEmpty()) {
+            launchPackage(action)
+        }
+    }
+
+    private fun launchPackage(pkg: String) {
+        try {
+            packageManager.getLaunchIntentForPackage(pkg)?.let {
+                it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); startActivity(it)
+            }
+        } catch (_: Exception) {}
+    }
+
+    private fun lockScreen() {
+        val method = Prefs.lockMethod(this)
+        when (method) {
+            "admin" -> lockViaAdmin()
+            "accessibility" -> lockViaAccessibility()
+            else -> showLockMethodChooser()
+        }
+    }
+
+    private fun showLockMethodChooser() {
+        MinimalDialog.options(this, title = "choose lock method",
+            items = arrayOf(
+                "device admin\nsimple, reliable, one-time setup",
+                "accessibility\nlightweight, no scary prompt"
+            )
+        ) { which ->
+            when (which) {
+                0 -> { Prefs.setLockMethod(this, "admin"); lockViaAdmin() }
+                1 -> { Prefs.setLockMethod(this, "accessibility"); lockViaAccessibility() }
+            }
+        }
+    }
+
+    private fun lockViaAdmin() {
+        val dpm = getSystemService(DEVICE_POLICY_SERVICE) as DevicePolicyManager
+        val admin = ComponentName(this, LockScreenAdmin::class.java)
+        if (dpm.isAdminActive(admin)) {
+            dpm.lockNow()
+        } else {
+            MinimalDialog.confirm(this, title = "enable device admin",
+                message = "allows MinimalSF to lock your screen.\n\nonly the lock permission is used — nothing else.",
+                positiveText = "enable", negativeText = "cancel",
+                onPositive = {
+                    val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
+                    intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, admin)
+                    intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "MinimalSF uses this only to lock your screen.")
+                    startActivity(intent)
+                }
+            )
+        }
+    }
+
+    private fun lockViaAccessibility() {
+        val svc = LockAccessibilityService.instance
+        if (svc != null) {
+            svc.lock()
+        } else {
+            MinimalDialog.confirm(this, title = "enable accessibility",
+                message = "allows MinimalSF to lock your screen.\n\nno data is read or collected — only the lock action is used.",
+                positiveText = "open settings", negativeText = "cancel",
+                onPositive = {
+                    try { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) } catch (_: Exception) {}
+                }
+            )
+        }
+    }
+
+    // --- Search bar position ---
+
+    private fun applySearchPosition() {
+        val bottom = Prefs.searchAtBottom(this)
+        if (bottom) {
+            searchTopSlot.visibility = View.GONE
+            searchTopSlot.removeAllViews()
+            (searchInput.parent as? ViewGroup)?.removeView(searchInput)
+            (clearBtn.parent as? ViewGroup)?.removeView(clearBtn)
+            searchBottomSlot.visibility = View.VISIBLE
+            searchBottomSlot.addView(searchInput)
+            searchBottomSlot.addView(clearBtn)
+        } else {
+            searchTopSlot.visibility = View.VISIBLE
+            searchBottomSlot.visibility = View.GONE
         }
     }
 
     override fun onResume() {
         super.onResume()
         searchInput.text.clear(); searchInput.requestFocus()
+        showingAllApps = false
+        try { findViewById<TextView>(R.id.allAppsBtn).text = "⊞ all apps" } catch (_: Exception) {}
         handler.post(clockRunnable); handler.post(statsPollRunnable)
         updateMusicBar(); updateNowPlaying()
         if (Prefs.showMusic(this)) handler.post(musicPollRunnable)
         loadApps(); todos = TodoStore.load(this); refreshTodo()
+        applySearchPosition()
     }
 
     override fun onPause() {
@@ -179,33 +356,32 @@ class LauncherActivity : AppCompatActivity() {
         handler.removeCallbacks(statsPollRunnable); cancelAutoLaunch(); unregisterMediaCallback()
     }
 
-    override fun onBackPressed() { searchInput.text.clear() }
+    override fun onBackPressed() {
+        if (showingAllApps) {
+            showingAllApps = false; findViewById<TextView>(R.id.allAppsBtn).text = "⊞ all apps"
+            adapter.update(emptyList(), "")
+        }
+        searchInput.text.clear()
+    }
 
     // --- First launch ---
 
     private fun showFirstLaunchSetup() {
-        MinimalDialog.confirm(this,
-            title = "set as default launcher?",
+        MinimalDialog.confirm(this, title = "set as default launcher?",
             message = "set MinimalSF as your default home screen for the fastest app launching experience.",
-            positiveText = "set default",
-            negativeText = "later",
+            positiveText = "set default", negativeText = "later",
             onPositive = {
                 try { startActivity(Intent(Settings.ACTION_HOME_SETTINGS)) } catch (_: Exception) {}
                 handler.postDelayed({ showMusicSetupPrompt() }, 500)
             },
-            onNegative = {
-                Prefs.setDefaultPromptDismissed(this)
-                showMusicSetupPrompt()
-            }
+            onNegative = { Prefs.setDefaultPromptDismissed(this); showMusicSetupPrompt() }
         )
     }
 
     private fun showMusicSetupPrompt() {
-        MinimalDialog.confirm(this,
-            title = "enable now playing bar?",
+        MinimalDialog.confirm(this, title = "enable now playing bar?",
             message = "show currently playing music on your home screen with playback controls.\n\nrequires notification access to read music info.\n\nno data is tracked.",
-            positiveText = "enable",
-            negativeText = "no thanks",
+            positiveText = "enable", negativeText = "no thanks",
             onPositive = {
                 Prefs.setShowMusic(this, true); updateMusicBar()
                 try { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) {}
@@ -216,16 +392,14 @@ class LauncherActivity : AppCompatActivity() {
 
     // --- Pull down ---
 
-    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
-        handlePullDown(ev); return super.dispatchTouchEvent(ev)
-    }
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean { handlePullDown(ev); return super.dispatchTouchEvent(ev) }
 
     private fun handlePullDown(event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> { pullStartY = event.rawY; pullTriggered = false }
             MotionEvent.ACTION_MOVE -> {
-                if (!pullTriggered && pullStartY < resources.displayMetrics.heightPixels * 0.35f) {
-                    if (event.rawY - pullStartY > 60) { pullTriggered = true; expandNotificationBar(); return true }
+                if (!pullTriggered) {
+                    if (event.rawY - pullStartY > 60) { pullTriggered = true; dismissHomeTip(); expandNotificationBar(); return true }
                 }
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> { pullTriggered = false }
@@ -235,10 +409,7 @@ class LauncherActivity : AppCompatActivity() {
 
     @Suppress("deprecation")
     private fun expandNotificationBar() {
-        try {
-            val s = getSystemService("statusbar")
-            Class.forName("android.app.StatusBarManager").getMethod("expandNotificationsPanel").invoke(s)
-        } catch (_: Exception) {}
+        try { Class.forName("android.app.StatusBarManager").getMethod("expandNotificationsPanel").invoke(getSystemService("statusbar")) } catch (_: Exception) {}
     }
 
     // --- Media ---
@@ -247,8 +418,7 @@ class LauncherActivity : AppCompatActivity() {
         try {
             val msm = getSystemService(MEDIA_SESSION_SERVICE) as? MediaSessionManager ?: return null
             val c = ComponentName(this, MusicNotificationListener::class.java)
-            val ctrls = try { msm.getActiveSessions(c) }
-            catch (_: SecurityException) { try { msm.getActiveSessions(null) } catch (_: SecurityException) { null } }
+            val ctrls = try { msm.getActiveSessions(c) } catch (_: SecurityException) { try { msm.getActiveSessions(null) } catch (_: SecurityException) { null } }
             return ctrls?.firstOrNull()
         } catch (_: Exception) { return null }
     }
@@ -266,6 +436,8 @@ class LauncherActivity : AppCompatActivity() {
                 ctrl.registerCallback(mediaCallback!!, handler)
             }
             displayMeta(ctrl.metadata); updatePlayIcon(ctrl.playbackState)
+            // Show music tip on first play
+            if (ctrl.playbackState?.state == PlaybackState.STATE_PLAYING) showMusicTip()
         } else { musicTitle.text = "no music playing"; musicIconView.text = "♪" }
     }
 
@@ -276,38 +448,20 @@ class LauncherActivity : AppCompatActivity() {
         musicTitle.text = if (a.isNotEmpty()) "$t · $a" else t
     }
 
-    private fun updatePlayIcon(state: PlaybackState?) {
-        musicIconView.text = if (state?.state == PlaybackState.STATE_PLAYING) "▮▮" else "▶"
-    }
-
-    private fun unregisterMediaCallback() {
-        try { mediaCallback?.let { activeController?.unregisterCallback(it) } } catch (_: Exception) {}
-        activeController = null; mediaCallback = null
-    }
-
-    private fun togglePlayPause() {
-        val c = findActiveMediaController() ?: return
-        if (c.playbackState?.state == PlaybackState.STATE_PLAYING) { c.transportControls.pause(); musicIconView.text = "▶" }
-        else { c.transportControls.play(); musicIconView.text = "▮▮" }
-    }
-
+    private fun updatePlayIcon(s: PlaybackState?) { musicIconView.text = if (s?.state == PlaybackState.STATE_PLAYING) "▮▮" else "▶" }
+    private fun unregisterMediaCallback() { try { mediaCallback?.let { activeController?.unregisterCallback(it) } } catch (_: Exception) {}; activeController = null; mediaCallback = null }
+    private fun togglePlayPause() { val c = findActiveMediaController() ?: return; if (c.playbackState?.state == PlaybackState.STATE_PLAYING) { c.transportControls.pause(); musicIconView.text = "▶" } else { c.transportControls.play(); musicIconView.text = "▮▮" } }
     private fun skipNext() { findActiveMediaController()?.transportControls?.skipToNext() }
     private fun skipPrev() { findActiveMediaController()?.transportControls?.skipToPrevious() }
-
     private fun openMusicPlayer() {
-        findActiveMediaController()?.let { c ->
-            packageManager.getLaunchIntentForPackage(c.packageName)?.let {
-                it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); startActivity(it); return
-            }
-        }
+        findActiveMediaController()?.let { c -> packageManager.getLaunchIntentForPackage(c.packageName)?.let { it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); startActivity(it); return } }
         try { startActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_MUSIC)) } catch (_: Exception) {}
     }
 
     // --- Todo ---
 
     private fun addTodo() {
-        val text = todoInput.text.toString().trim()
-        if (text.isEmpty()) return
+        val text = todoInput.text.toString().trim(); if (text.isEmpty()) return
         todos.add(TodoItem(System.currentTimeMillis(), text, false, false))
         TodoStore.save(this, todos); todoInput.text.clear(); refreshTodo(); searchInput.requestFocus()
     }
@@ -319,44 +473,24 @@ class LauncherActivity : AppCompatActivity() {
 
     inner class InlineTodoAdapter : RecyclerView.Adapter<InlineTodoAdapter.VH>() {
         inner class VH(v: View) : RecyclerView.ViewHolder(v) {
-            val checkBox: TextView = v.findViewById(R.id.checkBox)
-            val todoText: TextView = v.findViewById(R.id.todoText)
-            val importantBtn: TextView = v.findViewById(R.id.importantBtn)
-            val removeBtn: TextView = v.findViewById(R.id.removeBtn)
+            val checkBox: TextView = v.findViewById(R.id.checkBox); val todoText: TextView = v.findViewById(R.id.todoText)
+            val importantBtn: TextView = v.findViewById(R.id.importantBtn); val removeBtn: TextView = v.findViewById(R.id.removeBtn)
         }
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
-            VH(LayoutInflater.from(parent.context).inflate(R.layout.item_todo_inline, parent, false))
-
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = VH(LayoutInflater.from(parent.context).inflate(R.layout.item_todo_inline, parent, false))
         override fun onBindViewHolder(holder: VH, position: Int) {
             val item = todos[position]
-            holder.checkBox.text = if (item.done) "☑" else "☐"
-            holder.checkBox.alpha = if (item.done) 0.3f else 1f
+            holder.checkBox.text = if (item.done) "☑" else "☐"; holder.checkBox.alpha = if (item.done) 0.3f else 1f
             holder.todoText.text = item.text
             when {
-                item.done -> {
-                    holder.todoText.paintFlags = holder.todoText.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
-                    holder.todoText.alpha = 0.3f; holder.todoText.setTextColor(Color.parseColor("#888888"))
-                }
-                item.important -> {
-                    holder.todoText.paintFlags = holder.todoText.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
-                    holder.todoText.alpha = 1f; holder.todoText.setTextColor(Color.parseColor("#FF4444"))
-                }
-                else -> {
-                    holder.todoText.paintFlags = holder.todoText.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
-                    holder.todoText.alpha = 1f; holder.todoText.setTextColor(Color.parseColor("#888888"))
-                }
+                item.done -> { holder.todoText.paintFlags = holder.todoText.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG; holder.todoText.alpha = 0.3f; holder.todoText.setTextColor(Color.parseColor("#888888")) }
+                item.important -> { holder.todoText.paintFlags = holder.todoText.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv(); holder.todoText.alpha = 1f; holder.todoText.setTextColor(Color.parseColor("#FF4444")) }
+                else -> { holder.todoText.paintFlags = holder.todoText.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv(); holder.todoText.alpha = 1f; holder.todoText.setTextColor(Color.parseColor("#888888")) }
             }
             holder.checkBox.setTextColor(if (item.important && !item.done) Color.parseColor("#FF4444") else Color.parseColor("#555555"))
             holder.importantBtn.setTextColor(if (item.important) Color.parseColor("#FF4444") else Color.parseColor("#333333"))
-            holder.checkBox.setOnClickListener {
-                todos[position] = item.copy(done = !item.done); TodoStore.save(this@LauncherActivity, todos); refreshTodo()
-            }
-            holder.importantBtn.setOnClickListener {
-                todos[position] = item.copy(important = !item.important); TodoStore.save(this@LauncherActivity, todos); refreshTodo()
-            }
-            holder.removeBtn.setOnClickListener {
-                todos.removeAt(position); TodoStore.save(this@LauncherActivity, todos); refreshTodo()
-            }
+            holder.checkBox.setOnClickListener { todos[position] = item.copy(done = !item.done); TodoStore.save(this@LauncherActivity, todos); refreshTodo() }
+            holder.importantBtn.setOnClickListener { todos[position] = item.copy(important = !item.important); TodoStore.save(this@LauncherActivity, todos); refreshTodo() }
+            holder.removeBtn.setOnClickListener { todos.removeAt(position); TodoStore.save(this@LauncherActivity, todos); refreshTodo() }
         }
         override fun getItemCount() = todos.size
     }
@@ -367,12 +501,8 @@ class LauncherActivity : AppCompatActivity() {
         cancelAutoLaunch()
         MinimalDialog.options(this, title = app.label, items = arrayOf("ℹ  app info", "✕  uninstall")) { which ->
             when (which) {
-                0 -> try { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                    data = Uri.parse("package:${app.packageName}")
-                }) } catch (_: Exception) {}
-                1 -> try { startActivity(Intent(Intent.ACTION_DELETE).apply {
-                    data = Uri.parse("package:${app.packageName}")
-                }) } catch (_: Exception) {}
+                0 -> try { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply { data = Uri.parse("package:${app.packageName}") }) } catch (_: Exception) {}
+                1 -> try { startActivity(Intent(Intent.ACTION_DELETE).apply { data = Uri.parse("package:${app.packageName}") }) } catch (_: Exception) {}
             }
         }
     }
@@ -402,11 +532,20 @@ class LauncherActivity : AppCompatActivity() {
     private fun filterApps(query: String) {
         cancelAutoLaunch(); val q = query.trim().lowercase()
         clearBtn.visibility = if (q.isNotEmpty()) View.VISIBLE else View.GONE
-        if (q.isEmpty()) { adapter.update(emptyList(), ""); appList.visibility = View.VISIBLE; noMatch.visibility = View.GONE; autoLaunchBar.visibility = View.GONE; return }
+        if (q.isNotEmpty() && showingAllApps) { showingAllApps = false; findViewById<TextView>(R.id.allAppsBtn).text = "⊞ all apps" }
+        if (q.isEmpty()) {
+            if (showingAllApps) { adapter.update(allApps, ""); appList.visibility = View.VISIBLE }
+            else { adapter.update(emptyList(), ""); appList.visibility = View.VISIBLE }
+            noMatch.visibility = View.GONE; autoLaunchBar.visibility = View.GONE; return
+        }
         val f = allApps.filter { it.label.lowercase().contains(q) }
         when {
             f.isEmpty() -> { adapter.update(emptyList(), q); appList.visibility = View.GONE; noMatch.visibility = View.VISIBLE; autoLaunchBar.visibility = View.GONE }
-            f.size == 1 -> { adapter.update(emptyList(), q); appList.visibility = View.GONE; noMatch.visibility = View.GONE; autoLaunchBar.visibility = View.VISIBLE; autoLaunchIcon.text = f[0].label.first().toString(); autoLaunchName.text = f[0].label; scheduleAutoLaunch(f[0]) }
+            f.size == 1 -> {
+                adapter.update(emptyList(), q); appList.visibility = View.GONE; noMatch.visibility = View.GONE; autoLaunchBar.visibility = View.VISIBLE
+                autoLaunchIcon.setImageDrawable(f[0].icon); autoLaunchIcon.colorFilter = grayscaleFilter
+                autoLaunchName.text = f[0].label; scheduleAutoLaunch(f[0])
+            }
             else -> { adapter.update(f, q); appList.visibility = View.VISIBLE; noMatch.visibility = View.GONE; autoLaunchBar.visibility = View.GONE }
         }
     }

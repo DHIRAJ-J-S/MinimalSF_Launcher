@@ -13,299 +13,140 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingTop="40dp">
-
-        <TextView
-            android:id="@+id/clockText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:textColor="@android:color/white"
-            android:textSize="52sp"
-            android:fontFamily="monospace"
-            android:textStyle="bold"
-            android:letterSpacing="-0.04"
-            android:clickable="true"
-            android:focusable="true"
-            android:text="00:00" />
-
-        <TextView
-            android:id="@+id/ramText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end|top"
-            android:paddingEnd="16dp"
-            android:paddingTop="8dp"
-            android:textColor="#FF333333"
-            android:textSize="9sp"
-            android:fontFamily="monospace"
-            android:text="ram ---mb" />
+        <TextView android:id="@+id/clockText" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:gravity="center" android:textColor="@android:color/white" android:textSize="52sp"
+            android:fontFamily="monospace" android:textStyle="bold" android:letterSpacing="-0.04"
+            android:clickable="true" android:focusable="true" android:text="00:00" />
+        <TextView android:id="@+id/ramText" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_gravity="end|top" android:paddingEnd="16dp" android:paddingTop="8dp"
+            android:textColor="#FF555555" android:textSize="11sp" android:fontFamily="monospace" android:text="ram ---mb" />
     </FrameLayout>
 
-    <TextView
-        android:id="@+id/dateText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:paddingTop="2dp"
-        android:paddingBottom="20dp"
-        android:textColor="@color/grey_dim"
-        android:textSize="12sp"
-        android:fontFamily="monospace"
-        android:letterSpacing="0.08"
-        android:textAllCaps="true"
-        android:text="monday, jan 1" />
+    <TextView android:id="@+id/dateText" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center" android:paddingTop="2dp" android:paddingBottom="20dp"
+        android:textColor="@color/grey_dim" android:textSize="12sp" android:fontFamily="monospace"
+        android:letterSpacing="0.08" android:textAllCaps="true" android:text="monday, jan 1" />
 
-    <!-- Search -->
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingHorizontal="20dp">
-
-        <EditText
-            android:id="@+id/searchInput"
-            android:layout_width="match_parent"
-            android:layout_height="46dp"
-            android:background="@drawable/search_bg"
-            android:hint="@string/search_hint"
-            android:textColorHint="@color/grey_mid"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:fontFamily="monospace"
-            android:inputType="text"
-            android:imeOptions="actionDone"
-            android:singleLine="true"
-            android:paddingStart="16dp"
-            android:paddingEnd="40dp"
-            android:textCursorDrawable="@null" />
-
-        <TextView
-            android:id="@+id/clearBtn"
-            android:layout_width="40dp"
-            android:layout_height="46dp"
-            android:layout_gravity="end|center_vertical"
-            android:gravity="center"
-            android:text="×"
-            android:textColor="@color/grey_dim"
-            android:textSize="22sp"
-            android:visibility="gone"
-            android:clickable="true"
-            android:focusable="true" />
+    <!-- Search TOP slot -->
+    <FrameLayout android:id="@+id/searchTopSlot"
+        android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="20dp">
+        <EditText android:id="@+id/searchInput" android:layout_width="match_parent" android:layout_height="46dp"
+            android:background="@drawable/search_bg" android:hint="@string/search_hint" android:textColorHint="@color/grey_mid"
+            android:textColor="@android:color/white" android:textSize="16sp" android:fontFamily="monospace"
+            android:inputType="text" android:imeOptions="actionDone" android:singleLine="true"
+            android:paddingStart="16dp" android:paddingEnd="40dp" android:textCursorDrawable="@null" />
+        <TextView android:id="@+id/clearBtn" android:layout_width="40dp" android:layout_height="46dp"
+            android:layout_gravity="end|center_vertical" android:gravity="center" android:text="×"
+            android:textColor="@color/grey_dim" android:textSize="22sp" android:visibility="gone"
+            android:clickable="true" android:focusable="true" />
     </FrameLayout>
 
     <!-- Results -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/appList"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:paddingHorizontal="20dp"
-        android:paddingTop="4dp"
-        android:clipToPadding="false"
-        android:scrollbars="none" />
+    <androidx.recyclerview.widget.RecyclerView android:id="@+id/appList"
+        android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
+        android:paddingHorizontal="20dp" android:paddingTop="4dp" android:clipToPadding="false" android:scrollbars="none" />
 
-    <!-- No match -->
-    <TextView
-        android:id="@+id/noMatch"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:gravity="center"
-        android:text="@string/no_match"
-        android:textColor="@color/grey_mid"
-        android:textSize="13sp"
-        android:fontFamily="monospace"
+    <!-- Home tip (shown on first use, inside the black space) -->
+    <TextView android:id="@+id/homeTipView"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center" android:paddingVertical="20dp"
+        android:text="↓  pull down to open notifications\n\n⊡⊡  double tap to lock screen"
+        android:textColor="#FF333333" android:textSize="12sp"
+        android:fontFamily="monospace" android:lineSpacingMultiplier="1.4"
         android:visibility="gone" />
 
-    <!-- Auto launch indicator -->
-    <LinearLayout
-        android:id="@+id/autoLaunchBar"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:visibility="gone">
+    <TextView android:id="@+id/noMatch" android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:gravity="center" android:text="@string/no_match"
+        android:textColor="@color/grey_mid" android:textSize="13sp" android:fontFamily="monospace" android:visibility="gone" />
 
-        <TextView
-            android:id="@+id/autoLaunchIcon"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
-            android:background="@android:color/white"
-            android:gravity="center"
-            android:textColor="@android:color/black"
-            android:textSize="22sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/autoLaunchName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingTop="10dp"
-            android:textColor="@android:color/white"
-            android:textSize="15sp"
-            android:fontFamily="monospace" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingTop="6dp"
-            android:text="auto-launching…"
-            android:textColor="@color/grey_mid"
-            android:textSize="11sp"
-            android:fontFamily="monospace"
-            android:letterSpacing="0.06" />
+    <!-- Auto launch -->
+    <LinearLayout android:id="@+id/autoLaunchBar" android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:orientation="vertical" android:gravity="center" android:visibility="gone">
+        <ImageView android:id="@+id/autoLaunchIcon" android:layout_width="52dp" android:layout_height="52dp"
+            android:scaleType="fitCenter" />
+        <TextView android:id="@+id/autoLaunchName" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:paddingTop="10dp" android:textColor="@android:color/white" android:textSize="15sp" android:fontFamily="monospace" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingTop="6dp"
+            android:text="auto-launching…" android:textColor="@color/grey_mid" android:textSize="11sp"
+            android:fontFamily="monospace" android:letterSpacing="0.06" />
     </LinearLayout>
 
-    <!-- Music bar with swipe gestures -->
-    <LinearLayout
-        android:id="@+id/musicBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingHorizontal="20dp"
-        android:paddingVertical="10dp"
-        android:background="#0D0D0D"
-        android:visibility="gone">
+    <!-- Search BOTTOM slot -->
+    <FrameLayout android:id="@+id/searchBottomSlot"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:paddingHorizontal="20dp" android:visibility="gone" />
 
-        <TextView
-            android:id="@+id/musicIcon"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="▶"
-            android:textColor="@color/grey_dim"
-            android:textSize="12sp"
-            android:paddingEnd="10dp" />
-
-        <TextView
-            android:id="@+id/musicTitle"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textColor="@color/grey_dim"
-            android:textSize="11sp"
-            android:fontFamily="monospace"
-            android:singleLine="true"
-            android:ellipsize="end"
-            android:text="no music playing" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="⟵ advancement ⟶"
-            android:textColor="#FF222222"
-            android:textSize="9sp"
-            android:fontFamily="monospace" />
+    <!-- Music tip (shown on first play) -->
+    <LinearLayout android:id="@+id/musicTipView"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center_vertical"
+        android:paddingHorizontal="20dp" android:paddingVertical="6dp"
+        android:background="#0D0D0D" android:visibility="gone">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="←" android:textColor="#FF444444" android:textSize="14sp" android:fontFamily="monospace" />
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:gravity="center" android:text="swipe ←→ change  ·  tap ▶▮▮"
+            android:textColor="#FF444444" android:textSize="10sp" android:fontFamily="monospace" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="→" android:textColor="#FF444444" android:textSize="14sp" android:fontFamily="monospace" />
+        <TextView android:id="@+id/musicTipClose" android:layout_width="24dp" android:layout_height="24dp"
+            android:gravity="center" android:text="×" android:textColor="#FF555555" android:textSize="14sp"
+            android:clickable="true" android:focusable="true" android:paddingStart="8dp" />
     </LinearLayout>
 
-    <!-- Inline Todo Section -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@color/grey_border" />
+    <!-- Music bar -->
+    <LinearLayout android:id="@+id/musicBar" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="20dp"
+        android:paddingVertical="10dp" android:background="#0D0D0D" android:visibility="gone">
+        <TextView android:id="@+id/musicIcon" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="▶" android:textColor="@color/grey_dim" android:textSize="14sp" android:paddingEnd="12dp" />
+        <TextView android:id="@+id/musicTitle" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:textColor="@color/grey_text" android:textSize="13sp"
+            android:fontFamily="monospace" android:singleLine="true" android:ellipsize="end" android:text="no music playing" />
+    </LinearLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="@android:color/black">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingHorizontal="20dp"
-            android:paddingTop="8dp"
-            android:paddingBottom="4dp">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="☐ todo"
-                android:textColor="@color/grey_mid"
-                android:textSize="11sp"
-                android:fontFamily="monospace"
-                android:letterSpacing="0.06" />
-
-            <TextView
-                android:id="@+id/todoCount"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/grey_mid"
-                android:textSize="11sp"
-                android:fontFamily="monospace" />
+    <!-- Todo -->
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:background="@android:color/black">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:paddingHorizontal="20dp" android:paddingTop="8dp" android:paddingBottom="4dp">
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:text="☐ todo" android:textColor="@color/grey_mid" android:textSize="11sp"
+                android:fontFamily="monospace" android:letterSpacing="0.06" />
+            <TextView android:id="@+id/todoCount" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:textColor="@color/grey_mid" android:textSize="11sp" android:fontFamily="monospace" />
         </LinearLayout>
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/todoList"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:maxHeight="140dp"
-            android:paddingHorizontal="20dp"
-            android:clipToPadding="false"
-            android:scrollbars="none"
+        <androidx.recyclerview.widget.RecyclerView android:id="@+id/todoList"
+            android:layout_width="match_parent" android:layout_height="wrap_content" android:maxHeight="140dp"
+            android:paddingHorizontal="20dp" android:clipToPadding="false" android:scrollbars="none"
             android:nestedScrollingEnabled="false" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingHorizontal="20dp"
-            android:paddingVertical="6dp">
-
-            <EditText
-                android:id="@+id/todoInput"
-                android:layout_width="0dp"
-                android:layout_height="36dp"
-                android:layout_weight="1"
-                android:background="@drawable/todo_input_bg"
-                android:hint="add task…"
-                android:textColorHint="@color/grey_mid"
-                android:textColor="@android:color/white"
-                android:textSize="12sp"
-                android:fontFamily="monospace"
-                android:inputType="text"
-                android:imeOptions="actionDone"
-                android:singleLine="true"
-                android:paddingHorizontal="10dp" />
-
-            <TextView
-                android:id="@+id/addTodoBtn"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:gravity="center"
-                android:text="+"
-                android:textColor="@color/grey_dim"
-                android:textSize="20sp"
-                android:clickable="true"
-                android:focusable="true" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:paddingHorizontal="20dp" android:paddingVertical="6dp">
+            <EditText android:id="@+id/todoInput" android:layout_width="0dp" android:layout_height="36dp"
+                android:layout_weight="1" android:background="@drawable/todo_input_bg" android:hint="add task…"
+                android:textColorHint="@color/grey_mid" android:textColor="@android:color/white" android:textSize="12sp"
+                android:fontFamily="monospace" android:inputType="text" android:imeOptions="actionDone"
+                android:singleLine="true" android:paddingHorizontal="10dp" />
+            <TextView android:id="@+id/addTodoBtn" android:layout_width="36dp" android:layout_height="36dp"
+                android:gravity="center" android:text="+" android:textColor="@color/grey_dim" android:textSize="20sp"
+                android:clickable="true" android:focusable="true" />
         </LinearLayout>
     </LinearLayout>
 
     <!-- Bottom nav -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:paddingHorizontal="20dp"
-        android:paddingVertical="10dp"
-        android:background="@android:color/black"
-        android:gravity="end">
-
-        <TextView
-            android:id="@+id/settingsBtn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="⚙ settings"
-            android:textColor="@color/grey_mid"
-            android:textSize="12sp"
-            android:fontFamily="monospace"
-            android:letterSpacing="0.04"
-            android:clickable="true"
-            android:focusable="true" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:paddingHorizontal="20dp" android:paddingVertical="10dp"
+        android:background="@android:color/black">
+        <TextView android:id="@+id/allAppsBtn" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="⊞ all apps" android:textColor="@color/grey_text"
+            android:textSize="12sp" android:fontFamily="monospace" android:letterSpacing="0.04"
+            android:clickable="true" android:focusable="true" />
+        <TextView android:id="@+id/settingsBtn" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="⚙ settings" android:textColor="@color/grey_text" android:textSize="12sp"
+            android:fontFamily="monospace" android:letterSpacing="0.04" android:clickable="true" android:focusable="true" />
     </LinearLayout>
 
 </LinearLayout>
