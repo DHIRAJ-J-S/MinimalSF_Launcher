@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="grey_dark">#FF111111</color>
+    <color name="grey_mid">#FF333333</color>
+    <color name="grey_text">#FF888888</color>
+    <color name="grey_dim">#FF555555</color>
+    <color name="grey_border">#FF1A1A1A</color>
+    <color name="search_bg">#FF0D0D0D</color>
+</resources>

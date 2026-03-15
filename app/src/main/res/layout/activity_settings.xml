@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black"
+    android:fitsSystemWindows="true">
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="16dp">
+
+        <TextView
+            android:id="@+id/backBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="← back"
+            android:textColor="@color/grey_dim"
+            android:textSize="13sp"
+            android:fontFamily="monospace"
+            android:clickable="true"
+            android:focusable="true"
+            android:paddingEnd="16dp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="settings"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:fontFamily="monospace" />
+    </LinearLayout>
+
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" />
+
+    <!-- Set as default -->
+    <LinearLayout
+        android:id="@+id/setDefaultBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="18dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="@drawable/ripple_item">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="set as default launcher" android:textColor="@color/grey_text"
+            android:textSize="13sp" android:fontFamily="monospace" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="→" android:textColor="@color/grey_mid" android:textSize="14sp" />
+    </LinearLayout>
+
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" android:layout_marginHorizontal="20dp" />
+
+    <!-- Unset as default -->
+    <LinearLayout
+        android:id="@+id/unsetDefaultBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="18dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="@drawable/ripple_item">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="change default launcher" android:textColor="@color/grey_text"
+            android:textSize="13sp" android:fontFamily="monospace" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="→" android:textColor="@color/grey_mid" android:textSize="14sp" />
+    </LinearLayout>
+
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" android:layout_marginHorizontal="20dp" />
+
+    <!-- Music toggle -->
+    <LinearLayout
+        android:id="@+id/musicToggle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="18dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="@drawable/ripple_item">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="show now playing bar" android:textColor="@color/grey_text"
+            android:textSize="13sp" android:fontFamily="monospace" />
+        <TextView android:id="@+id/musicToggleState" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="[off]" android:textColor="@color/grey_dim" android:textSize="12sp" android:fontFamily="monospace" />
+    </LinearLayout>
+
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" android:layout_marginHorizontal="20dp" />
+
+    <!-- Auto launch delay -->
+    <LinearLayout
+        android:id="@+id/delayBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="18dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="@drawable/ripple_item">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="auto-launch delay" android:textColor="@color/grey_text"
+            android:textSize="13sp" android:fontFamily="monospace" />
+        <TextView android:id="@+id/delayValue" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="600ms" android:textColor="@color/grey_dim" android:textSize="12sp" android:fontFamily="monospace" />
+    </LinearLayout>
+
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" android:layout_marginHorizontal="20dp" />
+
+    <!-- Clock format -->
+    <LinearLayout
+        android:id="@+id/clockToggle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="18dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="@drawable/ripple_item">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="clock format" android:textColor="@color/grey_text"
+            android:textSize="13sp" android:fontFamily="monospace" />
+        <TextView android:id="@+id/clockToggleState" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="[12h]" android:textColor="@color/grey_dim" android:textSize="12sp" android:fontFamily="monospace" />
+    </LinearLayout>
+
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" android:layout_marginHorizontal="20dp" />
+
+    <!-- Credits -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:paddingTop="50dp"
+        android:text="By THE.404GUY ;)"
+        android:textColor="@color/grey_dim"
+        android:textSize="12sp"
+        android:fontFamily="monospace"
+        android:letterSpacing="0.06" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:paddingTop="6dp"
+        android:text="100% Open Source"
+        android:textColor="@color/grey_mid"
+        android:textSize="11sp"
+        android:fontFamily="monospace"
+        android:letterSpacing="0.04" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:paddingTop="4dp"
+        android:paddingBottom="30dp"
+        android:text="MinimalSF v1.0"
+        android:textColor="#FF1A1A1A"
+        android:textSize="10sp"
+        android:fontFamily="monospace"
+        android:letterSpacing="0.04" />
+
+</LinearLayout>
+</ScrollView>

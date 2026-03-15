@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MinimalSF</string>
+    <string name="search_hint">type to launch…</string>
+    <string name="no_match">no match</string>
+    <string name="settings">settings</string>
+</resources>
