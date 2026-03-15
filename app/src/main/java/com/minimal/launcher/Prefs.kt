@@ -10,7 +10,7 @@ object Prefs {
     fun showMusic(c: Context) = p(c).getBoolean("show_music", false)
     fun setShowMusic(c: Context, v: Boolean) { p(c).edit().putBoolean("show_music", v).apply() }
 
-    fun autoDelay(c: Context) = p(c).getLong("auto_delay", 600L)
+    fun autoDelay(c: Context) = p(c).getLong("auto_delay", 200L)
     fun setAutoDelay(c: Context, v: Long) { p(c).edit().putLong("auto_delay", v).apply() }
 
     fun use24hClock(c: Context) = p(c).getBoolean("use_24h", false)

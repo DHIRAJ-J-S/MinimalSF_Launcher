@@ -316,6 +316,11 @@ class LauncherActivity : AppCompatActivity() {
         handler.removeCallbacks(statsPollRunnable); cancelAutoLaunch(); unregisterMediaCallback()
     }
 
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus && !showingAllApps) showKeyboard()
+    }
+
     @Suppress("deprecation")
     override fun onBackPressed() {
         if (showingAllApps) { closeAllApps(); return }
@@ -537,8 +542,11 @@ class LauncherActivity : AppCompatActivity() {
 
     private fun showKeyboard() {
         searchInput.requestFocus()
-        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.showSoftInput(searchInput, InputMethodManager.SHOW_IMPLICIT)
+        handler.postDelayed({
+            searchInput.requestFocus()
+            val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.showSoftInput(searchInput, InputMethodManager.SHOW_FORCED)
+        }, 150)
     }
 
     private fun updateMusicBar() { musicBar.visibility = if (Prefs.showMusic(this)) View.VISIBLE else View.GONE; if (!Prefs.showMusic(this)) handler.removeCallbacks(musicPollRunnable) }
