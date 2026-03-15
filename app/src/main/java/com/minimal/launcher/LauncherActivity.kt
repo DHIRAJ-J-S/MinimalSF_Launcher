@@ -26,6 +26,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
@@ -183,12 +184,12 @@ class LauncherActivity : AppCompatActivity() {
         val allAppsBtn = findViewById<TextView>(R.id.allAppsBtn)
         allAppsBtn.setOnClickListener {
             if (showingAllApps) {
-                showingAllApps = false; allAppsBtn.text = "⊞ all apps"
-                adapter.update(emptyList(), ""); searchInput.text.clear(); searchInput.requestFocus()
+                closeAllApps()
             } else {
                 showingAllApps = true; allAppsBtn.text = "⊟ close"
                 adapter.update(allApps, ""); appList.visibility = View.VISIBLE
                 noMatch.visibility = View.GONE; autoLaunchBar.visibility = View.GONE
+                hideKeyboard()
             }
         }
 
@@ -299,9 +300,9 @@ class LauncherActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        searchInput.text.clear(); searchInput.requestFocus()
-        showingAllApps = false
-        try { findViewById<TextView>(R.id.allAppsBtn).text = "⊞ all apps" } catch (_: Exception) {}
+        if (showingAllApps) closeAllApps()
+        searchInput.text.clear()
+        showKeyboard()
         handler.post(clockRunnable); handler.post(statsPollRunnable)
         updateMusicBar(); updateNowPlaying()
         if (Prefs.showMusic(this)) handler.post(musicPollRunnable)
@@ -317,10 +318,7 @@ class LauncherActivity : AppCompatActivity() {
 
     @Suppress("deprecation")
     override fun onBackPressed() {
-        if (showingAllApps) {
-            showingAllApps = false; findViewById<TextView>(R.id.allAppsBtn).text = "⊞ all apps"
-            adapter.update(emptyList(), "")
-        }
+        if (showingAllApps) { closeAllApps(); return }
         searchInput.text.clear()
         super.onBackPressed()
     }
@@ -359,7 +357,7 @@ class LauncherActivity : AppCompatActivity() {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> { pullStartY = event.rawY; pullTriggered = false }
             MotionEvent.ACTION_MOVE -> {
-                if (!pullTriggered) {
+                if (!pullTriggered && !showingAllApps) {
                     if (event.rawY - pullStartY > 60) { pullTriggered = true; dismissHomeTip(); expandNotificationBar(); return true }
                 }
             }
@@ -513,6 +511,35 @@ class LauncherActivity : AppCompatActivity() {
 
     private fun scheduleAutoLaunch(app: AppInfo) { autoLaunchRunnable = Runnable { launchApp(app) }; handler.postDelayed(autoLaunchRunnable!!, Prefs.autoDelay(this)) }
     private fun cancelAutoLaunch() { autoLaunchRunnable?.let { handler.removeCallbacks(it) }; autoLaunchRunnable = null }
-    private fun launchApp(app: AppInfo) { cancelAutoLaunch(); packageManager.getLaunchIntentForPackage(app.packageName)?.let { it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); startActivity(it) }; searchInput.text.clear() }
+
+    private fun launchApp(app: AppInfo) {
+        cancelAutoLaunch()
+        if (showingAllApps) closeAllApps()
+        packageManager.getLaunchIntentForPackage(app.packageName)?.let {
+            it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); startActivity(it)
+        }
+        searchInput.text.clear()
+    }
+
+    private fun closeAllApps() {
+        showingAllApps = false
+        try { findViewById<TextView>(R.id.allAppsBtn).text = "⊞ all apps" } catch (_: Exception) {}
+        adapter.update(emptyList(), "")
+        searchInput.text.clear()
+        showKeyboard()
+    }
+
+    private fun hideKeyboard() {
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(searchInput.windowToken, 0)
+        searchInput.clearFocus()
+    }
+
+    private fun showKeyboard() {
+        searchInput.requestFocus()
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.showSoftInput(searchInput, InputMethodManager.SHOW_IMPLICIT)
+    }
+
     private fun updateMusicBar() { musicBar.visibility = if (Prefs.showMusic(this)) View.VISIBLE else View.GONE; if (!Prefs.showMusic(this)) handler.removeCallbacks(musicPollRunnable) }
 }
