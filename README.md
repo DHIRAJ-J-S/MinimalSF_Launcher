@@ -1,117 +1,156 @@
-# MinimalSF
+# ⚡ MinimalSF
 
 **Super Fast. Minimal. Monochrome.**
 
-A lightweight, black & white Android launcher built for speed. Type to search, auto-launch when there's a single match. No bloat, no distractions.
+A lightweight, black & white Android home launcher built purely for speed. Type to search, auto-launch apps instantly. No bloat, no ads, no tracking, no network calls.
 
-100% Open Source.
+> 100% Open Source · By THE.404GUY ;)
 
 ---
 
 ## Features
 
 ### ⌨️ Type-to-Launch
-- Keyboard is always open — start typing immediately
-- App list filters in real-time as you type
-- When only one app matches your query, it **auto-launches** after a configurable delay
-- Matched letters are highlighted bold white in search results
+- Keyboard always ready — start typing immediately to search apps
+- Real-time filtering as you type
+- Single match auto-launches after configurable delay
+- Matched letters highlighted in white
+- Search bar position configurable: top or bottom of screen
 
-### ⏱ Auto-Launch
-- Single match auto-opens the app without needing to tap
-- Configurable delay: 300ms, 400ms, 500ms, 600ms (default), 800ms, 1000ms, 1500ms
-- Cancel by continuing to type or clearing the search
+### 🚀 Auto-Launch
+- When only one app matches your search, it opens automatically
+- Adjustable delay via step slider: 0ms, 100ms, 200ms, 300ms, 404ms, 500ms, 600ms
+- 404ms is a little easter egg
+
+### 📱 All Apps
+- Tap "all apps" to browse every installed app in a scrollable list
+- Displays inline on the home screen — no separate drawer or popup
+- Long press any app for app info or uninstall
 
 ### 🔽 Pull-Down Notifications
-- Swipe down from the top area of the screen to instantly open the notification panel
-- No animation delay — triggers immediately via touch detection on the top 35% of the screen
-- Works even with the keyboard open
+- Swipe down anywhere on the home screen to open the notification panel
+- Instant — no animation or delay
 
-### 🎵 Now Playing Bar
-- Optional music control bar at the bottom of the home screen
-- Shows currently playing song title and artist from any music app (YT Music, Spotify, Musicolet, etc.)
-- **Tap** → play / pause
-- **Swipe left** → next track
-- **Swipe right** → previous track
-- **Long press** → open the music player app
-- Live playback state icon (▶ / ▮▮)
-- Requires notification listener permission (prompted on first launch or when enabling in settings)
+### 🔒 Double-Tap to Lock Screen
+- Double-tap the empty black space to lock your device
+- Uses Android Accessibility Service — no data is read or collected
+- Configurable: can be changed to open any app instead of locking
+
+### 👆 Long Press Gesture
+- Disabled by default
+- Configurable in settings to launch any app on long press of empty space
+
+### 🎵 Now Playing Music Bar
+- Optional bar showing currently playing song and artist
+- Works with any music app (YT Music, Spotify, Musicolet, etc.)
+- Tap to play/pause
+- Swipe left for next track, right for previous
+- Long press to open the music player
+- First-time usage tip appears inline with controls hint
 
 ### ☐ Inline Todo Checklist
-- Always visible at the bottom of the home screen — no separate screen
-- Add tasks with the input field and `+` button
-- Tap checkbox to mark done (strikethrough)
-- Tap `!` button to mark as important (turns red)
-- Tap `×` to remove
+- Always visible at the bottom of the home screen
+- Add tasks, mark as done, mark as important (red), or remove
+- Tap the `!` button to toggle important
 - Persisted across app restarts
 
-### 📱 App Management
-- Long press any app in search results for a context menu:
-  - **App info** — opens Android's app details screen
-  - **Uninstall** — triggers system uninstall prompt
-- App list refreshes automatically after uninstall
-
 ### 🕐 Clock
-- Large monospace bold clock on the home screen
-- Tap the clock to open the system clock/alarms app
-- 12-hour (AM/PM) format by default, switchable to 24-hour in settings
+- Large monospace bold clock on home screen
+- Tap to open the system clock/alarms app
+- 12-hour AM/PM by default, switchable to 24-hour
 
-### 💾 Free RAM Display
-- Small dim text in the top-right corner showing available/total RAM
+### 💾 RAM Display
+- Small text in the top-right showing free/total RAM
 - Updates every 2 seconds
-- Minimal visual footprint
 
-### ⚙️ Settings
-- **Set as default launcher** — opens Android home app settings
-- **Change default launcher** — switch back to another launcher
-- **Now playing bar** — toggle on/off with notification access prompt
-- **Auto-launch delay** — pick from 7 preset values
-- **Clock format** — toggle between 12h and 24h
+### 💡 First-Use Tips
+- Inline hints on the home screen on first launch: pull down for notifications, double tap to lock
+- Inline music control hint on first music play with close button
+- Tips auto-dismiss after first use
 
-### 🚀 First Launch Setup
-- Prompts to set MinimalSF as default launcher (with "Later" option that won't ask again)
-- Asks if you want the now playing music bar enabled
-- Clear "no data is tracked" disclosure
-- Non-intrusive — if you decline, you're never asked again
+### 🏁 First Launch Setup
+- Prompt to set MinimalSF as default launcher (dismissible, won't ask again)
+- Prompt to enable music bar with privacy notice
+- Lock screen permission prompt with clear explanation on first double-tap
 
----
-
-## Design
-
-- Pure black & white monochrome aesthetic
-- Monospace font throughout
-- Grayscale app icons in search results
-- Zero ads, zero tracking, zero analytics
-- Minimal memory footprint — no background services except the optional notification listener for music
+### 🎨 Custom UI
+- Every dialog, prompt, menu, and picker uses a custom-built monochrome UI system
+- Black background, thin grey borders, monospace font throughout
+- No Android system dialogs — fully consistent visual language
 
 ---
 
-## Icon
+## ⚙️ Settings
 
-White square inside a black square. Minimal.
+| Setting | Options |
+|---|---|
+| 🏠 Set as default launcher | Shows ✓ when active |
+| 🔄 Change default launcher | Opens Android home settings |
+| 🎵 Now playing bar | On / Off |
+| ⏱️ Auto-launch delay | 0–600ms step slider |
+| 🕐 Clock format | 12h / 24h |
+| 🔍 Search bar position | Top / Bottom |
+| 👆 Double tap action | Lock screen / Open app |
+| ✊ Long press action | None / Open app |
 
 ---
 
-## Build
+## 🔐 Permissions
+
+| Permission | Why |
+|---|---|
+| `QUERY_ALL_PACKAGES` | List all installed apps for search-to-launch |
+| `EXPAND_STATUS_BAR` | Pull down notification panel from home screen |
+| `REQUEST_DELETE_PACKAGES` | Uninstall apps from long-press menu |
+| `BIND_NOTIFICATION_LISTENER_SERVICE` | Read currently playing music info (optional, user-enabled) |
+| `BIND_ACCESSIBILITY_SERVICE` | Lock screen on double-tap (optional, user-enabled) |
+| `BIND_DEVICE_ADMIN` | Alternative lock screen method (optional, user-enabled) |
+
+---
+
+## 🛡️ Privacy
+
+- 🚫 **Zero network** — the app makes no internet requests whatsoever
+- 🚫 **Zero tracking** — no analytics, no telemetry, no data collection
+- 🚫 **Zero ads** — completely ad-free, forever
+- 🚫 **Zero location** — no GPS or location access
+- 💾 All data stored locally on device in SharedPreferences
+- 🔓 Full source code available for audit
+
+---
+
+## 🔍 Static Analysis Note
+
+Automated scanners (VirusTotal, Zenbox, etc.) may flag this app for:
+- **"Queries installed applications"** — required for any launcher to list apps
+- **"Deletes other packages"** — the uninstall feature uses the standard Android uninstall intent
+- **"Uses reflection"** — used to expand the notification panel via StatusBarManager
+- **"Obfuscates method names"** — R8/ProGuard minification, standard for release builds
+- **"Device administrator"** — optional lock screen feature, only locks the screen
+- **"Networking/Location"** — false positives from AndroidX/Material library internals, not from app code
+
+These are all expected behaviors for a home launcher application. The app contains no malicious code.
+
+---
+
+## 🔨 Build
 
 1. Clone the repository
 2. Open in Android Studio
 3. Sync Gradle
-4. Run on device (API 26+ / Android 8.0+)
+4. Build → Run on device (Android 8.0+ / API 26+)
 
 ---
 
-## Permissions
+## 📦 Install
 
-| Permission | Purpose |
-|---|---|
-| `QUERY_ALL_PACKAGES` | List all installed apps for search |
-| `EXPAND_STATUS_BAR` | Pull-down notification panel |
-| `REQUEST_DELETE_PACKAGES` | Uninstall apps from long-press menu |
-| `BIND_NOTIFICATION_LISTENER_SERVICE` | Read now playing music info (optional) |
+Download the latest APK from [Releases](../../releases).
+
+> ⚠️ Play Protect may show a warning for sideloaded apps. This is normal for apps not distributed via Play Store. Tap "More details" → "Install anyway".
 
 ---
 
-## Credits
+## 👤 Credits
 
 **By THE.404GUY ;)**
 
@@ -119,6 +158,6 @@ White square inside a black square. Minimal.
 
 ---
 
-## License
+## 📄 License
 
-Open source. Do whatever you want with it.
+MIT License

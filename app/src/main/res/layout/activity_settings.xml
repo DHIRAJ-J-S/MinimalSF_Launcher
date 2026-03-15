@@ -200,21 +200,6 @@
 
     <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" android:layout_marginHorizontal="20dp" />
 
-    <!-- Lock method -->
-    <LinearLayout android:id="@+id/lockMethodBtn"
-        android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:gravity="center_vertical"
-        android:paddingHorizontal="20dp" android:paddingVertical="18dp"
-        android:clickable="true" android:focusable="true" android:background="@drawable/ripple_item">
-        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-            android:text="screen lock method" android:textColor="@color/grey_text"
-            android:textSize="13sp" android:fontFamily="monospace" />
-        <TextView android:id="@+id/lockMethodState" android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="[choose]" android:textColor="@color/grey_text" android:textSize="12sp" android:fontFamily="monospace" />
-    </LinearLayout>
-
-    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" android:layout_marginHorizontal="20dp" />
-
     <!-- Credits -->
     <TextView
         android:layout_width="match_parent"

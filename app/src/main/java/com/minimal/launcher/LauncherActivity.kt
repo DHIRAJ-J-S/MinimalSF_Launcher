@@ -1,7 +1,6 @@
 package com.minimal.launcher
 
 import android.annotation.SuppressLint
-import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Intent
 import android.graphics.Color
@@ -264,55 +263,15 @@ class LauncherActivity : AppCompatActivity() {
     }
 
     private fun lockScreen() {
-        val method = Prefs.lockMethod(this)
-        when (method) {
-            "admin" -> lockViaAdmin()
-            "accessibility" -> lockViaAccessibility()
-            else -> showLockMethodChooser()
-        }
-    }
-
-    private fun showLockMethodChooser() {
-        MinimalDialog.options(this, title = "choose lock method",
-            items = arrayOf(
-                "device admin\nsimple, reliable, one-time setup",
-                "accessibility\nlightweight, no scary prompt"
-            )
-        ) { which ->
-            when (which) {
-                0 -> { Prefs.setLockMethod(this, "admin"); lockViaAdmin() }
-                1 -> { Prefs.setLockMethod(this, "accessibility"); lockViaAccessibility() }
-            }
-        }
-    }
-
-    private fun lockViaAdmin() {
-        val dpm = getSystemService(DEVICE_POLICY_SERVICE) as DevicePolicyManager
-        val admin = ComponentName(this, LockScreenAdmin::class.java)
-        if (dpm.isAdminActive(admin)) {
-            dpm.lockNow()
-        } else {
-            MinimalDialog.confirm(this, title = "enable device admin",
-                message = "allows MinimalSF to lock your screen.\n\nonly the lock permission is used — nothing else.",
-                positiveText = "enable", negativeText = "cancel",
-                onPositive = {
-                    val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
-                    intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, admin)
-                    intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "MinimalSF uses this only to lock your screen.")
-                    startActivity(intent)
-                }
-            )
-        }
-    }
-
-    private fun lockViaAccessibility() {
         val svc = LockAccessibilityService.instance
         if (svc != null) {
             svc.lock()
         } else {
-            MinimalDialog.confirm(this, title = "enable accessibility",
-                message = "allows MinimalSF to lock your screen.\n\nno data is read or collected — only the lock action is used.",
-                positiveText = "open settings", negativeText = "cancel",
+            MinimalDialog.confirm(this,
+                title = "enable screen lock",
+                message = "to lock screen by double-tap, MinimalSF needs accessibility permission.\n\nonly the lock action is used — no data is read or collected.",
+                positiveText = "open settings",
+                negativeText = "cancel",
                 onPositive = {
                     try { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) } catch (_: Exception) {}
                 }
@@ -356,12 +315,14 @@ class LauncherActivity : AppCompatActivity() {
         handler.removeCallbacks(statsPollRunnable); cancelAutoLaunch(); unregisterMediaCallback()
     }
 
+    @Suppress("deprecation")
     override fun onBackPressed() {
         if (showingAllApps) {
             showingAllApps = false; findViewById<TextView>(R.id.allAppsBtn).text = "⊞ all apps"
             adapter.update(emptyList(), "")
         }
         searchInput.text.clear()
+        super.onBackPressed()
     }
 
     // --- First launch ---

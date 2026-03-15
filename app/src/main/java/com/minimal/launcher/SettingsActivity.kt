@@ -107,24 +107,6 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
 
-        // Lock method
-        val lockMethodState = findViewById<TextView>(R.id.lockMethodState)
-        updateLockMethod(lockMethodState)
-        findViewById<View>(R.id.lockMethodBtn).setOnClickListener {
-            MinimalDialog.options(this, title = "screen lock method",
-                items = arrayOf(
-                    "device admin\nsimple, reliable, one-time setup",
-                    "accessibility\nlightweight, no scary prompt"
-                )
-            ) { which ->
-                when (which) {
-                    0 -> Prefs.setLockMethod(this, "admin")
-                    1 -> Prefs.setLockMethod(this, "accessibility")
-                }
-                updateLockMethod(lockMethodState)
-            }
-        }
-
         updateDefaultStatus()
     }
 
@@ -173,13 +155,6 @@ class SettingsActivity : AppCompatActivity() {
     private fun updateDelay(tv: TextView) { tv.text = "${Prefs.autoDelay(this)}ms" }
     private fun updateClockToggle(tv: TextView) { tv.text = if (Prefs.use24hClock(this)) "[24h]" else "[12h]" }
     private fun updateSearchPos(tv: TextView) { tv.text = if (Prefs.searchAtBottom(this)) "[bottom]" else "[top]" }
-    private fun updateLockMethod(tv: TextView) {
-        tv.text = when (Prefs.lockMethod(this)) {
-            "admin" -> "[device admin]"
-            "accessibility" -> "[accessibility]"
-            else -> "[choose]"
-        }
-    }
 
     private fun updateDoubleTap() {
         val action = Prefs.doubleTapAction(this)
