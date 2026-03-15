@@ -1,4 +1,5 @@
-# ⚡ MinimalSF
+
+<h1><img src="assets/MSF_icon.png" width="50" align="absmiddle" alt="icon">&nbsp;MinimalSF</h1>
 
 **Super Fast. Minimal. Monochrome. Just 1.5Mb**
 
