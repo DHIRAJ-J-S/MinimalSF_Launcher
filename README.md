@@ -88,7 +88,6 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 | `REQUEST_DELETE_PACKAGES` | Uninstall apps from long-press menu |
 | `BIND_NOTIFICATION_LISTENER_SERVICE` | Read currently playing music info (optional, user-enabled) |
 | `BIND_ACCESSIBILITY_SERVICE` | Lock screen on double-tap (optional, user-enabled) |
-| `BIND_DEVICE_ADMIN` | Alternative lock screen method (optional, user-enabled) |
 
 ---
 
