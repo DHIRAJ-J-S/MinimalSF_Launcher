@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
+import android.graphics.Typeface
 import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSessionManager
@@ -74,9 +75,12 @@ class LauncherActivity : AppCompatActivity() {
     private var activeController: MediaController? = null
     private var mediaCallback: MediaController.Callback? = null
     private var musicEverPlayed = false
+    private var appsLoaded = false
 
     private var pullStartY = 0f
     private var pullTriggered = false
+    private var launchCooldown = false
+    private var keepAllAppsOpen = false
 
     private val grayscaleFilter = ColorMatrixColorFilter(ColorMatrix().apply { setSaturation(0f) })
 
@@ -146,12 +150,9 @@ class LauncherActivity : AppCompatActivity() {
 
         appList.setOnTouchListener { _, event -> homeGestureDetector.onTouchEvent(event); false }
 
-        rootLayout.setOnTouchListener { _, event ->
-            homeGestureDetector.onTouchEvent(event)
-            handlePullDown(event)
-        }
-        clockText.setOnTouchListener { v, event -> if (handlePullDown(event)) true else { v.performClick(); false } }
-        dateText.setOnTouchListener { v, event -> if (handlePullDown(event)) true else { v.performClick(); false } }
+        rootLayout.setOnTouchListener { _, event -> handlePullDown(event) }
+        // Clock and date: no separate touch listeners needed — dispatchTouchEvent handles pull-down globally
+        // Click listeners on clock/date work normally when pull isn't triggered
 
         adapter = AppAdapter(
             onClick = { app -> launchApp(app) },
@@ -209,9 +210,50 @@ class LauncherActivity : AppCompatActivity() {
         musicGesture.setIsLongpressEnabled(true)
         musicBar.setOnTouchListener { _, event -> musicGesture.onTouchEvent(event); true }
 
-        loadApps(); updateClock(); refreshTodo()
+        // Immediate: show clock (fast, no I/O)
+        updateClock()
+        applySearchPosition()
+        applyFont()
 
-        if (Prefs.isFirstLaunch(this)) { Prefs.setFirstLaunchDone(this); showFirstLaunchSetup() }
+        // Deferred: load apps and todos after first frame draws
+        window.decorView.post {
+            loadApps()
+            appsLoaded = true
+            todos = TodoStore.load(this)
+            refreshTodo()
+            updateMusicBar()
+            updateNowPlaying()
+
+            if (Prefs.isFirstLaunch(this)) { Prefs.setFirstLaunchDone(this); showFirstLaunchSetup() }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        resetHomeState()
+    }
+
+    private fun resetHomeState() {
+        cancelAutoLaunch()
+        launchCooldown = false
+        if (keepAllAppsOpen) {
+            // Returning from uninstall/app info — keep all apps open, refresh list
+            keepAllAppsOpen = false
+            if (showingAllApps) {
+                loadApps()
+                adapter.update(allApps, "")
+            }
+            searchInput.text.clear()
+            autoLaunchBar.visibility = View.GONE
+            return
+        }
+        if (showingAllApps) closeAllApps()
+        searchInput.text.clear()
+        autoLaunchBar.visibility = View.GONE
+        appList.visibility = View.VISIBLE
+        noMatch.visibility = View.GONE
+        adapter.update(emptyList(), "")
     }
 
     // --- Tips ---
@@ -300,20 +342,37 @@ class LauncherActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (showingAllApps) closeAllApps()
-        searchInput.text.clear()
-        showKeyboard()
-        handler.post(clockRunnable); handler.post(statsPollRunnable)
-        updateMusicBar(); updateNowPlaying()
+        resetHomeState()
+
+        handler.post(clockRunnable)
+        handler.post(statsPollRunnable)
+        updateClock()
+        updateMusicBar()
+
         if (Prefs.showMusic(this)) handler.post(musicPollRunnable)
-        loadApps(); todos = TodoStore.load(this); refreshTodo()
-        applySearchPosition()
+
+        // Defer heavier work past first frame
+        window.decorView.post {
+            // Reload apps only if needed (returning from settings/uninstall)
+            if (appsLoaded) loadApps()
+            todos = TodoStore.load(this)
+            refreshTodo()
+            updateNowPlaying()
+            applySearchPosition()
+            applyFont()
+        }
     }
 
     override fun onPause() {
         super.onPause()
         handler.removeCallbacks(clockRunnable); handler.removeCallbacks(musicPollRunnable)
         handler.removeCallbacks(statsPollRunnable); cancelAutoLaunch(); unregisterMediaCallback()
+    }
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // Handle config changes ourselves instead of activity recreation
+        updateClock()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -324,8 +383,8 @@ class LauncherActivity : AppCompatActivity() {
     @Suppress("deprecation")
     override fun onBackPressed() {
         if (showingAllApps) { closeAllApps(); return }
-        searchInput.text.clear()
-        super.onBackPressed()
+        if (searchInput.text.isNotEmpty()) { searchInput.text.clear(); return }
+        // On home screen already — do nothing, don't call super
     }
 
     // --- First launch ---
@@ -356,7 +415,10 @@ class LauncherActivity : AppCompatActivity() {
 
     // --- Pull down ---
 
-    override fun dispatchTouchEvent(ev: MotionEvent): Boolean { handlePullDown(ev); return super.dispatchTouchEvent(ev) }
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        if (handlePullDown(ev)) return true  // Consume — don't let click listeners fire
+        return super.dispatchTouchEvent(ev)
+    }
 
     private fun handlePullDown(event: MotionEvent): Boolean {
         when (event.actionMasked) {
@@ -365,8 +427,12 @@ class LauncherActivity : AppCompatActivity() {
                 if (!pullTriggered && !showingAllApps) {
                     if (event.rawY - pullStartY > 60) { pullTriggered = true; dismissHomeTip(); expandNotificationBar(); return true }
                 }
+                if (pullTriggered) return true
             }
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> { pullTriggered = false }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                if (pullTriggered) { pullTriggered = false; return true }
+                pullTriggered = false
+            }
         }
         return false
     }
@@ -412,9 +478,12 @@ class LauncherActivity : AppCompatActivity() {
         musicTitle.text = if (a.isNotEmpty()) "$t · $a" else t
     }
 
-    private fun updatePlayIcon(s: PlaybackState?) { musicIconView.text = if (s?.state == PlaybackState.STATE_PLAYING) "▮▮" else "▶" }
+    private fun updatePlayIcon(s: PlaybackState?) {
+        musicIconView.text = if (s?.state == PlaybackState.STATE_PLAYING) "\u23F8\uFE0E"  // ⏸︎
+        else "\u25B6\uFE0E"  // ▶︎
+    }
     private fun unregisterMediaCallback() { try { mediaCallback?.let { activeController?.unregisterCallback(it) } } catch (_: Exception) {}; activeController = null; mediaCallback = null }
-    private fun togglePlayPause() { val c = findActiveMediaController() ?: return; if (c.playbackState?.state == PlaybackState.STATE_PLAYING) { c.transportControls.pause(); musicIconView.text = "▶" } else { c.transportControls.play(); musicIconView.text = "▮▮" } }
+    private fun togglePlayPause() { val c = findActiveMediaController() ?: return; if (c.playbackState?.state == PlaybackState.STATE_PLAYING) { c.transportControls.pause(); musicIconView.text = "▶" } else { c.transportControls.play(); musicIconView.text = "⏸" } }
     private fun skipNext() { findActiveMediaController()?.transportControls?.skipToNext() }
     private fun skipPrev() { findActiveMediaController()?.transportControls?.skipToPrevious() }
     private fun openMusicPlayer() {
@@ -453,6 +522,7 @@ class LauncherActivity : AppCompatActivity() {
             holder.checkBox.setTextColor(if (item.important && !item.done) Color.parseColor("#FF4444") else Color.parseColor("#555555"))
             holder.importantBtn.setTextColor(if (item.important) Color.parseColor("#FF4444") else Color.parseColor("#333333"))
             holder.checkBox.setOnClickListener { todos[position] = item.copy(done = !item.done); TodoStore.save(this@LauncherActivity, todos); refreshTodo() }
+            holder.todoText.setOnClickListener { todos[position] = item.copy(done = !item.done); TodoStore.save(this@LauncherActivity, todos); refreshTodo() }
             holder.importantBtn.setOnClickListener { todos[position] = item.copy(important = !item.important); TodoStore.save(this@LauncherActivity, todos); refreshTodo() }
             holder.removeBtn.setOnClickListener { todos.removeAt(position); TodoStore.save(this@LauncherActivity, todos); refreshTodo() }
         }
@@ -463,10 +533,34 @@ class LauncherActivity : AppCompatActivity() {
 
     private fun showAppOptions(app: AppInfo) {
         cancelAutoLaunch()
-        MinimalDialog.options(this, title = app.label, items = arrayOf("ℹ  app info", "✕  uninstall")) { which ->
+        val hidden = Prefs.getHiddenApps(this)
+        val isHidden = hidden.contains(app.packageName)
+        val keywords = Prefs.getKeywords(this)
+        val currentKeyword = keywords[app.packageName] ?: ""
+
+        val items = mutableListOf(
+            "ℹ  app info",
+            "✕  uninstall",
+            "⌨  set keyword" + if (currentKeyword.isNotEmpty()) " [$currentKeyword]" else "",
+            if (isHidden) "◉  show in search" else "○  hide from search"
+        )
+
+        MinimalDialog.options(this, title = app.label, items = items.toTypedArray()) { which ->
             when (which) {
-                0 -> try { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply { data = Uri.parse("package:${app.packageName}") }) } catch (_: Exception) {}
-                1 -> try { startActivity(Intent(Intent.ACTION_DELETE).apply { data = Uri.parse("package:${app.packageName}") }) } catch (_: Exception) {}
+                0 -> { keepAllAppsOpen = showingAllApps; try { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply { data = Uri.parse("package:${app.packageName}") }) } catch (_: Exception) {} }
+                1 -> { keepAllAppsOpen = showingAllApps; try { startActivity(Intent(Intent.ACTION_DELETE).apply { data = Uri.parse("package:${app.packageName}") }) } catch (_: Exception) {} }
+                2 -> {
+                    MinimalDialog.textInput(this,
+                        title = "set keyword for ${app.label}",
+                        hint = "e.g. wa for whatsapp",
+                        prefill = currentKeyword,
+                        onSubmit = { keyword -> Prefs.setKeyword(this, app.packageName, keyword) }
+                    )
+                }
+                3 -> {
+                    Prefs.setAppHidden(this, app.packageName, !isHidden)
+                    if (showingAllApps) adapter.update(allApps, "")
+                }
             }
         }
     }
@@ -494,15 +588,39 @@ class LauncherActivity : AppCompatActivity() {
     }
 
     private fun filterApps(query: String) {
+        if (launchCooldown) return  // Suppress search while app is launching
         cancelAutoLaunch(); val q = query.trim().lowercase()
         clearBtn.visibility = if (q.isNotEmpty()) View.VISIBLE else View.GONE
-        if (q.isNotEmpty() && showingAllApps) { showingAllApps = false; findViewById<TextView>(R.id.allAppsBtn).text = "⊞ all apps" }
+        if (q.isNotEmpty() && showingAllApps) { showingAllApps = false; findViewById<TextView>(R.id.allAppsBtn).text = "⊞ all apps"; showKeyboard() }
         if (q.isEmpty()) {
             if (showingAllApps) { adapter.update(allApps, ""); appList.visibility = View.VISIBLE }
             else { adapter.update(emptyList(), ""); appList.visibility = View.VISIBLE }
             noMatch.visibility = View.GONE; autoLaunchBar.visibility = View.GONE; return
         }
-        val f = allApps.filter { it.label.lowercase().contains(q) }
+
+        val keywords = Prefs.getKeywords(this)
+        val hiddenApps = Prefs.getHiddenApps(this)
+
+        // Check for exact keyword match first
+        val keywordMatch = allApps.firstOrNull { app ->
+            !hiddenApps.contains(app.packageName) && keywords[app.packageName] == q
+        }
+        if (keywordMatch != null) {
+            adapter.update(emptyList(), q); appList.visibility = View.GONE; noMatch.visibility = View.GONE
+            autoLaunchBar.visibility = View.VISIBLE
+            autoLaunchIcon.setImageDrawable(keywordMatch.icon); autoLaunchIcon.colorFilter = grayscaleFilter
+            autoLaunchName.text = keywordMatch.label; scheduleAutoLaunch(keywordMatch)
+            return
+        }
+
+        // Normal search — exclude hidden apps
+        val fromStart = Prefs.searchFromStart(this)
+        val f = allApps.filter { app ->
+            !hiddenApps.contains(app.packageName) && (
+                (if (fromStart) app.label.lowercase().startsWith(q) else app.label.lowercase().contains(q)) ||
+                (keywords[app.packageName]?.contains(q) == true)
+            )
+        }
         when {
             f.isEmpty() -> { adapter.update(emptyList(), q); appList.visibility = View.GONE; noMatch.visibility = View.VISIBLE; autoLaunchBar.visibility = View.GONE }
             f.size == 1 -> {
@@ -519,11 +637,14 @@ class LauncherActivity : AppCompatActivity() {
 
     private fun launchApp(app: AppInfo) {
         cancelAutoLaunch()
+        launchCooldown = true
         if (showingAllApps) closeAllApps()
         packageManager.getLaunchIntentForPackage(app.packageName)?.let {
             it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); startActivity(it)
         }
         searchInput.text.clear()
+        // Reset cooldown after a delay — covers fast typing overlap
+        handler.postDelayed({ launchCooldown = false }, 600)
     }
 
     private fun closeAllApps() {
@@ -550,4 +671,19 @@ class LauncherActivity : AppCompatActivity() {
     }
 
     private fun updateMusicBar() { musicBar.visibility = if (Prefs.showMusic(this)) View.VISIBLE else View.GONE; if (!Prefs.showMusic(this)) handler.removeCallbacks(musicPollRunnable) }
+
+    private fun applyFont() {
+        val tf = FontManager.getTypeface(this)
+        val m = FontManager.sizeMultiplier(this)
+
+        clockText.typeface = Typeface.create(tf, Typeface.BOLD)
+        clockText.textSize = FontManager.clockSizeSp(this)
+
+        dateText.typeface = tf; dateText.textSize = 12f * m
+        searchInput.typeface = tf; searchInput.textSize = 16f * m
+        musicTitle.typeface = tf; musicTitle.textSize = 14f * m
+        ramText.typeface = tf; ramText.textSize = 11f * m
+
+        adapter.setTypeface(tf, m)
+    }
 }

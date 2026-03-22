@@ -3,6 +3,7 @@ package com.minimal.launcher
 import android.graphics.Color
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
+import android.graphics.Typeface
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
@@ -22,6 +23,8 @@ class AppAdapter(
 
     private var apps: List<AppInfo> = emptyList()
     private var query: String = ""
+    private var typeface: Typeface = Typeface.MONOSPACE
+    private var sizeMultiplier: Float = 1f
 
     private val grayscaleFilter = ColorMatrixColorFilter(
         ColorMatrix().apply { setSaturation(0f) }
@@ -39,9 +42,13 @@ class AppAdapter(
         }).dispatchUpdatesTo(this)
     }
 
+    fun setTypeface(tf: Typeface, mult: Float) {
+        typeface = tf; sizeMultiplier = mult
+        notifyDataSetChanged()
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-        val v = LayoutInflater.from(parent.context).inflate(R.layout.item_app, parent, false)
-        return VH(v)
+        return VH(LayoutInflater.from(parent.context).inflate(R.layout.item_app, parent, false))
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {
@@ -49,29 +56,21 @@ class AppAdapter(
         holder.icon.setImageDrawable(app.icon)
         holder.icon.colorFilter = grayscaleFilter
 
+        holder.name.typeface = typeface
+        holder.name.textSize = 14f * sizeMultiplier
+
         val name = app.label
         val spannable = SpannableString(name)
         if (query.isNotEmpty()) {
             val idx = name.lowercase().indexOf(query)
             if (idx >= 0) {
-                spannable.setSpan(
-                    ForegroundColorSpan(Color.WHITE),
-                    idx, idx + query.length,
-                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
-                spannable.setSpan(
-                    StyleSpan(android.graphics.Typeface.BOLD),
-                    idx, idx + query.length,
-                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
+                spannable.setSpan(ForegroundColorSpan(Color.WHITE), idx, idx + query.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                spannable.setSpan(StyleSpan(Typeface.BOLD), idx, idx + query.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
         }
         holder.name.text = spannable
         holder.itemView.setOnClickListener { onClick(app) }
-        holder.itemView.setOnLongClickListener {
-            onLongClick(app)
-            true
-        }
+        holder.itemView.setOnLongClickListener { onLongClick(app); true }
     }
 
     override fun getItemCount() = apps.size

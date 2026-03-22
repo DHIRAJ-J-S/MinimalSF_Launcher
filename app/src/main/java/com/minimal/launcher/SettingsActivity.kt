@@ -1,5 +1,6 @@
 package com.minimal.launcher
 
+import android.app.Activity
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -7,6 +8,8 @@ import android.os.Bundle
 import android.provider.Settings
 import android.view.View
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 
 class SettingsActivity : AppCompatActivity() {
@@ -79,6 +82,52 @@ class SettingsActivity : AppCompatActivity() {
         updateSearchPos(searchPosState)
         findViewById<View>(R.id.searchPosToggle).setOnClickListener {
             Prefs.setSearchAtBottom(this, !Prefs.searchAtBottom(this)); updateSearchPos(searchPosState)
+        }
+
+        // Search mode
+        val searchModeState = findViewById<TextView>(R.id.searchModeState)
+        updateSearchMode(searchModeState)
+        findViewById<View>(R.id.searchModeToggle).setOnClickListener {
+            Prefs.setSearchFromStart(this, !Prefs.searchFromStart(this)); updateSearchMode(searchModeState)
+        }
+
+        // Font style
+        val fontStyleState = findViewById<TextView>(R.id.fontStyleState)
+        updateFontStyle(fontStyleState)
+        findViewById<View>(R.id.fontStyleBtn).setOnClickListener {
+            MinimalDialog.options(this, title = "font",
+                items = arrayOf("monospace (code)", "clean (sans-serif)", "import custom font")
+            ) { which ->
+                when (which) {
+                    0 -> { Prefs.setFontStyle(this, "mono"); FontManager.clearCache(); updateFontStyle(fontStyleState) }
+                    1 -> { Prefs.setFontStyle(this, "clean"); FontManager.clearCache(); updateFontStyle(fontStyleState) }
+                    2 -> pickFontFile(fontStyleState)
+                }
+            }
+        }
+
+        // Font size
+        val fontSizeState = findViewById<TextView>(R.id.fontSizeState)
+        updateFontSize(fontSizeState)
+        findViewById<View>(R.id.fontSizeBtn).setOnClickListener {
+            MinimalDialog.options(this, title = "font size",
+                items = arrayOf("small", "default", "large")
+            ) { which ->
+                val size = arrayOf("small", "default", "large")[which]
+                Prefs.setFontSize(this, size); updateFontSize(fontSizeState)
+            }
+        }
+
+        // Clock size
+        val clockSizeState = findViewById<TextView>(R.id.clockSizeState)
+        updateClockSize(clockSizeState)
+        findViewById<View>(R.id.clockSizeBtn).setOnClickListener {
+            MinimalDialog.options(this, title = "clock size",
+                items = arrayOf("small", "default", "large")
+            ) { which ->
+                val size = arrayOf("small", "default", "large")[which]
+                Prefs.setClockSize(this, size); updateClockSize(clockSizeState)
+            }
         }
 
         // Double tap action
@@ -155,6 +204,39 @@ class SettingsActivity : AppCompatActivity() {
     private fun updateDelay(tv: TextView) { tv.text = "${Prefs.autoDelay(this)}ms" }
     private fun updateClockToggle(tv: TextView) { tv.text = if (Prefs.use24hClock(this)) "[24h]" else "[12h]" }
     private fun updateSearchPos(tv: TextView) { tv.text = if (Prefs.searchAtBottom(this)) "[bottom]" else "[top]" }
+    private fun updateSearchMode(tv: TextView) { tv.text = if (Prefs.searchFromStart(this)) "[starts with]" else "[contains]" }
+
+    private fun updateFontStyle(tv: TextView) {
+        tv.text = when (Prefs.fontStyle(this)) {
+            "clean" -> "[clean]"
+            "custom" -> "[custom]"
+            else -> "[mono]"
+        }
+    }
+
+    private fun updateFontSize(tv: TextView) { tv.text = "[${Prefs.fontSize(this)}]" }
+    private fun updateClockSize(tv: TextView) { tv.text = "[${Prefs.clockSize(this)}]" }
+
+    private var fontStyleStateRef: TextView? = null
+
+    private val fontPickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            val ok = FontManager.copyFontToInternal(this, uri)
+            if (ok) {
+                Prefs.setFontStyle(this, "custom")
+                FontManager.clearCache()
+                fontStyleStateRef?.let { updateFontStyle(it) }
+                Toast.makeText(this, "font imported", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "failed to import font", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun pickFontFile(stateView: TextView) {
+        fontStyleStateRef = stateView
+        fontPickerLauncher.launch("*/*")
+    }
 
     private fun updateDoubleTap() {
         val action = Prefs.doubleTapAction(this)

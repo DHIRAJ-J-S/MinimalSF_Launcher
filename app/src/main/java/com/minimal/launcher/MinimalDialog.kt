@@ -238,6 +238,51 @@ object MinimalDialog {
         dialog.show()
     }
 
+    /**
+     * Text input dialog.
+     */
+    fun textInput(ctx: Context, title: String, hint: String, prefill: String = "", onSubmit: (String) -> Unit) {
+        val dialog = Dialog(ctx)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.setCancelable(true)
+        val root = frame(ctx)
+        root.addView(title(ctx, title)); root.addView(divider(ctx))
+
+        val input = android.widget.EditText(ctx).apply {
+            setHint(hint); setHintTextColor(Color.parseColor("#FF555555"))
+            setText(prefill); setTextColor(Color.WHITE); textSize = 14f
+            typeface = android.graphics.Typeface.MONOSPACE
+            setBackgroundColor(Color.parseColor("#FF0D0D0D"))
+            setPadding(dp(ctx, 16), dp(ctx, 12), dp(ctx, 16), dp(ctx, 12))
+            inputType = android.text.InputType.TYPE_CLASS_TEXT
+            isSingleLine = true
+            val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            lp.setMargins(dp(ctx, 16), dp(ctx, 12), dp(ctx, 16), dp(ctx, 12))
+            layoutParams = lp
+        }
+        root.addView(input)
+        root.addView(divider(ctx))
+
+        val btnRow = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+        btnRow.addView(btn(ctx, "cancel", 1f) { dialog.dismiss() })
+        btnRow.addView(View(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(ctx, 1), ViewGroup.LayoutParams.MATCH_PARENT)
+            setBackgroundColor(Color.parseColor(DIVIDER))
+        })
+        btnRow.addView(btn(ctx, "save", 1f) { dialog.dismiss(); onSubmit(input.text.toString().trim()) })
+        root.addView(btnRow)
+
+        dialog.setContentView(root)
+        dialog.window?.setLayout(dp(ctx, 300), ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+        dialog.show()
+        input.requestFocus()
+    }
+
     // --- Internals ---
 
     private fun frame(ctx: Context) = LinearLayout(ctx).apply {

@@ -6,7 +6,9 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@android:color/black"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="true"
+    android:focusable="true"
+    android:focusableInTouchMode="true">
 
     <!-- Clock + RAM -->
     <FrameLayout
@@ -83,12 +85,12 @@
         android:paddingHorizontal="20dp" android:paddingVertical="6dp"
         android:background="#0D0D0D" android:visibility="gone">
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="←" android:textColor="#FF444444" android:textSize="14sp" android:fontFamily="monospace" />
+            android:text="⏮" android:textColor="#FF444444" android:textSize="12sp" />
         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-            android:gravity="center" android:text="swipe ←→ change  ·  tap ▶▮▮"
+            android:gravity="center" android:text="← swipe →  ·  tap ▶⏸"
             android:textColor="#FF444444" android:textSize="10sp" android:fontFamily="monospace" />
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="→" android:textColor="#FF444444" android:textSize="14sp" android:fontFamily="monospace" />
+            android:text="⏭" android:textColor="#FF444444" android:textSize="12sp" />
         <TextView android:id="@+id/musicTipClose" android:layout_width="24dp" android:layout_height="24dp"
             android:gravity="center" android:text="×" android:textColor="#FF555555" android:textSize="14sp"
             android:clickable="true" android:focusable="true" android:paddingStart="8dp" />
@@ -97,11 +99,11 @@
     <!-- Music bar -->
     <LinearLayout android:id="@+id/musicBar" android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="20dp"
-        android:paddingVertical="10dp" android:background="#0D0D0D" android:visibility="gone">
-        <TextView android:id="@+id/musicIcon" android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="▶" android:textColor="@color/grey_dim" android:textSize="14sp" android:paddingEnd="12dp" />
+        android:paddingVertical="14dp" android:background="#0D0D0D" android:visibility="gone">
+        <TextView android:id="@+id/musicIcon" android:layout_width="24dp" android:layout_height="wrap_content"
+            android:gravity="center" android:text="▶" android:textColor="@color/grey_dim" android:textSize="16sp" android:paddingEnd="8dp" />
         <TextView android:id="@+id/musicTitle" android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_weight="1" android:textColor="@color/grey_text" android:textSize="13sp"
+            android:layout_weight="1" android:textColor="@color/grey_text" android:textSize="14sp"
             android:fontFamily="monospace" android:singleLine="true" android:ellipsize="end" android:text="no music playing" />
     </LinearLayout>
 
@@ -138,15 +140,18 @@
 
     <!-- Bottom nav -->
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:paddingHorizontal="20dp" android:paddingVertical="10dp"
+        android:orientation="horizontal" android:paddingHorizontal="20dp" android:paddingVertical="4dp"
         android:background="@android:color/black">
         <TextView android:id="@+id/allAppsBtn" android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:text="⊞ all apps" android:textColor="@color/grey_text"
-            android:textSize="12sp" android:fontFamily="monospace" android:letterSpacing="0.04"
+            android:textSize="13sp" android:fontFamily="monospace" android:letterSpacing="0.04"
+            android:paddingVertical="12dp"
             android:clickable="true" android:focusable="true" />
         <TextView android:id="@+id/settingsBtn" android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="⚙ settings" android:textColor="@color/grey_text" android:textSize="12sp"
-            android:fontFamily="monospace" android:letterSpacing="0.04" android:clickable="true" android:focusable="true" />
+            android:text="⚙ settings" android:textColor="@color/grey_text" android:textSize="13sp"
+            android:fontFamily="monospace" android:letterSpacing="0.04"
+            android:paddingVertical="12dp" android:paddingStart="20dp"
+            android:clickable="true" android:focusable="true" />
     </LinearLayout>
 
 </LinearLayout>

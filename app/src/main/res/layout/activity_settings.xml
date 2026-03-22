@@ -170,6 +170,66 @@
 
     <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" android:layout_marginHorizontal="20dp" />
 
+    <!-- Search mode -->
+    <LinearLayout android:id="@+id/searchModeToggle"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center_vertical"
+        android:paddingHorizontal="20dp" android:paddingVertical="18dp"
+        android:clickable="true" android:focusable="true" android:background="@drawable/ripple_item">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="search matching" android:textColor="@color/grey_text"
+            android:textSize="13sp" android:fontFamily="monospace" />
+        <TextView android:id="@+id/searchModeState" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="[start]" android:textColor="@color/grey_text" android:textSize="12sp" android:fontFamily="monospace" />
+    </LinearLayout>
+
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" android:layout_marginHorizontal="20dp" />
+
+    <!-- Font style -->
+    <LinearLayout android:id="@+id/fontStyleBtn"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center_vertical"
+        android:paddingHorizontal="20dp" android:paddingVertical="18dp"
+        android:clickable="true" android:focusable="true" android:background="@drawable/ripple_item">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="font" android:textColor="@color/grey_text"
+            android:textSize="13sp" android:fontFamily="monospace" />
+        <TextView android:id="@+id/fontStyleState" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="[mono]" android:textColor="@color/grey_text" android:textSize="12sp" android:fontFamily="monospace" />
+    </LinearLayout>
+
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" android:layout_marginHorizontal="20dp" />
+
+    <!-- Font size -->
+    <LinearLayout android:id="@+id/fontSizeBtn"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center_vertical"
+        android:paddingHorizontal="20dp" android:paddingVertical="18dp"
+        android:clickable="true" android:focusable="true" android:background="@drawable/ripple_item">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="font size" android:textColor="@color/grey_text"
+            android:textSize="13sp" android:fontFamily="monospace" />
+        <TextView android:id="@+id/fontSizeState" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="[default]" android:textColor="@color/grey_text" android:textSize="12sp" android:fontFamily="monospace" />
+    </LinearLayout>
+
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" android:layout_marginHorizontal="20dp" />
+
+    <!-- Clock size -->
+    <LinearLayout android:id="@+id/clockSizeBtn"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center_vertical"
+        android:paddingHorizontal="20dp" android:paddingVertical="18dp"
+        android:clickable="true" android:focusable="true" android:background="@drawable/ripple_item">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="clock size" android:textColor="@color/grey_text"
+            android:textSize="13sp" android:fontFamily="monospace" />
+        <TextView android:id="@+id/clockSizeState" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="[default]" android:textColor="@color/grey_text" android:textSize="12sp" android:fontFamily="monospace" />
+    </LinearLayout>
+
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" android:layout_marginHorizontal="20dp" />
+
     <!-- Double tap action -->
     <LinearLayout android:id="@+id/doubleTapBtn"
         android:layout_width="match_parent" android:layout_height="wrap_content"
