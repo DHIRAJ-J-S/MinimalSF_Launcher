@@ -99,7 +99,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
     private val prefsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> uiDirty = true }
     private val appsListener: () -> Unit = { onAppsChanged() }
 
-    // Media — event driven via session listener + controller callback (no polling)
+    // Media - event driven via session listener + controller callback (no polling)
     private var sessionsListener: MediaSessionManager.OnActiveSessionsChangedListener? = null
     private var activeController: MediaController? = null
     private var musicNeedsAccess = false
@@ -339,7 +339,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         cancelAutoLaunch()
         launchCooldown = false
         if (keepAllAppsOpen) {
-            // Returning from app info — keep all apps open
+            // Returning from app info - keep all apps open
             keepAllAppsOpen = false
             if (showingAllApps) return
         }
@@ -403,7 +403,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         try {
             packageManager.getLaunchIntentForPackage(pkg)?.let {
                 it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); startActivity(it)
-            } ?: Toast.makeText(this, "app not found — check gesture settings", Toast.LENGTH_SHORT).show()
+            } ?: Toast.makeText(this, "app not found - check gesture settings", Toast.LENGTH_SHORT).show()
         } catch (_: Exception) {}
     }
 
@@ -417,7 +417,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         if (LockAccessibilityService.instance?.lock() == true) return
         MinimalDialog.confirm(this,
             title = "enable screen lock",
-            message = "to lock screen by double-tap, MinimalSF needs accessibility permission.\n\nonly the lock action is used — no data is read or collected.",
+            message = "to lock screen by double-tap, MinimalSF needs accessibility permission.\n\nonly the lock action is used - no data is read or collected.",
             positiveText = "open settings",
             negativeText = "cancel",
             onPositive = {
@@ -513,7 +513,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
     private fun showFirstLaunchSetup() {
         MinimalDialog.confirm(this, title = "welcome to MinimalSF",
-            message = "type to launch any app — one match opens on its own.\n\n" +
+            message = "type to launch any app - one match opens on its own.\n\n" +
                 "fonts, gestures, screen time, search and more can be changed in settings.",
             positiveText = "go to settings", negativeText = "later",
             // Settings has the default-launcher row too, so the next prompt isn't needed after it
@@ -680,7 +680,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
     /**
      * While searching or browsing all apps, the todo section and music bar step aside so the results
-     * get the space — with the keyboard up there was none left for them.
+     * get the space - with the keyboard up there was none left for them.
      */
     private fun updateCompact() {
         val compact = showingAllApps || searchInput.text.isNotBlank()
@@ -727,7 +727,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
             val removeBtn: ImageView = v.findViewById(R.id.removeBtn)
 
             init {
-                // Position is read at click time — the bind-time position goes stale after removals
+                // Position is read at click time - the bind-time position goes stale after removals
                 val toggleDone = View.OnClickListener { edit { it.copy(done = !it.done) } }
                 checkBox.setOnClickListener(toggleDone)
                 todoText.setOnClickListener(toggleDone)

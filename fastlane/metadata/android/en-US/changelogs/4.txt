@@ -1,0 +1,2 @@
+• Screen time no longer over-counts after a restart or crash
+• F-Droid-ready build (no embedded dependency metadata)

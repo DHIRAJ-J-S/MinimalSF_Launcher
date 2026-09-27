@@ -1,0 +1,38 @@
+<p>MinimalSF is a lightweight black &amp; white home screen built for speed. Start typing and the app you want opens - often before you finish the name.</p>
+
+<p><b>Type to launch</b></p>
+<ul>
+<li>Keyboard is ready as soon as you're home</li>
+<li>One match opens on its own after a short, adjustable delay</li>
+<li>Press enter to open the top result; results are ranked by best match</li>
+<li>Custom keywords per app (e.g. "wa" for WhatsApp) and hide apps from search</li>
+</ul>
+
+<p><b>Gestures</b></p>
+<ul>
+<li>Double tap, long press, and swipe left / right / up / down</li>
+<li>Open an app, call a contact, run an app shortcut, open a specific app screen, toggle the flashlight, open the camera, control music, lock the screen, open notifications or quick settings</li>
+<li>Saves "add to home screen" shortcuts from other apps, including Activity Launcher</li>
+</ul>
+
+<p><b>On the home screen</b></p>
+<ul>
+<li>Large clock (tap for alarms) and date</li>
+<li>Optional screen time for today, with your top apps</li>
+<li>Optional now playing bar: tap to play/pause, swipe to skip</li>
+<li>Inline todo list</li>
+</ul>
+
+<p><b>Make it yours</b></p>
+<ul>
+<li>Fonts: monospace, clean, your phone's font, free Google Fonts, or import a .ttf/.otf - plus bold</li>
+<li>Font and clock size, 12/24h clock, search bar at the top or bottom</li>
+</ul>
+
+<p><b>Private</b></p>
+<ul>
+<li>No internet permission, no ads, no analytics, no tracking</li>
+<li>Everything is stored on your device</li>
+</ul>
+
+<p>Optional features need permissions you grant yourself: accessibility (only used to lock the screen), notification access (now playing bar) and usage access (screen time). Font downloads use Google Play services when it's installed.</p>

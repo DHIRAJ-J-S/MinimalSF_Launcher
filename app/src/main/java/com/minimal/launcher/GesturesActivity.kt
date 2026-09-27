@@ -24,7 +24,7 @@ class GesturesActivity : AppCompatActivity() {
     private val contactPicker = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val g = pendingGesture ?: return@registerForActivityResult
         val uri = result.data?.data ?: return@registerForActivityResult
-        // The picker grants one-time read access to the chosen number — no contacts permission needed
+        // The picker grants one-time read access to the chosen number - no contacts permission needed
         val cols = arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER, ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
         val picked = try {
             contentResolver.query(uri, cols, null, null, null)?.use { c ->
@@ -176,7 +176,7 @@ class GesturesActivity : AppCompatActivity() {
 
     private fun promptAccessibility() {
         MinimalDialog.confirm(this, title = "enable screen lock",
-            message = "to lock the screen with a gesture, MinimalSF needs accessibility permission.\n\nonly the lock action is used — no data is read or collected.",
+            message = "to lock the screen with a gesture, MinimalSF needs accessibility permission.\n\nonly the lock action is used - no data is read or collected.",
             positiveText = "open settings", negativeText = "later",
             onPositive = { try { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) } catch (_: Exception) {} })
     }

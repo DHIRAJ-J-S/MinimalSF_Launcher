@@ -31,3 +31,7 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# Release build output (APKs are published on GitHub Releases, not committed)
+/app/release/
+.kotlin/

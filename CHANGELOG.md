@@ -1,16 +1,20 @@
 # Changelog
 
+## v1.2.1
+- Fixed: screen time over-counted after the phone restarted or crashed while an app was open
+- F-Droid ready: store listing and screenshots in `fastlane/`, no embedded dependency metadata in the APK
+
 ## v1.2
 
 ### New
 - **Gestures screen** (settings → gestures): double tap, long press, swipe left / right / up / down on empty home space. Each can:
   open an app, call a contact, run an app shortcut (e.g. WhatsApp "new chat"), open a specific app screen (Activity Launcher style),
   toggle the flashlight, open the camera, play/pause, skip track, open notifications or quick settings, open all apps, lock the screen, or do nothing.
-- **Saved shortcuts** — "add to home screen" requests from other apps (Activity Launcher, Chrome, …) are saved and can be put on a gesture.
+- **Saved shortcuts** - "add to home screen" requests from other apps (Activity Launcher, Chrome, …) are saved and can be put on a gesture.
 - **App shortcuts in the long-press menu**, above app info.
-- **Screen time** (optional) — today's total under the date; tap for top apps and Digital Wellbeing; per-app time in the long-press menu.
-- **Download fonts** — 22 free Google Fonts in the font menu, fetched by Google Play services (the app still has no internet permission).
-- **Font options** — monospace, clean, phone default (One UI Sans on Samsung, or your chosen font style), downloaded, or imported .ttf/.otf; plus a **bold** toggle.
+- **Screen time** (optional) - today's total under the date; tap for top apps and Digital Wellbeing; per-app time in the long-press menu.
+- **Download fonts** - 22 free Google Fonts in the font menu, fetched by Google Play services (the app still has no internet permission).
+- **Font options** - monospace, clean, phone default (One UI Sans on Samsung, or your chosen font style), downloaded, or imported .ttf/.otf; plus a **bold** toggle.
 - **Welcome prompt** on first launch with "go to settings" / "later".
 - **Enter / go** on the keyboard opens the top result; search results are ranked (name start → keyword → word start → anywhere).
 - Keyword clashes ask before moving a keyword; hidden apps appear dimmed in all apps.

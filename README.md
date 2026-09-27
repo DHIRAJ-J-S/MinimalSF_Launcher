@@ -10,7 +10,7 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 ## Features
 
 ### ⌨️ Type-to-Launch
-- Keyboard always ready — start typing immediately to search apps
+- Keyboard always ready - start typing immediately to search apps
 - Real-time filtering as you type
 - Single match auto-launches after configurable delay
 - Press enter / go on the keyboard to open the top result
@@ -33,7 +33,7 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 
 ### 🔒 Double-Tap to Lock Screen
 - Double-tap the empty black space to lock your device
-- Uses Android Accessibility Service — no data is read or collected
+- Uses Android Accessibility Service - no data is read or collected
 - Configurable: can be changed to open any app instead of locking
 
 ### 👆 Long Press Gesture
@@ -142,10 +142,10 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 
 ## 🛡️ Privacy
 
-- 🚫 **Zero network** — the app has no internet permission. Optional font downloads are fetched by Google Play services, not by the app
-- 🚫 **Zero tracking** — no analytics, no telemetry, no data collection
-- 🚫 **Zero ads** — completely ad-free, forever
-- 🚫 **Zero location** — no GPS or location access
+- 🚫 **Zero network** - the app has no internet permission. Optional font downloads are fetched by Google Play services, not by the app
+- 🚫 **Zero tracking** - no analytics, no telemetry, no data collection
+- 🚫 **Zero ads** - completely ad-free, forever
+- 🚫 **Zero location** - no GPS or location access
 - 💾 All data stored locally on device in SharedPreferences
 - 🔓 Full source code available for audit
 

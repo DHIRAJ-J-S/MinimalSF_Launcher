@@ -28,7 +28,7 @@
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
             android:paddingHorizontal="20dp" android:paddingTop="24dp" android:paddingBottom="30dp"
             android:lineSpacingMultiplier="1.4"
-            android:text="gestures work on empty space on the home screen.\n\ntip: apps like Activity Launcher can send shortcuts here with “add to home screen” — they show up under saved shortcuts."
+            android:text="gestures work on empty space on the home screen.\n\ntip: apps like Activity Launcher can send shortcuts here with “add to home screen” - they show up under saved shortcuts."
             android:textColor="@color/grey_mid" android:textSize="11sp" android:fontFamily="monospace" />
     </LinearLayout>
 </ScrollView>

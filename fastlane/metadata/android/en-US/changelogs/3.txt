@@ -1,0 +1,7 @@
+• Gestures: double tap, long press and swipes - open apps, call contacts, app shortcuts, flashlight, music, lock and more
+• Screen time on the home screen (optional)
+• Fonts: Google Fonts downloads, phone default font, bold
+• Smoother: layout follows the keyboard, faster app loading, launch animations
+• Cleaner icons, welcome prompt
+• No QUERY_ALL_PACKAGES; targets Android 16
+• Many fixes, incl. Samsung clock tap and fonts

@@ -118,7 +118,7 @@ class SettingsActivity : AppCompatActivity() {
             Prefs.setShowScreenTime(this, enabling); refresh()
             if (enabling && !ScreenTime.hasAccess(this)) {
                 MinimalDialog.confirm(this, title = "usage access needed",
-                    message = "to show today's screen time, allow MinimalSF under usage access.\n\nit's read on this device only — nothing is sent anywhere.",
+                    message = "to show today's screen time, allow MinimalSF under usage access.\n\nit's read on this device only - nothing is sent anywhere.",
                     positiveText = "open settings", negativeText = "skip",
                     onPositive = { ScreenTime.openAccessSettings(this) }
                 )
@@ -235,7 +235,7 @@ class SettingsActivity : AppCompatActivity() {
                     Prefs.setFontStyle(this, "custom"); FontManager.clearCache(); refresh()
                     Toast.makeText(this, "${name.lowercase()} applied", Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(this, "couldn't download — needs google play services and internet", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "couldn't download - needs google play services and internet", Toast.LENGTH_LONG).show()
                 }
             }
         }

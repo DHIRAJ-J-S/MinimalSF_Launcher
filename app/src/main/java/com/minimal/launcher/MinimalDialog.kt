@@ -82,7 +82,7 @@ object MinimalDialog {
     /** An on/off switch shown on the right of a dialog's title (e.g. "bold" in the font picker). */
     class TitleToggle(val label: String, val isOn: () -> Boolean, val onToggle: () -> Unit)
 
-    /** Options list that marks the current value — used for every multi-value setting. */
+    /** Options list that marks the current value - used for every multi-value setting. */
     fun singleChoice(ctx: Context, title: String, items: Array<String>, checkedIndex: Int,
                      toggle: TitleToggle? = null, onSelect: (Int) -> Unit) {
         val dialog = newDialog(ctx)

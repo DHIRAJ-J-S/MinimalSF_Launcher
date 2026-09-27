@@ -119,7 +119,7 @@ object GestureActions {
 
     private fun start(ctx: Context, intent: Intent) {
         try { ctx.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-        catch (_: Exception) { toast(ctx, "can't open that — the app may have changed") }
+        catch (_: Exception) { toast(ctx, "can't open that - the app may have changed") }
     }
 
     private fun callNumber(ctx: Context, number: String) {

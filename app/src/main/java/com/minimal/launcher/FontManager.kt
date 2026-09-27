@@ -47,7 +47,7 @@ object FontManager {
 
     /**
      * The font the phone's own UI uses. Samsung's system apps use One UI Sans, but ordinary apps asking
-     * for the default font get Roboto, so load One UI Sans directly — unless a custom Samsung font style
+     * for the default font get Roboto, so load One UI Sans directly - unless a custom Samsung font style
      * is active, in which case the default typeface already is that style.
      */
     private fun phoneDefault(bold: Boolean): Typeface {
@@ -62,7 +62,7 @@ object FontManager {
         return if (bold) Typeface.create(Typeface.DEFAULT, Typeface.BOLD) else Typeface.DEFAULT
     }
 
-    /** True when the default typeface has been replaced (e.g. a Samsung font style) — it no longer measures like Roboto. */
+    /** True when the default typeface has been replaced (e.g. a Samsung font style) - it no longer measures like Roboto. */
     private fun customStyleActive(): Boolean {
         val roboto = systemFont("Roboto-Regular.ttf", "RobotoStatic-Regular.ttf") ?: return false
         val sample = "The quick brown fox 0123456789"
@@ -106,7 +106,7 @@ object FontManager {
 
     /**
      * Returns size multiplier based on font size pref.
-     * Clock size is independent — not affected by this.
+     * Clock size is independent - not affected by this.
      */
     fun sizeMultiplier(ctx: Context): Float {
         return when (Prefs.fontSize(ctx)) {
@@ -128,7 +128,7 @@ object FontManager {
      * Applies typeface + size multiplier to every TextView under [root], so the chosen font
      * is used consistently instead of on a handful of hand-picked views.
      * The original XML size is remembered in a tag so repeated calls don't compound.
-     * RecyclerView contents are skipped — their adapters apply the font on bind.
+     * RecyclerView contents are skipped - their adapters apply the font on bind.
      */
     fun applyTo(root: View, tf: Typeface, mult: Float, skip: Set<View> = emptySet()) {
         if (root in skip || root is RecyclerView) return

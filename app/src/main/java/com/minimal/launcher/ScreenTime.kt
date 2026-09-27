@@ -77,8 +77,17 @@ object ScreenTime {
 
         val events = usm.queryEvents(start, now)
         val e = UsageEvents.Event()
+        var lastTs = start
         while (events.hasNextEvent()) {
             events.getNextEvent(e)
+            // Reboot / power loss: nothing ran while the phone was off. After an unclean shutdown Android
+            // logs the shutdown at the *next* startup time, so end open sessions at the last real event.
+            if (e.eventType == UsageEvents.Event.DEVICE_SHUTDOWN || e.eventType == UsageEvents.Event.DEVICE_STARTUP) {
+                sessionStart.keys.toList().forEach { close(it, lastTs) }
+                resumed.clear()
+                continue
+            }
+            lastTs = e.timeStamp
             val pkg = e.packageName ?: continue
             val cls = e.className ?: ""
             when (e.eventType) {
