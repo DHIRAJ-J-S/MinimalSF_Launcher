@@ -5,6 +5,14 @@
 
 A lightweight, black & white Android home launcher built purely for speed. Type to search, auto-launch apps instantly. No bloat, no ads, no tracking, no network calls.
 
+<a href="https://github.com/DHIRAJ-J-S/MinimalSF_Launcher/releases/latest"><img src="https://raw.githubusercontent.com/Kunzisoft/Github-badge/main/get-it-on-github.png" alt="Get it on GitHub" height="54"></a>
+<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/DHIRAJ-J-S/MinimalSF_Launcher"><img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="54"></a>
+
+[![Latest release](https://img.shields.io/github/v/release/DHIRAJ-J-S/MinimalSF_Launcher?label=release)](https://github.com/DHIRAJ-J-S/MinimalSF_Launcher/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/DHIRAJ-J-S/MinimalSF_Launcher/total?label=downloads)](https://github.com/DHIRAJ-J-S/MinimalSF_Launcher/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)
+
 ---
 
 ## Features
@@ -164,9 +172,7 @@ From the command line: `./gradlew assembleRelease`
 
 ## 📦 Install
 
-<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/DHIRAJ-J-S/MinimalSF_Launcher"><img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="54"></a>
-
-- **Obtainium** (recommended): tap the badge on your phone, or add `https://github.com/DHIRAJ-J-S/MinimalSF_Launcher` in [Obtainium](https://github.com/ImranR98/Obtainium). You get updates automatically from each new release.
+- **Obtainium** (recommended): tap the Obtainium badge at the top on your phone, or add `https://github.com/DHIRAJ-J-S/MinimalSF_Launcher` in [Obtainium](https://github.com/ImranR98/Obtainium). You get updates automatically from each new release.
 - **Direct download:** get the latest APK from [Releases](../../releases).
 - **F-Droid:** submitted and awaiting review.
 
