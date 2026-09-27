@@ -5,14 +5,28 @@ plugins {
 
 android {
     namespace 'com.minimal.launcher'
-    compileSdk 35
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.minimal.launcher"
         minSdk 26
-        targetSdk 35
-        versionCode 2
-        versionName "1.1"
+        targetSdk 36
+        versionCode 3
+        versionName "1.2"
+    }
+
+    // lite: no accessibility service / notification listener, so sideloaded installs aren't
+    //       blocked by Google Play Protect. No double-tap lock or now playing bar.
+    // full: everything, but Play Protect may block or warn when sideloading.
+    flavorDimensions 'features'
+    productFlavors {
+        lite {
+            dimension 'features'
+        }
+        full {
+            dimension 'features'
+            versionNameSuffix '-full'
+        }
     }
 
     buildTypes {
