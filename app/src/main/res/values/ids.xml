@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- FontManager: original XML text size, so the size multiplier never compounds -->
-    <item name="tag_base_text_size" type="id" />
-    <!-- FontManager: original XML text style (bold or not), so the bold toggle can be undone -->
-    <item name="tag_base_text_style" type="id" />
-</resources>

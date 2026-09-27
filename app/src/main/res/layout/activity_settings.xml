@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/black"
     android:fitsSystemWindows="true">
 
 <LinearLayout
-    android:id="@+id/settingsRoot"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical">
@@ -32,8 +30,6 @@
             android:fontFamily="monospace"
             android:clickable="true"
             android:focusable="true"
-            android:background="@drawable/ripple_borderless"
-            android:paddingVertical="8dp"
             android:paddingEnd="16dp" />
 
         <TextView
@@ -64,7 +60,28 @@
             android:text="set as default launcher" android:textColor="@color/grey_text"
             android:textSize="13sp" android:fontFamily="monospace" />
         <TextView android:id="@+id/setDefaultArrow" android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="→" android:textColor="@color/grey_text" android:textSize="12sp" android:fontFamily="monospace" />
+            android:text="→" android:textColor="@color/grey_dim" android:textSize="14sp" />
+    </LinearLayout>
+
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" android:layout_marginHorizontal="20dp" />
+
+    <!-- Unset as default -->
+    <LinearLayout
+        android:id="@+id/unsetDefaultBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="18dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="@drawable/ripple_item">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="change default launcher" android:textColor="@color/grey_text"
+            android:textSize="13sp" android:fontFamily="monospace" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="→" android:textColor="@color/grey_dim" android:textSize="14sp" />
     </LinearLayout>
 
     <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" android:layout_marginHorizontal="20dp" />
@@ -88,7 +105,7 @@
             android:text="[off]" android:textColor="@color/grey_text" android:textSize="12sp" android:fontFamily="monospace" />
     </LinearLayout>
 
-    <View android:id="@+id/musicDivider" android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" android:layout_marginHorizontal="20dp" />
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" android:layout_marginHorizontal="20dp" />
 
     <!-- Auto launch delay -->
     <LinearLayout
@@ -106,7 +123,7 @@
             android:text="auto-launch delay" android:textColor="@color/grey_text"
             android:textSize="13sp" android:fontFamily="monospace" />
         <TextView android:id="@+id/delayValue" android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="[200ms]" android:textColor="@color/grey_text" android:textSize="12sp" android:fontFamily="monospace" />
+            android:text="600ms" android:textColor="@color/grey_text" android:textSize="12sp" android:fontFamily="monospace" />
     </LinearLayout>
 
     <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" android:layout_marginHorizontal="20dp" />
@@ -128,21 +145,6 @@
             android:textSize="13sp" android:fontFamily="monospace" />
         <TextView android:id="@+id/clockToggleState" android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="[12h]" android:textColor="@color/grey_text" android:textSize="12sp" android:fontFamily="monospace" />
-    </LinearLayout>
-
-    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" android:layout_marginHorizontal="20dp" />
-
-    <!-- Screen time -->
-    <LinearLayout android:id="@+id/screenTimeToggle"
-        android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:gravity="center_vertical"
-        android:paddingHorizontal="20dp" android:paddingVertical="18dp"
-        android:clickable="true" android:focusable="true" android:background="@drawable/ripple_item">
-        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-            android:text="show screen time" android:textColor="@color/grey_text"
-            android:textSize="13sp" android:fontFamily="monospace" />
-        <TextView android:id="@+id/screenTimeState" android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="[off]" android:textColor="@color/grey_text" android:textSize="12sp" android:fontFamily="monospace" />
     </LinearLayout>
 
     <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" android:layout_marginHorizontal="20dp" />
@@ -178,7 +180,7 @@
             android:text="search matching" android:textColor="@color/grey_text"
             android:textSize="13sp" android:fontFamily="monospace" />
         <TextView android:id="@+id/searchModeState" android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="[starts with]" android:textColor="@color/grey_text" android:textSize="12sp" android:fontFamily="monospace" />
+            android:text="[start]" android:textColor="@color/grey_text" android:textSize="12sp" android:fontFamily="monospace" />
     </LinearLayout>
 
     <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" android:layout_marginHorizontal="20dp" />
@@ -228,17 +230,32 @@
 
     <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" android:layout_marginHorizontal="20dp" />
 
-    <!-- Gestures (own screen) -->
-    <LinearLayout android:id="@+id/gesturesBtn"
+    <!-- Double tap action -->
+    <LinearLayout android:id="@+id/doubleTapBtn"
         android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="horizontal" android:gravity="center_vertical"
         android:paddingHorizontal="20dp" android:paddingVertical="18dp"
         android:clickable="true" android:focusable="true" android:background="@drawable/ripple_item">
         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-            android:text="gestures" android:textColor="@color/grey_text"
+            android:text="double tap action" android:textColor="@color/grey_text"
             android:textSize="13sp" android:fontFamily="monospace" />
-        <TextView android:id="@+id/gesturesState" android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="→" android:textColor="@color/grey_text" android:textSize="12sp" android:fontFamily="monospace" />
+        <TextView android:id="@+id/doubleTapState" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="[lock]" android:textColor="@color/grey_text" android:textSize="12sp" android:fontFamily="monospace" />
+    </LinearLayout>
+
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" android:layout_marginHorizontal="20dp" />
+
+    <!-- Long press action -->
+    <LinearLayout android:id="@+id/longPressBtn"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center_vertical"
+        android:paddingHorizontal="20dp" android:paddingVertical="18dp"
+        android:clickable="true" android:focusable="true" android:background="@drawable/ripple_item">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="long press action" android:textColor="@color/grey_text"
+            android:textSize="13sp" android:fontFamily="monospace" />
+        <TextView android:id="@+id/longPressState" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="[none]" android:textColor="@color/grey_text" android:textSize="12sp" android:fontFamily="monospace" />
     </LinearLayout>
 
     <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" android:layout_marginHorizontal="20dp" />
@@ -266,30 +283,14 @@
         android:fontFamily="monospace"
         android:letterSpacing="0.04" />
 
-    <!-- Opens the repo in the browser (the app itself has no internet permission) -->
-    <ImageView
-        android:id="@+id/githubBtn"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="6dp"
-        android:padding="11dp"
-        android:src="@drawable/ic_github"
-        app:tint="@color/grey_dim"
-        android:background="@drawable/ripple_borderless"
-        android:contentDescription="source code on github"
-        android:clickable="true"
-        android:focusable="true" />
-
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
         android:paddingTop="4dp"
         android:paddingBottom="30dp"
-        android:id="@+id/versionText"
-        android:text="MinimalSF"
-        android:textColor="#FF444444"
+        android:text="MinimalSF v1.0"
+        android:textColor="#FF1A1A1A"
         android:textSize="10sp"
         android:fontFamily="monospace"
         android:letterSpacing="0.04" />

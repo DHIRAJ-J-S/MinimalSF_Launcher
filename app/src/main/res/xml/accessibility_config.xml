@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Only used to perform the lock-screen action. Subscribing to a rare event type (instead of
-     typeAllMask) stops Android from routing every UI event on the phone through this service. -->
 <accessibility-service
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/accessibility_desc"
-    android:accessibilityEventTypes="typeAnnouncement"
+    android:accessibilityEventTypes="typeAllMask"
     android:accessibilityFeedbackType="feedbackGeneric"
-    android:notificationTimeout="1000"
+    android:notificationTimeout="100"
     android:canPerformGestures="false"
     android:canRetrieveWindowContent="false" />

@@ -1,7 +1,6 @@
 package com.minimal.launcher
 
 import android.content.Context
-import android.content.SharedPreferences
 import org.json.JSONObject
 
 object Prefs {
@@ -9,13 +8,7 @@ object Prefs {
 
     private fun p(c: Context) = c.getSharedPreferences(P, Context.MODE_PRIVATE)
 
-    fun registerListener(c: Context, l: SharedPreferences.OnSharedPreferenceChangeListener) =
-        p(c).registerOnSharedPreferenceChangeListener(l)
-    fun unregisterListener(c: Context, l: SharedPreferences.OnSharedPreferenceChangeListener) =
-        p(c).unregisterOnSharedPreferenceChangeListener(l)
-
-    // Features that need the "full" build read as off in "lite"
-    fun showMusic(c: Context) = SystemFeatures.AVAILABLE && p(c).getBoolean("show_music", false)
+    fun showMusic(c: Context) = p(c).getBoolean("show_music", false)
     fun setShowMusic(c: Context, v: Boolean) { p(c).edit().putBoolean("show_music", v).apply() }
 
     fun autoDelay(c: Context) = p(c).getLong("auto_delay", 200L)
@@ -33,45 +26,11 @@ object Prefs {
     fun searchAtBottom(c: Context) = p(c).getBoolean("search_bottom", false)
     fun setSearchAtBottom(c: Context, v: Boolean) { p(c).edit().putBoolean("search_bottom", v).apply() }
 
-    // --- Gestures: each stores a GestureActions code ("" = none) ---
-    enum class Gesture(val key: String, val title: String) {
-        DOUBLE_TAP("double_tap_action", "double tap"),
-        LONG_PRESS("long_press_action", "long press"),
-        SWIPE_LEFT("swipe_left_action", "swipe left"),
-        SWIPE_RIGHT("swipe_right_action", "swipe right"),
-        SWIPE_UP("swipe_up_action", "swipe up"),
-        SWIPE_DOWN("swipe_down_action", "swipe down"),
-    }
+    fun doubleTapAction(c: Context): String = p(c).getString("double_tap_action", "lock") ?: "lock"
+    fun setDoubleTapAction(c: Context, v: String) { p(c).edit().putString("double_tap_action", v).apply() }
 
-    private fun defaultGesture(g: Gesture) = when (g) {
-        Gesture.DOUBLE_TAP -> if (SystemFeatures.AVAILABLE) GestureActions.LOCK else ""
-        Gesture.SWIPE_DOWN -> GestureActions.NOTIFICATIONS
-        else -> ""
-    }
-
-    fun gesture(c: Context, g: Gesture): String {
-        val v = p(c).getString(g.key, defaultGesture(g)) ?: ""
-        // "lock" needs the full build's accessibility service
-        return if (v == GestureActions.LOCK && !SystemFeatures.AVAILABLE) "" else v
-    }
-    fun setGesture(c: Context, g: Gesture, v: String) { p(c).edit().putString(g.key, v).apply() }
-
-    fun doubleTapAction(c: Context) = gesture(c, Gesture.DOUBLE_TAP)
-
-    // --- Shortcuts other apps pinned to us ("add to home screen", Activity Launcher): "pkg|id|label" ---
-    private const val PINNED_KEY = "pinned_shortcuts"
-
-    fun pinnedShortcuts(c: Context): List<String> =
-        (p(c).getString(PINNED_KEY, "") ?: "").split('\n').filter { it.isNotBlank() }
-
-    fun addPinnedShortcut(c: Context, entry: String) {
-        val list = pinnedShortcuts(c).filterNot { it.substringBeforeLast('|') == entry.substringBeforeLast('|') } + entry
-        p(c).edit().putString(PINNED_KEY, list.joinToString("\n")).apply()
-    }
-
-    fun removePinnedShortcut(c: Context, entry: String) {
-        p(c).edit().putString(PINNED_KEY, pinnedShortcuts(c).filterNot { it == entry }.joinToString("\n")).apply()
-    }
+    fun longPressAction(c: Context): String = p(c).getString("long_press_action", "") ?: ""
+    fun setLongPressAction(c: Context, v: String) { p(c).edit().putString("long_press_action", v).apply() }
 
     fun homeTipShown(c: Context) = p(c).getBoolean("home_tip_shown", false)
     fun setHomeTipShown(c: Context) { p(c).edit().putBoolean("home_tip_shown", true).apply() }
@@ -79,71 +38,46 @@ object Prefs {
     fun musicTipShown(c: Context) = p(c).getBoolean("music_tip_shown", false)
     fun setMusicTipShown(c: Context) { p(c).edit().putBoolean("music_tip_shown", true).apply() }
 
+    fun lockMethod(c: Context): String = p(c).getString("lock_method", "") ?: ""
+    fun setLockMethod(c: Context, v: String) { p(c).edit().putString("lock_method", v).apply() }
+
     // --- Custom keywords: package -> keyword ---
-    // Parsed once and cached; search reads this on every keystroke.
     private const val KEYWORDS_KEY = "app_keywords"
-    private var keywordsCache: Map<String, String>? = null
 
     fun getKeywords(c: Context): Map<String, String> {
-        keywordsCache?.let { return it }
         val json = p(c).getString(KEYWORDS_KEY, "{}") ?: "{}"
+        val obj = JSONObject(json)
         val map = mutableMapOf<String, String>()
-        try {
-            val obj = JSONObject(json)
-            obj.keys().forEach { map[it] = obj.getString(it) }
-        } catch (_: Exception) {}
-        keywordsCache = map
+        obj.keys().forEach { map[it] = obj.getString(it) }
         return map
     }
 
     fun setKeyword(c: Context, pkg: String, keyword: String) {
         val map = getKeywords(c).toMutableMap()
-        val k = keyword.trim().lowercase()
-        if (k.isEmpty()) map.remove(pkg) else map[pkg] = k
-        keywordsCache = map
+        if (keyword.isEmpty()) map.remove(pkg) else map[pkg] = keyword.lowercase()
         p(c).edit().putString(KEYWORDS_KEY, JSONObject(map as Map<*, *>).toString()).apply()
     }
 
-    /** Package that already owns [keyword], if any (ignoring [exceptPkg]). */
-    fun keywordOwner(c: Context, keyword: String, exceptPkg: String): String? =
-        getKeywords(c).entries.firstOrNull { it.value == keyword.trim().lowercase() && it.key != exceptPkg }?.key
-
     // --- Hidden apps: set of package names ---
     private const val HIDDEN_KEY = "hidden_apps"
-    private var hiddenCache: Set<String>? = null
 
     fun getHiddenApps(c: Context): Set<String> {
-        hiddenCache?.let { return it }
-        // Copy: the set returned by getStringSet must not be modified or kept
-        val set = HashSet(p(c).getStringSet(HIDDEN_KEY, emptySet()) ?: emptySet())
-        hiddenCache = set
-        return set
+        return p(c).getStringSet(HIDDEN_KEY, emptySet()) ?: emptySet()
     }
 
     fun setAppHidden(c: Context, pkg: String, hidden: Boolean) {
-        val set = HashSet(getHiddenApps(c))
+        val set = getHiddenApps(c).toMutableSet()
         if (hidden) set.add(pkg) else set.remove(pkg)
-        hiddenCache = set
         p(c).edit().putStringSet(HIDDEN_KEY, set).apply()
     }
 
     // --- Font ---
-    // "mono" (default), "clean", "system" (phone's font), "custom"
+    // "mono" (default), "clean", "custom"
     fun fontStyle(c: Context): String = p(c).getString("font_style", "mono") ?: "mono"
     fun setFontStyle(c: Context, v: String) { p(c).edit().putString("font_style", v).apply() }
 
-    fun fontBold(c: Context) = p(c).getBoolean("font_bold", false)
-    fun setFontBold(c: Context, v: Boolean) { p(c).edit().putBoolean("font_bold", v).apply() }
-
     fun customFontPath(c: Context): String = p(c).getString("custom_font_path", "") ?: ""
     fun setCustomFontPath(c: Context, v: String) { p(c).edit().putString("custom_font_path", v).apply() }
-
-    // Display name of the stored custom font ("JetBrains Mono", or "" for an imported file)
-    fun customFontName(c: Context): String = p(c).getString("custom_font_name", "") ?: ""
-    fun setCustomFontName(c: Context, v: String) { p(c).edit().putString("custom_font_name", v).apply() }
-
-    fun showScreenTime(c: Context) = p(c).getBoolean("show_screen_time", false)
-    fun setShowScreenTime(c: Context, v: Boolean) { p(c).edit().putBoolean("show_screen_time", v).apply() }
 
     // "small", "default", "large"
     fun fontSize(c: Context): String = p(c).getString("font_size", "default") ?: "default"

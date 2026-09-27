@@ -1,22 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Icons are the shared line-icon set, tinted in code; all 32dp touch targets with 18dp glyphs -->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:minHeight="32dp">
+    android:paddingVertical="6dp">
 
-    <ImageView
+    <TextView
         android:id="@+id/checkBox"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:layout_marginStart="-7dp"
-        android:padding="7dp"
-        android:src="@drawable/ic_check_off"
-        android:background="@drawable/ripple_borderless"
-        android:contentDescription="done"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="☐"
+        android:textColor="@color/grey_dim"
+        android:textSize="14sp"
+        android:paddingEnd="10dp"
         android:clickable="true"
         android:focusable="true" />
 
@@ -25,33 +23,33 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:paddingStart="6dp"
-        android:paddingVertical="6dp"
         android:textColor="@color/grey_text"
         android:textSize="12sp"
         android:fontFamily="monospace"
         android:singleLine="true"
         android:ellipsize="end" />
 
-    <ImageView
+    <TextView
         android:id="@+id/importantBtn"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:padding="7dp"
-        android:src="@drawable/ic_important"
-        android:background="@drawable/ripple_borderless"
-        android:contentDescription="important"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:gravity="center"
+        android:text="!"
+        android:textColor="@color/grey_mid"
+        android:textSize="13sp"
+        android:fontFamily="monospace"
+        android:textStyle="bold"
         android:clickable="true"
         android:focusable="true" />
 
-    <ImageView
+    <TextView
         android:id="@+id/removeBtn"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:padding="8dp"
-        android:src="@drawable/ic_close"
-        android:background="@drawable/ripple_borderless"
-        android:contentDescription="remove"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:gravity="center"
+        android:text="×"
+        android:textColor="@color/grey_mid"
+        android:textSize="16sp"
         android:clickable="true"
         android:focusable="true" />
 </LinearLayout>

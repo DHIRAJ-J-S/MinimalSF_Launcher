@@ -2,165 +2,143 @@ package com.minimal.launcher
 
 import android.app.Dialog
 import android.content.Context
-import android.content.res.ColorStateList
 import android.graphics.Color
-import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
-import android.graphics.drawable.RippleDrawable
-import android.text.InputType
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
-import android.view.WindowManager
-import android.view.inputmethod.EditorInfo
-import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 
-/**
- * Every dialog in the app. All share one frame, font, divider and press-feedback style.
- */
 object MinimalDialog {
 
-    private val BORDER = Color.parseColor("#FF444444")
-    private val BG = Color.parseColor("#FF000000")
-    private val TEXT = Color.parseColor("#FFCCCCCC")
-    private val TITLE = Color.WHITE
-    private val OPTION = Color.parseColor("#FFDDDDDD")
-    private val MUTED = Color.parseColor("#FF555555")
-    private val PRESS = Color.parseColor("#33FFFFFF")
-    private val DIVIDER = Color.parseColor("#FF222222")
-    private val INPUT_BG = Color.parseColor("#FF0D0D0D")
-    private val ACCENT = Color.parseColor("#FFFF4444")
+    private const val BORDER = "#FF444444"
+    private const val BG = "#FF000000"
+    private const val TEXT = "#FFCCCCCC"
+    private const val TITLE = "#FFFFFFFF"
+    private const val OPTION = "#FFDDDDDD"
+    private const val PRESS = "#FF1A1A1A"
+    private const val DIVIDER = "#FF222222"
 
     private fun dp(ctx: Context, v: Int): Int =
         TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v.toFloat(), ctx.resources.displayMetrics).toInt()
 
-    private fun tf(ctx: Context): Typeface = FontManager.getTypeface(ctx)
-
     fun confirm(ctx: Context, title: String? = null, message: String, positiveText: String,
-                negativeText: String? = null, onPositive: () -> Unit, onNegative: (() -> Unit)? = null,
-                onDismiss: (() -> Unit)? = null) {
-        val dialog = newDialog(ctx)
-        // Fires for any close: button, back, or tapping outside
-        if (onDismiss != null) dialog.setOnDismissListener { onDismiss() }
+                negativeText: String? = null, onPositive: () -> Unit, onNegative: (() -> Unit)? = null) {
+        val dialog = Dialog(ctx)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.setCancelable(true)
         val root = frame(ctx)
         if (title != null) { root.addView(title(ctx, title)); root.addView(divider(ctx)) }
         root.addView(TextView(ctx).apply {
-            text = message; setTextColor(TEXT); textSize = 13f; typeface = tf(ctx)
-            setPadding(dp(ctx, 20), dp(ctx, 16), dp(ctx, 20), dp(ctx, 16)); setLineSpacing(dp(ctx, 4).toFloat(), 1f)
+            text = message; setTextColor(Color.parseColor(TEXT)); textSize = 13f
+            typeface = android.graphics.Typeface.MONOSPACE
+            setPadding(dp(ctx, 20), dp(ctx, 16), dp(ctx, 20), dp(ctx, 16)); lineHeight = dp(ctx, 20)
         })
         root.addView(divider(ctx))
-        val buttons = mutableListOf<Pair<String, () -> Unit>>()
-        if (negativeText != null) buttons += negativeText to { dialog.dismiss(); onNegative?.invoke(); Unit }
-        buttons += positiveText to { dialog.dismiss(); onPositive() }
-        root.addView(buttonRow(ctx, buttons))
-        show(dialog, root, 300)
-    }
-
-    /**
-     * Menu. [icons] (drawable ids, same length as [items]) are drawn in a fixed-width column so
-     * labels line up; [trailing] shows a dim value on the right of a row (e.g. usage time).
-     */
-    fun options(ctx: Context, title: String? = null, items: Array<String>, icons: IntArray? = null,
-                subtitle: String? = null, trailing: Array<String?>? = null, onSelect: (Int) -> Unit) {
-        val dialog = newDialog(ctx)
-        val root = frame(ctx)
-        if (title != null) { root.addView(title(ctx, title, subtitle)); root.addView(divider(ctx)) }
-        root.addView(list(ctx, items.mapIndexed { i, label ->
-            row(ctx, icons?.getOrNull(i), OPTION, label, OPTION, trailing?.getOrNull(i)) { dialog.dismiss(); onSelect(i) }
-        }))
-        show(dialog, root, 290)
-    }
-
-    /** An on/off switch shown on the right of a dialog's title (e.g. "bold" in the font picker). */
-    class TitleToggle(val label: String, val isOn: () -> Boolean, val onToggle: () -> Unit)
-
-    /** Options list that marks the current value — used for every multi-value setting. */
-    fun singleChoice(ctx: Context, title: String, items: Array<String>, checkedIndex: Int,
-                     toggle: TitleToggle? = null, onSelect: (Int) -> Unit) {
-        val dialog = newDialog(ctx)
-        val root = frame(ctx)
-        root.addView(if (toggle == null) title(ctx, title) else titleWithToggle(ctx, title, toggle)); root.addView(divider(ctx))
-        root.addView(list(ctx, items.mapIndexed { i, label ->
-            val checked = i == checkedIndex
-            row(ctx, if (checked) R.drawable.ic_radio_on else R.drawable.ic_radio_off,
-                if (checked) Color.WHITE else MUTED, label, if (checked) Color.WHITE else OPTION) { dialog.dismiss(); onSelect(i) }
-        }))
-        show(dialog, root, 290)
-    }
-
-    /** Rows separated by dividers; scrolls when there are more than fit on screen. */
-    private fun list(ctx: Context, rows: List<View>): View {
-        val col = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
-        rows.forEachIndexed { i, r -> if (i > 0) col.addView(divider(ctx)); col.addView(r) }
-        if (rows.size <= 7) return col
-        return android.widget.ScrollView(ctx).apply {
-            isVerticalScrollBarEnabled = false
-            overScrollMode = View.OVER_SCROLL_NEVER
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                minOf(rows.size * dp(ctx, 49), (ctx.resources.displayMetrics.heightPixels * 0.55f).toInt()))
-            addView(col)
+        val row = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         }
+        if (negativeText != null) {
+            row.addView(btn(ctx, negativeText, 1f) { dialog.dismiss(); onNegative?.invoke() })
+            row.addView(View(ctx).apply {
+                layoutParams = LinearLayout.LayoutParams(dp(ctx, 1), ViewGroup.LayoutParams.MATCH_PARENT)
+                setBackgroundColor(Color.parseColor(DIVIDER))
+            })
+        }
+        row.addView(btn(ctx, positiveText, 1f) { dialog.dismiss(); onPositive() })
+        root.addView(row)
+        dialog.setContentView(root)
+        dialog.window?.setLayout(dp(ctx, 300), ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog.show()
     }
 
-    private fun row(ctx: Context, icon: Int?, iconTint: Int, label: String, labelColor: Int,
-                    trailing: String? = null, onClick: () -> Unit) = LinearLayout(ctx).apply {
-        orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-        minimumHeight = dp(ctx, 48)
-        setPadding(dp(ctx, 20), dp(ctx, 12), dp(ctx, 20), dp(ctx, 12))
-        if (icon != null) addView(android.widget.ImageView(ctx).apply {
-            setImageResource(icon)
-            imageTintList = ColorStateList.valueOf(iconTint)
-            layoutParams = LinearLayout.LayoutParams(dp(ctx, 18), dp(ctx, 18)).apply { marginEnd = dp(ctx, 16) }
-        })
-        addView(TextView(ctx).apply {
-            text = label; setTextColor(labelColor); textSize = 13f; typeface = tf(ctx)
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-        })
-        if (trailing != null) addView(TextView(ctx).apply {
-            text = trailing; setTextColor(MUTED); textSize = 12f; typeface = tf(ctx)
-            setPadding(dp(ctx, 12), 0, 0, 0)
-        })
-        pressable(this, onClick)
+    fun options(ctx: Context, title: String? = null, items: Array<String>, onSelect: (Int) -> Unit) {
+        val dialog = Dialog(ctx)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.setCancelable(true)
+        val root = frame(ctx)
+        if (title != null) { root.addView(title(ctx, title)); root.addView(divider(ctx)) }
+        items.forEachIndexed { i, label ->
+            if (i > 0) root.addView(divider(ctx))
+            root.addView(option(ctx, label) { dialog.dismiss(); onSelect(i) })
+        }
+        dialog.setContentView(root)
+        dialog.window?.setLayout(dp(ctx, 280), ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog.show()
+    }
+
+    fun singleChoice(ctx: Context, title: String, items: Array<String>, checkedIndex: Int, onSelect: (Int) -> Unit) {
+        val dialog = Dialog(ctx)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.setCancelable(true)
+        val root = frame(ctx)
+        root.addView(title(ctx, title)); root.addView(divider(ctx))
+        items.forEachIndexed { i, label ->
+            if (i > 0) root.addView(divider(ctx))
+            val row = LinearLayout(ctx).apply {
+                orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(ctx, 20), dp(ctx, 12), dp(ctx, 20), dp(ctx, 12))
+                isClickable = true; isFocusable = true; setBackgroundColor(Color.parseColor(BG))
+                setOnClickListener { dialog.dismiss(); onSelect(i) }
+                touchHL(this)
+            }
+            row.addView(TextView(ctx).apply {
+                text = if (i == checkedIndex) "◉" else "○"
+                setTextColor(if (i == checkedIndex) Color.WHITE else Color.parseColor("#FF555555"))
+                textSize = 14f; setPadding(0, 0, dp(ctx, 14), 0)
+            })
+            row.addView(TextView(ctx).apply {
+                text = label; setTextColor(Color.parseColor(OPTION)); textSize = 13f
+                typeface = android.graphics.Typeface.MONOSPACE
+            })
+            root.addView(row)
+        }
+        dialog.setContentView(root)
+        dialog.window?.setLayout(dp(ctx, 260), ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog.show()
     }
 
     /**
      * Step slider dialog for auto-launch delay.
      */
     fun stepSlider(ctx: Context, title: String, steps: LongArray, currentValue: Long, onSelect: (Long) -> Unit) {
-        val dialog = newDialog(ctx)
+        val dialog = Dialog(ctx)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.setCancelable(true)
         val root = frame(ctx)
         root.addView(title(ctx, title)); root.addView(divider(ctx))
 
-        // Nearest step, so a stored value that isn't a step doesn't snap to 0
-        val currentIdx = steps.indices.minByOrNull { kotlin.math.abs(steps[it] - currentValue) } ?: 0
+        val currentIdx = steps.indexOf(currentValue).coerceAtLeast(0)
 
         val valueText = TextView(ctx).apply {
-            textSize = 24f; typeface = tf(ctx); gravity = Gravity.CENTER
+            text = "${steps[currentIdx]}ms"
+            setTextColor(Color.WHITE); textSize = 24f; typeface = android.graphics.Typeface.MONOSPACE
+            gravity = Gravity.CENTER
             setPadding(dp(ctx, 20), dp(ctx, 20), dp(ctx, 20), dp(ctx, 8))
         }
-        fun showValue(v: Long) {
-            valueText.text = "${v}ms"
-            valueText.setTextColor(if (v == 404L) ACCENT else Color.WHITE)
-        }
-        showValue(steps[currentIdx])
         root.addView(valueText)
 
+        // Step labels row
         val labelsRow = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
-            setPadding(dp(ctx, 20), 0, dp(ctx, 20), dp(ctx, 4))
+            setPadding(dp(ctx, 20), dp(ctx, 0), dp(ctx, 20), dp(ctx, 4))
         }
         steps.forEach { v ->
             labelsRow.addView(TextView(ctx).apply {
-                text = "$v"; setTextColor(MUTED); textSize = 9f
-                typeface = tf(ctx); gravity = Gravity.CENTER
+                text = if (v == 404L) "404" else "${v}"
+                setTextColor(Color.parseColor("#FF555555")); textSize = 8f
+                typeface = android.graphics.Typeface.MONOSPACE; gravity = Gravity.CENTER
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             })
         }
@@ -169,180 +147,189 @@ object MinimalDialog {
         val seekBar = SeekBar(ctx).apply {
             max = steps.size - 1; progress = currentIdx
             setPadding(dp(ctx, 24), dp(ctx, 8), dp(ctx, 24), dp(ctx, 16))
-            progressTintList = ColorStateList.valueOf(Color.WHITE)
-            progressBackgroundTintList = ColorStateList.valueOf(MUTED)
-            thumbTintList = ColorStateList.valueOf(Color.WHITE)
+            progressDrawable?.setTint(Color.WHITE)
+            thumb?.setTint(Color.WHITE)
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) = showValue(steps[progress])
+                override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
+                    val v = steps[progress]
+                    valueText.text = "${v}ms"
+                    if (v == 404L) valueText.setTextColor(Color.parseColor("#FF4444")) else valueText.setTextColor(Color.WHITE)
+                }
                 override fun onStartTrackingTouch(sb: SeekBar?) {}
                 override fun onStopTrackingTouch(sb: SeekBar?) {}
             })
         }
         root.addView(seekBar)
         root.addView(divider(ctx))
-        root.addView(buttonRow(ctx, listOf(
-            "cancel" to { dialog.dismiss() },
-            "set" to { dialog.dismiss(); onSelect(steps[seekBar.progress]) }
-        )))
-        show(dialog, root, 300)
+
+        val btnRow = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+        btnRow.addView(btn(ctx, "cancel", 1f) { dialog.dismiss() })
+        btnRow.addView(View(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(ctx, 1), ViewGroup.LayoutParams.MATCH_PARENT)
+            setBackgroundColor(Color.parseColor(DIVIDER))
+        })
+        btnRow.addView(btn(ctx, "set", 1f) { dialog.dismiss(); onSelect(steps[seekBar.progress]) })
+        root.addView(btnRow)
+
+        dialog.setContentView(root)
+        dialog.window?.setLayout(dp(ctx, 300), ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog.show()
     }
 
-    // --- Scrollable app list dialog (recycled rows, same look as the home list) ---
-    fun appList(ctx: Context, title: String, apps: List<AppInfo>, onTap: (AppInfo) -> Unit) {
-        val dialog = newDialog(ctx)
+    // --- Scrollable app list dialog ---
+    fun appList(ctx: Context, title: String, apps: List<AppInfo>, onTap: (AppInfo) -> Unit, onLongPress: (AppInfo) -> Unit) {
+        val dialog = Dialog(ctx)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.setCancelable(true)
         val root = frame(ctx)
         root.addView(title(ctx, "$title (${apps.size})"))
         root.addView(divider(ctx))
 
-        val adapter = AppAdapter(onClick = { app, _ -> dialog.dismiss(); onTap(app) })
-        adapter.setTypeface(tf(ctx), 0.93f)
-        val list = RecyclerView(ctx).apply {
-            layoutManager = LinearLayoutManager(ctx)
-            this.adapter = adapter
-            itemAnimator = null
-            setHasFixedSize(true)
-            setPadding(dp(ctx, 16), dp(ctx, 4), dp(ctx, 16), dp(ctx, 4))
-            clipToPadding = false
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                (ctx.resources.displayMetrics.heightPixels * 0.55f).toInt().coerceAtMost(dp(ctx, 420)))
+        val scroll = android.widget.ScrollView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                dp(ctx, 350)
+            )
         }
-        adapter.update(apps, "")
-        root.addView(list)
+        val list = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
+
+        apps.forEachIndexed { i, app ->
+            if (i > 0) list.addView(View(ctx).apply {
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(ctx, 1))
+                setBackgroundColor(Color.parseColor("#FF111111"))
+            })
+            val row = LinearLayout(ctx).apply {
+                orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(ctx, 20), dp(ctx, 10), dp(ctx, 20), dp(ctx, 10))
+                isClickable = true; isFocusable = true; isLongClickable = true
+                setBackgroundColor(Color.parseColor(BG))
+                setOnClickListener { dialog.dismiss(); onTap(app) }
+                setOnLongClickListener { dialog.dismiss(); onLongPress(app); true }
+                touchHL(this)
+            }
+            val icon = android.widget.ImageView(ctx).apply {
+                layoutParams = LinearLayout.LayoutParams(dp(ctx, 30), dp(ctx, 30))
+                setImageDrawable(app.icon); scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+                val gs = android.graphics.ColorMatrix().apply { setSaturation(0f) }
+                colorFilter = android.graphics.ColorMatrixColorFilter(gs)
+            }
+            row.addView(icon)
+            row.addView(TextView(ctx).apply {
+                text = app.label; setTextColor(Color.parseColor(OPTION)); textSize = 13f
+                typeface = android.graphics.Typeface.MONOSPACE
+                setPadding(dp(ctx, 14), 0, 0, 0)
+            })
+            list.addView(row)
+        }
+        scroll.addView(list)
+        root.addView(scroll)
 
         root.addView(divider(ctx))
-        root.addView(buttonRow(ctx, listOf("close" to { dialog.dismiss() })))
-        show(dialog, root, 300)
+        root.addView(btn(ctx, "close", 0f) { dialog.dismiss() }.apply {
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        })
+
+        dialog.setContentView(root)
+        dialog.window?.setLayout(dp(ctx, 300), ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog.show()
     }
 
     /**
      * Text input dialog.
      */
     fun textInput(ctx: Context, title: String, hint: String, prefill: String = "", onSubmit: (String) -> Unit) {
-        val dialog = newDialog(ctx)
+        val dialog = Dialog(ctx)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.setCancelable(true)
         val root = frame(ctx)
         root.addView(title(ctx, title)); root.addView(divider(ctx))
 
-        val input = EditText(ctx).apply {
-            setHint(hint); setHintTextColor(MUTED)
-            setText(prefill); setSelection(prefill.length)
-            setTextColor(Color.WHITE); textSize = 14f; typeface = tf(ctx)
-            background = GradientDrawable().apply { setColor(INPUT_BG); setStroke(dp(ctx, 1), DIVIDER) }
-            setPadding(dp(ctx, 14), dp(ctx, 12), dp(ctx, 14), dp(ctx, 12))
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
-            imeOptions = EditorInfo.IME_ACTION_DONE
+        val input = android.widget.EditText(ctx).apply {
+            setHint(hint); setHintTextColor(Color.parseColor("#FF555555"))
+            setText(prefill); setTextColor(Color.WHITE); textSize = 14f
+            typeface = android.graphics.Typeface.MONOSPACE
+            setBackgroundColor(Color.parseColor("#FF0D0D0D"))
+            setPadding(dp(ctx, 16), dp(ctx, 12), dp(ctx, 16), dp(ctx, 12))
+            inputType = android.text.InputType.TYPE_CLASS_TEXT
             isSingleLine = true
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                setMargins(dp(ctx, 16), dp(ctx, 14), dp(ctx, 16), dp(ctx, 14))
-            }
+            val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            lp.setMargins(dp(ctx, 16), dp(ctx, 12), dp(ctx, 16), dp(ctx, 12))
+            layoutParams = lp
         }
-        val submit = { dialog.dismiss(); onSubmit(input.text.toString().trim()) }
-        input.setOnEditorActionListener { _, id, _ -> if (id == EditorInfo.IME_ACTION_DONE) { submit(); true } else false }
         root.addView(input)
         root.addView(divider(ctx))
-        root.addView(buttonRow(ctx, listOf("cancel" to { dialog.dismiss() }, "save" to submit)))
 
-        dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
-        show(dialog, root, 300)
+        val btnRow = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+        btnRow.addView(btn(ctx, "cancel", 1f) { dialog.dismiss() })
+        btnRow.addView(View(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(ctx, 1), ViewGroup.LayoutParams.MATCH_PARENT)
+            setBackgroundColor(Color.parseColor(DIVIDER))
+        })
+        btnRow.addView(btn(ctx, "save", 1f) { dialog.dismiss(); onSubmit(input.text.toString().trim()) })
+        root.addView(btnRow)
+
+        dialog.setContentView(root)
+        dialog.window?.setLayout(dp(ctx, 300), ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+        dialog.show()
         input.requestFocus()
     }
 
     // --- Internals ---
 
-    private fun newDialog(ctx: Context) = Dialog(ctx).apply {
-        requestWindowFeature(Window.FEATURE_NO_TITLE)
-        setCancelable(true)
-        setCanceledOnTouchOutside(true)
-    }
-
-    private fun show(dialog: Dialog, root: View, widthDp: Int) {
-        dialog.setContentView(root)
-        dialog.window?.apply {
-            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            val maxW = (context.resources.displayMetrics.widthPixels * 0.9f).toInt()
-            setLayout(dp(context, widthDp).coerceAtMost(maxW), ViewGroup.LayoutParams.WRAP_CONTENT)
-            setWindowAnimations(android.R.style.Animation_Dialog)
-            setDimAmount(0.75f)
-        }
-        dialog.show()
-    }
-
     private fun frame(ctx: Context) = LinearLayout(ctx).apply {
         orientation = LinearLayout.VERTICAL
-        background = GradientDrawable().apply { setColor(BG); setStroke(dp(ctx, 1), BORDER) }
-        // Keeps ripples inside the 1dp border
-        setPadding(dp(ctx, 1), dp(ctx, 1), dp(ctx, 1), dp(ctx, 1))
-    }
-
-    private fun title(ctx: Context, t: String, subtitle: String? = null): View {
-        val titleView = TextView(ctx).apply {
-            text = t; setTextColor(TITLE); textSize = 14f; typeface = tf(ctx)
-            setPadding(dp(ctx, 20), dp(ctx, 16), dp(ctx, 20), dp(ctx, if (subtitle == null) 12 else 2))
-        }
-        if (subtitle == null) return titleView
-        return LinearLayout(ctx).apply {
-            orientation = LinearLayout.VERTICAL
-            addView(titleView)
-            addView(TextView(ctx).apply {
-                text = subtitle; setTextColor(MUTED); textSize = 11f; typeface = tf(ctx)
-                setPadding(dp(ctx, 20), 0, dp(ctx, 20), dp(ctx, 12))
-            })
+        background = GradientDrawable().apply {
+            setColor(Color.parseColor(BG)); setStroke(dp(ctx, 1), Color.parseColor(BORDER))
         }
     }
 
-    private fun titleWithToggle(ctx: Context, t: String, toggle: TitleToggle) = LinearLayout(ctx).apply {
-        orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-        addView(title(ctx, t).apply { layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f) })
-        val chip = TextView(ctx).apply {
-            text = toggle.label; textSize = 12f; gravity = Gravity.CENTER
-            setPadding(dp(ctx, 12), dp(ctx, 5), dp(ctx, 12), dp(ctx, 5))
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-                .apply { marginEnd = dp(ctx, 16) }
-            isClickable = true; isFocusable = true
-        }
-        // Label is always bold (it previews what it does); on = white with a white outline, off = dim
-        fun paint() {
-            val on = toggle.isOn()
-            chip.typeface = Typeface.create(tf(ctx), Typeface.BOLD)
-            chip.setTextColor(if (on) Color.WHITE else MUTED)
-            chip.background = RippleDrawable(ColorStateList.valueOf(PRESS),
-                GradientDrawable().apply { setColor(BG); setStroke(dp(ctx, 1), if (on) Color.WHITE else DIVIDER) }, null)
-            chip.contentDescription = "${toggle.label} ${if (on) "on" else "off"}"
-        }
-        paint()
-        chip.setOnClickListener {
-            toggle.onToggle()
-            // Re-font the whole dialog so its own text reflects the change immediately
-            FontManager.applyTo(chip.rootView, tf(ctx), 1f)
-            paint()
-        }
-        addView(chip)
+    private fun title(ctx: Context, t: String) = TextView(ctx).apply {
+        text = t; setTextColor(Color.parseColor(TITLE)); textSize = 14f
+        typeface = android.graphics.Typeface.MONOSPACE
+        setPadding(dp(ctx, 20), dp(ctx, 16), dp(ctx, 20), dp(ctx, 12))
     }
 
     private fun divider(ctx: Context) = View(ctx).apply {
         layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(ctx, 1))
-        setBackgroundColor(DIVIDER)
+        setBackgroundColor(Color.parseColor(DIVIDER))
     }
 
-    private fun buttonRow(ctx: Context, buttons: List<Pair<String, () -> Unit>>) = LinearLayout(ctx).apply {
-        orientation = LinearLayout.HORIZONTAL
-        layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        buttons.forEachIndexed { i, (label, action) ->
-            if (i > 0) addView(View(ctx).apply {
-                layoutParams = LinearLayout.LayoutParams(dp(ctx, 1), ViewGroup.LayoutParams.MATCH_PARENT)
-                setBackgroundColor(DIVIDER)
-            })
-            addView(TextView(ctx).apply {
-                text = label; setTextColor(OPTION); textSize = 12f; typeface = tf(ctx); gravity = Gravity.CENTER
-                setPadding(dp(ctx, 16), dp(ctx, 14), dp(ctx, 16), dp(ctx, 14))
-                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-                pressable(this, action)
-            })
+    private fun option(ctx: Context, label: String, onClick: () -> Unit) = TextView(ctx).apply {
+        text = label; setTextColor(Color.parseColor(OPTION)); textSize = 13f
+        typeface = android.graphics.Typeface.MONOSPACE
+        setPadding(dp(ctx, 20), dp(ctx, 14), dp(ctx, 20), dp(ctx, 14))
+        isClickable = true; isFocusable = true; setBackgroundColor(Color.parseColor(BG))
+        setOnClickListener { onClick() }
+        touchHL(this)
+    }
+
+    private fun btn(ctx: Context, text: String, weight: Float, onClick: () -> Unit) = TextView(ctx).apply {
+        this.text = text; setTextColor(Color.parseColor(OPTION)); textSize = 12f
+        typeface = android.graphics.Typeface.MONOSPACE; gravity = Gravity.CENTER
+        setPadding(dp(ctx, 16), dp(ctx, 14), dp(ctx, 16), dp(ctx, 14))
+        layoutParams = if (weight > 0f) LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, weight)
+        else LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        isClickable = true; isFocusable = true; setBackgroundColor(Color.parseColor(BG))
+        setOnClickListener { onClick() }
+        touchHL(this)
+    }
+
+    private fun touchHL(v: View) {
+        v.setOnTouchListener { view, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> view.setBackgroundColor(Color.parseColor(PRESS))
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> view.setBackgroundColor(Color.parseColor(BG))
+            }
+            false
         }
-    }
-
-    private fun pressable(v: View, onClick: () -> Unit) {
-        v.isClickable = true; v.isFocusable = true
-        v.background = RippleDrawable(ColorStateList.valueOf(PRESS), null, ColorDrawable(Color.WHITE))
-        v.setOnClickListener { onClick() }
     }
 }

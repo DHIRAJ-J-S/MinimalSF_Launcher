@@ -2,33 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- App list: only apps with a launcher icon are needed, so a <queries> intent is enough.
-         QUERY_ALL_PACKAGES is a restricted permission and isn't needed. -->
-    <queries>
-        <intent>
-            <action android:name="android.intent.action.MAIN" />
-            <category android:name="android.intent.category.LAUNCHER" />
-        </intent>
-        <!-- Whichever app shows alarms (clock tap fallback) -->
-        <intent>
-            <action android:name="android.intent.action.SHOW_ALARMS" />
-        </intent>
-        <!-- Digital Wellbeing dashboards (Google / Samsung), opened from the screen time line -->
-        <package android:name="com.google.android.apps.wellbeing" />
-        <package android:name="com.samsung.android.forest" />
-        <!-- Google Fonts provider (Play services) for font downloads -->
-        <provider android:authorities="com.google.android.gms.fonts" />
-    </queries>
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
     <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
-    <!-- Tap the clock → alarms. Samsung's clock only accepts that from apps with this (normal, auto-granted) permission -->
-    <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
-    <!-- Optional: "call contact" gestures call directly when granted, otherwise open the dialer -->
-    <uses-permission android:name="android.permission.CALL_PHONE" />
-    <uses-feature android:name="android.hardware.telephony" android:required="false" />
-    <!-- Optional screen time. Granted by the user under Settings → Usage access; data stays on device. -->
-    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
-        tools:ignore="ProtectedPermissions" />
 
     <application
         android:allowBackup="false"
@@ -59,26 +36,31 @@
         </activity>
 
         <activity
-            android:name=".GesturesActivity"
-            android:theme="@style/LauncherTheme"
-            android:exported="false" />
-
-        <!-- Other apps' "add to home screen" shortcut requests (Chrome, Activity Launcher, …) -->
-        <activity
-            android:name=".PinShortcutActivity"
-            android:theme="@style/LauncherTheme.Transparent"
-            android:excludeFromRecents="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.content.pm.action.CONFIRM_PIN_SHORTCUT" />
-            </intent-filter>
-        </activity>
-
-        <activity
             android:name=".SettingsActivity"
             android:theme="@style/LauncherTheme"
             android:windowSoftInputMode="stateHidden"
             android:exported="false" />
+
+        <service
+            android:name=".MusicNotificationListener"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".LockAccessibilityService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_config" />
+        </service>
 
     </application>
 </manifest>
