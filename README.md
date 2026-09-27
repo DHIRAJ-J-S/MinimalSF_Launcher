@@ -164,7 +164,11 @@ From the command line: `./gradlew assembleRelease`
 
 ## 📦 Install
 
-Download the latest APK from [Releases](../../releases).
+<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/DHIRAJ-J-S/MinimalSF_Launcher"><img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="54"></a>
+
+- **Obtainium** (recommended): tap the badge on your phone, or add `https://github.com/DHIRAJ-J-S/MinimalSF_Launcher` in [Obtainium](https://github.com/ImranR98/Obtainium). You get updates automatically from each new release.
+- **Direct download:** get the latest APK from [Releases](../../releases).
+- **F-Droid:** submitted and awaiting review.
 
 ---
 
