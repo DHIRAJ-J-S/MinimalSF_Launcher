@@ -1,0 +1,2 @@
+• New app ID (io.github.dhiraj_j_s.minimalsf) to avoid a clash with another app
+• Installs as a new app: set it as home, then uninstall the old version

@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.2.2
+- New app ID: `io.github.dhiraj_j_s.minimalsf` (was `com.minimal.launcher`, which another app on Google Play already uses)
+- Because the ID changed, this installs as a separate app. Set it as your home app, then uninstall the old version. Settings do not carry over.
+
 ## v1.2.1
 - Fixed: screen time over-counted after the phone restarted or crashed while an app was open
 - F-Droid ready: store listing and screenshots in `fastlane/`, no embedded dependency metadata in the APK

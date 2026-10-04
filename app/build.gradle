@@ -8,11 +8,11 @@ android {
     compileSdk 36
 
     defaultConfig {
-        applicationId "com.minimal.launcher"
+        applicationId "io.github.dhiraj_j_s.minimalsf"
         minSdk 26
         targetSdk 36
-        versionCode 4
-        versionName "1.2.1"
+        versionCode 5
+        versionName "1.2.2"
     }
 
     // F-Droid: don't embed the Google-encrypted dependency metadata block in the APK
