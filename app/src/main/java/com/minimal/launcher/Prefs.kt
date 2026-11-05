@@ -17,7 +17,7 @@ object Prefs {
     fun showMusic(c: Context) = p(c).getBoolean("show_music", false)
     fun setShowMusic(c: Context, v: Boolean) { p(c).edit().putBoolean("show_music", v).apply() }
 
-    fun autoDelay(c: Context) = p(c).getLong("auto_delay", 200L)
+    fun autoDelay(c: Context) = p(c).getLong("auto_delay", 100L)
     fun setAutoDelay(c: Context, v: Long) { p(c).edit().putLong("auto_delay", v).apply() }
 
     fun use24hClock(c: Context) = p(c).getBoolean("use_24h", false)
@@ -31,6 +31,9 @@ object Prefs {
 
     fun searchAtBottom(c: Context) = p(c).getBoolean("search_bottom", false)
     fun setSearchAtBottom(c: Context, v: Boolean) { p(c).edit().putBoolean("search_bottom", v).apply() }
+
+    fun floatingKeyboardLeft(c: Context) = p(c).getBoolean("floating_keyboard_left", false)
+    fun setFloatingKeyboardLeft(c: Context, v: Boolean) { p(c).edit().putBoolean("floating_keyboard_left", v).apply() }
 
     // --- Gestures: each stores a GestureActions code ("" = none) ---
     enum class Gesture(val key: String, val title: String) {

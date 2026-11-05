@@ -100,11 +100,11 @@ class GesturesActivity : AppCompatActivity() {
             save(g, GestureActions.LOCK)
             if (LockAccessibilityService.isSupported && !LockAccessibilityService.isEnabled(this)) promptAccessibility()
         }
-        add("open app…", R.drawable.ic_app) { pickApp { save(g, GestureActions.app(it.packageName)) } }
+        add("open app…", R.drawable.ic_app) { pickApp(AppRepository.apps) { save(g, GestureActions.app(it.key)) } }
         add("call contact…", R.drawable.ic_call) { pendingGesture = g; pickContact() }
         add("app shortcut…", R.drawable.ic_shortcut) { pickAppShortcut(g) }
         if (Prefs.pinnedShortcuts(this).isNotEmpty()) add("saved shortcuts…", R.drawable.ic_shortcut) { pickPinned(g) }
-        add("app screen…", R.drawable.ic_activity) { pickApp { pickActivity(g, it) } }
+        add("app screen…", R.drawable.ic_activity) { pickApp(AppRepository.mainApps()) { pickActivity(g, it) } }
         listOf(GestureActions.FLASHLIGHT, GestureActions.CAMERA, GestureActions.PLAY_PAUSE, GestureActions.NEXT_TRACK,
             GestureActions.NOTIFICATIONS, GestureActions.QUICK_SETTINGS, GestureActions.ALL_APPS).forEach { simple(it) }
 
@@ -112,8 +112,8 @@ class GesturesActivity : AppCompatActivity() {
             items = choices.map { it.first }.toTypedArray(), icons = icons.toIntArray()) { choices[it].second() }
     }
 
-    private fun pickApp(onPick: (AppInfo) -> Unit) =
-        MinimalDialog.appList(this, "choose app", AppRepository.apps, onTap = onPick)
+    private fun pickApp(apps: List<AppInfo>, onPick: (AppInfo) -> Unit) =
+        MinimalDialog.appList(this, "choose app", apps, onTap = onPick)
 
     private fun pickContact() {
         try { contactPicker.launch(Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI)) }
@@ -128,7 +128,8 @@ class GesturesActivity : AppCompatActivity() {
                 onPositive = { try { startActivity(Intent(Settings.ACTION_HOME_SETTINGS)) } catch (_: Exception) {} })
             return
         }
-        pickApp { app ->
+        // Shortcut gestures are saved without a profile, so only personal apps are offered
+        pickApp(AppRepository.mainApps()) { app ->
             val shortcuts = AppShortcuts.forPackage(this, app.packageName)
             if (shortcuts.isEmpty()) { Toast.makeText(this, "${app.label} has no shortcuts", Toast.LENGTH_SHORT).show(); return@pickApp }
             MinimalDialog.options(this, title = app.label, subtitle = "app shortcuts",
@@ -178,6 +179,6 @@ class GesturesActivity : AppCompatActivity() {
         MinimalDialog.confirm(this, title = "enable screen lock",
             message = "to lock the screen with a gesture, MinimalSF needs accessibility permission.\n\nonly the lock action is used - no data is read or collected.",
             positiveText = "open settings", negativeText = "later",
-            onPositive = { try { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) } catch (_: Exception) {} })
+            onPositive = { SpecialAccess.open(this, Settings.ACTION_ACCESSIBILITY_SETTINGS) })
     }
 }

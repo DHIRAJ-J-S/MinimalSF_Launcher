@@ -13,17 +13,21 @@ object TodoStore {
     fun load(ctx: Context): MutableList<TodoItem> {
         val prefs = ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
         val json = prefs.getString(KEY, "[]") ?: "[]"
-        val arr = JSONArray(json)
         val list = mutableListOf<TodoItem>()
-        for (i in 0 until arr.length()) {
-            val obj = arr.getJSONObject(i)
-            list.add(TodoItem(
-                obj.getLong("id"),
-                obj.getString("text"),
-                obj.getBoolean("done"),
-                obj.optBoolean("important", false)
-            ))
-        }
+        // This runs while the home screen starts: damaged data must not crash it on every launch.
+        // Whatever could be read before the damage is kept.
+        try {
+            val arr = JSONArray(json)
+            for (i in 0 until arr.length()) {
+                val obj = arr.getJSONObject(i)
+                list.add(TodoItem(
+                    obj.getLong("id"),
+                    obj.getString("text"),
+                    obj.getBoolean("done"),
+                    obj.optBoolean("important", false)
+                ))
+            }
+        } catch (_: Exception) {}
         return list
     }
 

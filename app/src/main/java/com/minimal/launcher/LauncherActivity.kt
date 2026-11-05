@@ -6,6 +6,7 @@ import android.app.ActivityOptions
 import android.content.ComponentName
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.LauncherApps
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Paint
@@ -49,6 +50,7 @@ import androidx.recyclerview.widget.RecyclerView
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 import kotlin.math.abs
 import kotlin.math.max
 
@@ -76,6 +78,15 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
     private lateinit var homeTipView: TextView
     private lateinit var musicTipView: LinearLayout
     private lateinit var allAppsBtn: TextView
+    private lateinit var headerGroup: LinearLayout
+    private lateinit var resultsGroup: LinearLayout
+    private lateinit var footerGroup: LinearLayout
+    private lateinit var navGroup: LinearLayout
+
+    // Landscape: two panes, and the keyboard is either docked (takes height) or floating (covers a side)
+    private var landscape = false
+    private var dockedIme = false
+    private var floatingIme = false
 
     private lateinit var todoList: MaxHeightRecyclerView
     private lateinit var todoDivider: View
@@ -174,8 +185,14 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         todoSection = findViewById(R.id.todoSection)
         todoInput = findViewById(R.id.todoInput)
         todoCount = findViewById(R.id.todoCount)
+        headerGroup = findViewById(R.id.headerGroup)
+        resultsGroup = findViewById(R.id.resultsGroup)
+        footerGroup = findViewById(R.id.footerGroup)
+        navGroup = findViewById(R.id.navGroup)
 
+        applyOrientation()
         setupInsets()
+        todoInput.setOnFocusChangeListener { _, _ -> updateCompact() }
 
         autoLaunchIcon.colorFilter = AppAdapter.GRAYSCALE
         findViewById<View>(R.id.musicTipClose).setOnClickListener { dismissMusicTip() }
@@ -299,13 +316,21 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         ViewCompat.setOnApplyWindowInsetsListener(rootLayout) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
             navBottom = bars.bottom
-            v.setPadding(bars.left, bars.top, bars.right, v.paddingBottom)
-            todoList.maxHeightPx = if (insets.isVisible(WindowInsetsCompat.Type.ime())) dp(72f).toInt() else todoList.xmlMaxHeightPx
+            val imeVisible = insets.isVisible(WindowInsetsCompat.Type.ime())
+            val imeBottom = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
+            // A floating keyboard reports (almost) no height, so it would sit on top of the content.
+            // Apps can't ask where it is, so keep clear the side chosen in settings.
+            val docked = landscape && imeVisible && imeBottom >= dp(KEYBOARD_MIN_DOCKED_DP)
+            floatingIme = landscape && imeVisible && !docked
+            val reserve = if (floatingIme) minOf(dp(FLOATING_KEYBOARD_DP), v.width * 0.4f).toInt() else 0
+            val onLeft = Prefs.floatingKeyboardLeft(this)
+            v.setPadding(bars.left + (if (onLeft) reserve else 0), bars.top, bars.right + (if (onLeft) 0 else reserve), v.paddingBottom)
+            todoList.maxHeightPx = if (imeVisible || landscape) dp(72f).toInt() else todoList.xmlMaxHeightPx
             // While the keyboard animates, onProgress drives the bottom padding frame-by-frame
             if (!imeAnimating) {
-                v.setPadding(v.paddingLeft, v.paddingTop, v.paddingRight,
-                    max(bars.bottom, insets.getInsets(WindowInsetsCompat.Type.ime()).bottom))
+                v.setPadding(v.paddingLeft, v.paddingTop, v.paddingRight, max(bars.bottom, imeBottom))
             }
+            if (docked != dockedIme) { dockedIme = docked; updateCompact() }
             WindowInsetsCompat.CONSUMED
         }
         ViewCompat.setWindowInsetsAnimationCallback(rootLayout,
@@ -335,9 +360,58 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         resetHomeState()
     }
 
+    /**
+     * Moves the groups between one column (portrait) and two panes (landscape). Views are moved rather
+     * than recreating the activity, so rotating keeps the search text and the keyboard.
+     */
+    private fun applyOrientation() {
+        val land = resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+        // The XML is already the portrait arrangement
+        if (land == landscape) return
+        landscape = land
+        val focused = currentFocus
+        val groups = listOf(headerGroup, resultsGroup, footerGroup, navGroup)
+        groups.forEach { (it.parent as? ViewGroup)?.removeView(it) }
+        rootLayout.removeAllViews()
+        rootLayout.orientation = if (land) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
+
+        fun rows(height: Int, weight: Float = 0f) = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, height, weight)
+        val wrap = ViewGroup.LayoutParams.WRAP_CONTENT
+        if (land) {
+            fun pane() = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
+            }
+            val info = pane()
+            info.addView(headerGroup, rows(wrap))
+            // Pushes music + todo to the bottom of the pane
+            info.addView(View(this), rows(0, 1f))
+            info.addView(footerGroup, rows(wrap))
+            val apps = pane()
+            apps.addView(resultsGroup, rows(0, 1f))
+            apps.addView(navGroup, rows(wrap))
+            rootLayout.addView(info)
+            rootLayout.addView(View(this).apply {
+                layoutParams = LinearLayout.LayoutParams(dp(1f).toInt(), ViewGroup.LayoutParams.MATCH_PARENT)
+                setBackgroundColor(getColor(R.color.grey_border))
+            })
+            rootLayout.addView(apps)
+        } else {
+            rootLayout.addView(headerGroup, rows(wrap))
+            rootLayout.addView(resultsGroup, rows(0, 1f))
+            rootLayout.addView(footerGroup, rows(wrap))
+            rootLayout.addView(navGroup, rows(wrap))
+        }
+        // There's less height in landscape, and the RAM text no longer shares the clock's width
+        (clockText.layoutParams as ViewGroup.MarginLayoutParams).topMargin = dp(if (land) 16f else 32f).toInt()
+        focused?.requestFocus()
+    }
+
     private fun resetHomeState() {
         cancelAutoLaunch()
         launchCooldown = false
+        // Otherwise the keyboard stays closed on return and typing goes into the todo box
+        if (todoInput.hasFocus()) searchInput.requestFocus()
         if (keepAllAppsOpen) {
             // Returning from app info - keep all apps open
             keepAllAppsOpen = false
@@ -397,11 +471,11 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
     override fun expandNotifications() = expandStatusBar("expandNotificationsPanel")
     override fun expandQuickSettings() = expandStatusBar("expandSettingsPanel")
 
-    override fun launchApp(pkg: String) {
-        val app = AppRepository.apps.firstOrNull { it.packageName == pkg }
+    override fun launchApp(key: String) {
+        val app = AppRepository.apps.firstOrNull { it.key == key }
         if (app != null) { launchApp(app); return }
         try {
-            packageManager.getLaunchIntentForPackage(pkg)?.let {
+            packageManager.getLaunchIntentForPackage(key)?.let {
                 it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); startActivity(it)
             } ?: Toast.makeText(this, "app not found - check gesture settings", Toast.LENGTH_SHORT).show()
         } catch (_: Exception) {}
@@ -420,9 +494,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
             message = "to lock screen by double-tap, MinimalSF needs accessibility permission.\n\nonly the lock action is used - no data is read or collected.",
             positiveText = "open settings",
             negativeText = "cancel",
-            onPositive = {
-                try { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) } catch (_: Exception) {}
-            }
+            onPositive = { SpecialAccess.open(this, Settings.ACTION_ACCESSIBILITY_SETTINGS) }
         )
     }
 
@@ -437,6 +509,8 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         clockFormat = null
         updateClock()
         if (showingAllApps) adapter.update(AppRepository.apps, "", Prefs.getHiddenApps(this))
+        // The floating keyboard side may have changed
+        ViewCompat.requestApplyInsets(rootLayout)
     }
 
     private fun applySearchPosition() {
@@ -477,7 +551,6 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
         handler.removeCallbacks(clockRunnable); handler.post(clockRunnable)
         handler.removeCallbacks(statsPollRunnable); handler.post(statsPollRunnable)
-        startMusic()
     }
 
     override fun onPause() {
@@ -485,11 +558,18 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         handler.removeCallbacks(clockRunnable)
         handler.removeCallbacks(statsPollRunnable)
         cancelAutoLaunch()
-        stopMusic()
+    }
+
+    // Start/stop, not resume/pause: the home screen is still visible while paused (an app opening over
+    // it, a dialog-style activity), and the bar would read "no music playing" during that
+    override fun onStart() {
+        super.onStart()
+        startMusic()
     }
 
     override fun onStop() {
         super.onStop()
+        stopMusic()
         // Reset while hidden, so returning home shows a clean screen without a visible flicker
         resetHomeState()
     }
@@ -499,6 +579,9 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         dateFormat = SimpleDateFormat("EEEE, MMM d", Locale.getDefault())
         clockFormat = null
         updateClock()
+        applyOrientation()
+        updateCompact()
+        ViewCompat.requestApplyInsets(rootLayout)
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -669,9 +752,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         activeController?.let { c -> packageManager.getLaunchIntentForPackage(c.packageName)?.let { it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); startActivity(it); return } }
         try { startActivity(Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_MUSIC).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (_: Exception) {}
     }
-    private fun openNotificationAccess() {
-        try { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) {}
-    }
+    private fun openNotificationAccess() = SpecialAccess.open(this, Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
 
     private fun updateMusicBarVisibility() {
         if (!Prefs.showMusic(this)) stopMusic()
@@ -683,11 +764,18 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
      * get the space - with the keyboard up there was none left for them.
      */
     private fun updateCompact() {
-        val compact = showingAllApps || searchInput.text.isNotBlank()
-        val todo = if (compact) View.GONE else View.VISIBLE
+        // Landscape results have their own pane, so only a docked keyboard's lost height matters there.
+        // The clock and music fit beside it; typing a task swaps them for the todo section.
+        val compact = if (landscape) dockedIme else showingAllApps || searchInput.text.isNotBlank()
+        val editingTodo = landscape && dockedIme && todoInput.hasFocus()
+        headerGroup.visibility = if (editingTodo) View.GONE else View.VISIBLE
+        val todo = if (compact && !editingTodo) View.GONE else View.VISIBLE
         if (todoSection.visibility != todo) { todoSection.visibility = todo; todoDivider.visibility = todo }
-        musicBar.visibility = if (Prefs.showMusic(this) && !compact) View.VISIBLE else View.GONE
+        val music = if (landscape) !editingTodo else !compact
+        musicBar.visibility = if (Prefs.showMusic(this) && music) View.VISIBLE else View.GONE
         if (compact || !Prefs.showMusic(this)) musicTipView.visibility = View.GONE
+        // Beside a docked keyboard the results only have room for a row or two without these buttons
+        navGroup.visibility = if (landscape && dockedIme && searchInput.text.isNotBlank()) View.GONE else View.VISIBLE
     }
 
     // --- Todo ---
@@ -774,35 +862,36 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
     private fun showAppOptions(app: AppInfo) {
         cancelAutoLaunch()
-        val isHidden = app.packageName in Prefs.getHiddenApps(this)
-        val currentKeyword = Prefs.getKeywords(this)[app.packageName] ?: ""
+        val isHidden = app.key in Prefs.getHiddenApps(this)
+        val currentKeyword = Prefs.getKeywords(this)[app.key] ?: ""
 
         // The app's own shortcuts first ("new chat", "navigate home"…), like other launchers show them
-        val shortcuts = AppShortcuts.forPackage(this, app.packageName).take(4)
-        val items = shortcuts.map { AppShortcuts.label(it) } +
-            listOf("app info", "uninstall", "set keyword", if (isHidden) "show in search" else "hide from search")
-        val icons = IntArray(shortcuts.size) { R.drawable.ic_shortcut } + intArrayOf(R.drawable.ic_info, R.drawable.ic_uninstall,
-            R.drawable.ic_keyword, if (isHidden) R.drawable.ic_eye else R.drawable.ic_eye_off)
-        val trailing = arrayOfNulls<String>(shortcuts.size) + arrayOf(null, null, currentKeyword.ifEmpty { null }, null)
-        val usage = if (screenTimeActive()) ScreenTime.today[app.packageName]?.let { "${ScreenTime.format(it)} today" } else null
+        val shortcuts = AppShortcuts.forPackage(this, app.packageName, app.user).take(4)
+        val menu = listOfNotNull(
+            Triple("app info", R.drawable.ic_info) { keepAllAppsOpen = showingAllApps; try { getSystemService(LauncherApps::class.java)?.startAppDetailsActivity(app.component, app.user, null, null) } catch (_: Exception) {}; Unit },
+            if (!app.canUninstall) null else Triple("uninstall", R.drawable.ic_uninstall) { keepAllAppsOpen = showingAllApps; try { startActivity(Intent(Intent.ACTION_DELETE, Uri.parse("package:${app.packageName}")).putExtra(Intent.EXTRA_USER, app.user)) } catch (_: Exception) {}; Unit },
+            Triple("set keyword", R.drawable.ic_keyword) { promptKeyword(app, currentKeyword) },
+            Triple(if (isHidden) "show in search" else "hide from search", if (isHidden) R.drawable.ic_eye else R.drawable.ic_eye_off) {
+                Prefs.setAppHidden(this, app.key, !isHidden)
+                if (showingAllApps) adapter.update(AppRepository.apps, "", Prefs.getHiddenApps(this))
+                else filterApps(searchInput.text.toString(), allowAutoLaunch = false)
+            }
+        )
+        val items = shortcuts.map { AppShortcuts.label(it) } + menu.map { it.first }
+        val icons = IntArray(shortcuts.size) { R.drawable.ic_shortcut } + menu.map { it.second }.toIntArray()
+        val trailing = arrayOfNulls<String>(shortcuts.size) +
+            menu.map { if (it.first == "set keyword") currentKeyword.ifEmpty { null } else null }.toTypedArray()
+        // Usage stats only cover this profile
+        val usage = if (screenTimeActive() && !app.isWork) ScreenTime.today[app.packageName]?.let { "${ScreenTime.format(it)} today" } else null
 
         MinimalDialog.options(this, title = app.label, items = items.toTypedArray(), icons = icons,
             subtitle = usage, trailing = trailing) { picked ->
             if (picked < shortcuts.size) {
                 val s = shortcuts[picked]
-                if (!AppShortcuts.start(this, s.`package`, s.id)) Toast.makeText(this, "shortcut unavailable", Toast.LENGTH_SHORT).show()
+                if (!AppShortcuts.start(this, s.`package`, s.id, user = app.user)) Toast.makeText(this, "shortcut unavailable", Toast.LENGTH_SHORT).show()
                 return@options
             }
-            when (picked - shortcuts.size) {
-                0 -> { keepAllAppsOpen = showingAllApps; try { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${app.packageName}"))) } catch (_: Exception) {} }
-                1 -> { keepAllAppsOpen = showingAllApps; try { startActivity(Intent(Intent.ACTION_DELETE, Uri.parse("package:${app.packageName}"))) } catch (_: Exception) {} }
-                2 -> promptKeyword(app, currentKeyword)
-                3 -> {
-                    Prefs.setAppHidden(this, app.packageName, !isHidden)
-                    if (showingAllApps) adapter.update(AppRepository.apps, "", Prefs.getHiddenApps(this))
-                    else filterApps(searchInput.text.toString(), allowAutoLaunch = false)
-                }
-            }
+            menu[picked - shortcuts.size].third()
         }
     }
 
@@ -812,17 +901,17 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
             hint = "e.g. wa for whatsapp (empty = remove)",
             prefill = current,
             onSubmit = { keyword ->
-                val owner = if (keyword.isEmpty()) null else Prefs.keywordOwner(this, keyword, app.packageName)
+                val owner = if (keyword.isEmpty()) null else Prefs.keywordOwner(this, keyword, app.key)
                 if (owner != null) {
                     MinimalDialog.confirm(this, title = "keyword in use",
                         message = "\"${keyword.lowercase()}\" is already used by ${AppRepository.labelFor(this, owner)}.\n\nmove it to ${app.label}?",
                         positiveText = "move", negativeText = "cancel",
                         onPositive = {
                             Prefs.setKeyword(this, owner, "")
-                            Prefs.setKeyword(this, app.packageName, keyword)
+                            Prefs.setKeyword(this, app.key, keyword)
                         })
                 } else {
-                    Prefs.setKeyword(this, app.packageName, keyword)
+                    Prefs.setKeyword(this, app.key, keyword)
                 }
             }
         )
@@ -863,7 +952,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
     private fun onScreenTimeClick() {
         if (!ScreenTime.hasAccess(this)) { ScreenTime.openAccessSettings(this); return }
-        val byApp = AppRepository.apps.associateBy { it.packageName }
+        val byApp = AppRepository.mainApps().associateBy { it.packageName }
         val top = ScreenTime.today.entries.filter { it.key in byApp }.sortedByDescending { it.value }.take(8)
         val wellbeing = ScreenTime.wellbeingIntent(this)
         val items = top.map { byApp.getValue(it.key).label } + listOfNotNull(wellbeing?.let { "open digital wellbeing" })
@@ -893,6 +982,10 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         val use24 = Prefs.use24hClock(this)
         val fmt = clockFormat?.takeIf { clockIs24h == use24 }
             ?: SimpleDateFormat(if (use24) "HH:mm" else "h:mm a", Locale.getDefault()).also { clockFormat = it; clockIs24h = use24 }
+        // A format keeps the timezone it was created with, and these live as long as the home screen
+        val zone = TimeZone.getDefault()
+        fmt.timeZone = zone
+        dateFormat.timeZone = zone
         val now = Date()
         clockText.text = fmt.format(now)
         dateText.text = dateFormat.format(now)
@@ -925,6 +1018,17 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         }
     }
 
+    private fun searchApps(q: String, hidden: Set<String>, keywords: Map<String, String>): List<AppInfo> {
+        val fromStart = Prefs.searchFromStart(this)
+        return AppRepository.apps.mapNotNull { app ->
+            if (app.key in hidden) null
+            else rank(app, q, keywords[app.key], fromStart)?.let { app to it }
+        }.sortedBy { it.second }.map { it.first }
+    }
+
+    /** The icon of a visible result row, for the launch animation. */
+    private fun rowIcon(position: Int) = (appList.findViewHolderForAdapterPosition(position) as? AppAdapter.VH)?.icon
+
     private fun filterApps(raw: String, allowAutoLaunch: Boolean = true) {
         cancelAutoLaunch()
         val q = raw.trim().lowercase()
@@ -944,14 +1048,25 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         val keywords = Prefs.getKeywords(this)
 
         // Exact keyword wins outright
-        val keywordMatch = apps.firstOrNull { it.packageName !in hidden && keywords[it.packageName] == q }
+        val keywordMatch = apps.firstOrNull { it.key !in hidden && keywords[it.key] == q }
         if (keywordMatch != null) { showAutoLaunch(keywordMatch, allowAutoLaunch); return }
 
-        val fromStart = Prefs.searchFromStart(this)
-        val matches = apps.mapNotNull { app ->
-            if (app.packageName in hidden) null
-            else rank(app, q, keywords[app.packageName], fromStart)?.let { app to it }
-        }.sortedBy { it.second }.map { it.first }
+        val matches = searchApps(q, hidden, keywords)
+
+        // "w2" opens the 2nd result for "w". Only when "w2" itself matches nothing, so an app with a
+        // number in its name ("fifa 23") can still be typed out.
+        if (matches.isEmpty() && q.length > 1 && q.last() in '1'..'9') {
+            val base = q.dropLast(1).trimEnd()
+            val results = searchApps(base, hidden, keywords)
+            val target = results.getOrNull(q.last() - '1')
+            if (target != null) {
+                bestMatch = target
+                adapter.update(results, base, hidden)
+                showResults(Results.LIST)
+                if (allowAutoLaunch) launchApp(target, rowIcon(q.last() - '1'))
+                return
+            }
+        }
 
         when (matches.size) {
             0 -> { bestMatch = null; showResults(Results.NO_MATCH) }
@@ -999,13 +1114,6 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         cancelAutoLaunch()
         if (launchCooldown) return
         keepAllAppsOpen = false
-        val intent = packageManager.getLaunchIntentForPackage(app.packageName)
-        if (intent == null) {
-            Toast.makeText(this, "can't open ${app.label}", Toast.LENGTH_SHORT).show()
-            AppRepository.reload(this)
-            return
-        }
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
         // Reveal the app from the icon that was tapped
         val opts = source?.takeIf { it.isShown && it.width > 0 }?.let {
             ActivityOptions.makeClipRevealAnimation(it, 0, 0, it.width, it.height).toBundle()
@@ -1014,10 +1122,12 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         // The search text is cleared in onStop, once the app covers the screen.
         launchCooldown = true
         try {
-            startActivity(intent, opts)
+            // Opens this exact icon, in its own profile (a package's launch intent can only reach one icon)
+            getSystemService(LauncherApps::class.java).startMainActivity(app.component, app.user, null, opts)
         } catch (_: Exception) {
             launchCooldown = false
             Toast.makeText(this, "can't open ${app.label}", Toast.LENGTH_SHORT).show()
+            AppRepository.reload(this)
             return
         }
         handler.postDelayed({ launchCooldown = false }, 600)
@@ -1074,5 +1184,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         private val RED = Color.parseColor("#FF4444")
         private val GREY = Color.parseColor("#888888")
         private val FAINT = Color.parseColor("#4A4A4A")
+        private const val KEYBOARD_MIN_DOCKED_DP = 100f
+        private const val FLOATING_KEYBOARD_DP = 345f
     }
 }

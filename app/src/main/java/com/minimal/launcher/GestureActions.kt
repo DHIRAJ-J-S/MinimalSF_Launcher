@@ -16,6 +16,7 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.os.Process
+import android.os.UserHandle
 import android.provider.MediaStore
 import android.view.KeyEvent
 import android.view.View
@@ -47,7 +48,7 @@ object GestureActions {
         fun openAllApps()
         fun expandNotifications()
         fun expandQuickSettings()
-        fun launchApp(pkg: String)
+        fun launchApp(key: String)
     }
 
     fun app(pkg: String) = "app:$pkg"
@@ -145,16 +146,25 @@ object GestureActions {
 
         fun toggle(ctx: Context) {
             val cm = ctx.getSystemService(CameraManager::class.java) ?: return
-            if (!registered) {
-                registered = true
+            // The camera service can refuse any of these, e.g. when a work policy disables the camera
+            try {
+                val id = cameraId ?: cm.cameraIdList.firstOrNull {
+                    cm.getCameraCharacteristics(it).get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
+                }?.also { cameraId = it }
+                if (id == null) { toast(ctx, "no flashlight on this phone"); return }
+                if (registered) { set(ctx, cm, id); return }
+                val main = Handler(Looper.getMainLooper())
                 cm.registerTorchCallback(object : CameraManager.TorchCallback() {
                     override fun onTorchModeChanged(id: String, enabled: Boolean) { if (id == cameraId) on = enabled }
-                }, Handler(Looper.getMainLooper()))
-            }
-            val id = cameraId ?: cm.cameraIdList.firstOrNull {
-                cm.getCameraCharacteristics(it).get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
-            }?.also { cameraId = it }
-            if (id == null) { toast(ctx, "no flashlight on this phone"); return }
+                }, main)
+                registered = true
+                // The current state arrives on the handler right after registering; the first toggle has to
+                // wait for it, or a torch already on (from quick settings) would be turned "on" again
+                main.post { set(ctx, cm, id) }
+            } catch (_: Exception) { toast(ctx, "flashlight is busy") }
+        }
+
+        private fun set(ctx: Context, cm: CameraManager, id: String) {
             try { cm.setTorchMode(id, !on); on = !on } catch (_: Exception) { toast(ctx, "flashlight is busy") }
         }
     }
@@ -171,13 +181,13 @@ object AppShortcuts {
 
     fun available(ctx: Context) = try { la(ctx)?.hasShortcutHostPermission() == true } catch (_: Exception) { false }
 
-    fun forPackage(ctx: Context, pkg: String): List<ShortcutInfo> {
+    fun forPackage(ctx: Context, pkg: String, user: UserHandle = Process.myUserHandle()): List<ShortcutInfo> {
         if (!available(ctx)) return emptyList()
         return try {
             val q = LauncherApps.ShortcutQuery().setPackage(pkg).setQueryFlags(
                 LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC or LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST
             )
-            (la(ctx)?.getShortcuts(q, Process.myUserHandle()) ?: emptyList())
+            (la(ctx)?.getShortcuts(q, user) ?: emptyList())
                 .filter { it.isEnabled }
                 .sortedWith(compareBy({ !it.isDeclaredInManifest }, { it.rank }))
         } catch (_: Exception) { emptyList() }
@@ -185,9 +195,9 @@ object AppShortcuts {
 
     fun label(s: ShortcutInfo) = (s.shortLabel ?: s.longLabel ?: s.id).toString().lowercase()
 
-    fun start(ctx: Context, pkg: String, id: String, source: View? = null): Boolean = try {
+    fun start(ctx: Context, pkg: String, id: String, source: View? = null, user: UserHandle = Process.myUserHandle()): Boolean = try {
         val bounds = source?.let { v -> IntArray(2).also { v.getLocationOnScreen(it) }.let { Rect(it[0], it[1], it[0] + v.width, it[1] + v.height) } }
-        la(ctx)?.startShortcut(pkg, id, bounds, null, Process.myUserHandle())
+        la(ctx)?.startShortcut(pkg, id, bounds, null, user)
         la(ctx) != null
     } catch (_: Exception) { false }
 }

@@ -85,7 +85,7 @@ class SettingsActivity : AppCompatActivity() {
                 MinimalDialog.confirm(this, title = "notification access needed",
                     message = "enable notification access for MinimalSF to read now playing info.\n\nno data is tracked.",
                     positiveText = "open settings", negativeText = "skip",
-                    onPositive = { try { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) {} }
+                    onPositive = { SpecialAccess.open(this, Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS) }
                 )
             }
         }
@@ -103,6 +103,10 @@ class SettingsActivity : AppCompatActivity() {
 
         findViewById<View>(R.id.searchPosToggle).setOnClickListener {
             Prefs.setSearchAtBottom(this, !Prefs.searchAtBottom(this)); refresh()
+        }
+
+        findViewById<View>(R.id.floatingKeyboardToggle).setOnClickListener {
+            Prefs.setFloatingKeyboardLeft(this, !Prefs.floatingKeyboardLeft(this)); refresh()
         }
 
         findViewById<View>(R.id.searchModeToggle).setOnClickListener {
@@ -170,6 +174,7 @@ class SettingsActivity : AppCompatActivity() {
         delayValue.text = "[${Prefs.autoDelay(this)}ms]"
         clockState.text = if (Prefs.use24hClock(this)) "[24h]" else "[12h]"
         searchPosState.text = if (Prefs.searchAtBottom(this)) "[bottom]" else "[top]"
+        findViewById<TextView>(R.id.floatingKeyboardState).text = if (Prefs.floatingKeyboardLeft(this)) "[left]" else "[right]"
         searchModeState.text = if (Prefs.searchFromStart(this)) "[starts with]" else "[contains]"
         val fontName = when (Prefs.fontStyle(this)) {
             "clean" -> "clean"

@@ -1,11 +1,17 @@
 package com.minimal.launcher
 
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherApps
 import android.os.Handler
 import android.os.Looper
+import android.os.Process
 import android.os.UserHandle
+import android.os.UserManager
+import androidx.core.content.ContextCompat
 import java.util.concurrent.Executors
 
 /**
@@ -44,6 +50,16 @@ object AppRepository {
                 override fun onPackagesAvailable(pkgs: Array<out String>, user: UserHandle, replacing: Boolean) = reload(app)
                 override fun onPackagesUnavailable(pkgs: Array<out String>, user: UserHandle, replacing: Boolean) = reload(app)
             }, main)
+            // A work profile being added, removed or paused changes the list without any package event
+            val filter = IntentFilter().apply {
+                addAction(Intent.ACTION_MANAGED_PROFILE_ADDED)
+                addAction(Intent.ACTION_MANAGED_PROFILE_REMOVED)
+                addAction(Intent.ACTION_MANAGED_PROFILE_AVAILABLE)
+                addAction(Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE)
+            }
+            ContextCompat.registerReceiver(app, object : BroadcastReceiver() {
+                override fun onReceive(c: Context, i: Intent) = reload(app)
+            }, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
         }
         if (!isLoaded) reload(app)
     }
@@ -64,19 +80,33 @@ object AppRepository {
         }
     }
 
+    /** Every launcher icon in every profile: apps can have several, and work profile apps are listed too. */
     private fun query(ctx: Context): List<AppInfo> {
-        val pm = ctx.packageManager
-        return pm.queryIntentActivities(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER), 0)
-            .asSequence()
-            .filter { it.activityInfo.packageName != ctx.packageName }
-            .distinctBy { it.activityInfo.packageName }
-            .map { AppInfo(it.loadLabel(pm).toString(), it.activityInfo.packageName, it.loadIcon(pm)) }
-            .sortedBy { it.labelLower }
-            .toList()
+        val la = ctx.getSystemService(LauncherApps::class.java) ?: return emptyList()
+        val um = ctx.getSystemService(UserManager::class.java)
+        val me = Process.myUserHandle()
+        return la.profiles.flatMap { user ->
+            val activities = la.getActivityList(null, user).filter { it.componentName.packageName != ctx.packageName }
+            val iconCount = activities.groupingBy { it.componentName.packageName }.eachCount()
+            activities.map { info ->
+                val cn = info.componentName
+                val isMain = user == me && (iconCount[cn.packageName] == 1 ||
+                    ctx.packageManager.getLaunchIntentForPackage(cn.packageName)?.component == cn)
+                val key = if (isMain) cn.packageName else "${um?.getSerialNumberForUser(user)}/${cn.flattenToShortString()}"
+                val isWork = user != me
+                // Preinstalled apps can't be removed, but an updated one can go back to its factory version
+                val flags = info.applicationInfo.flags
+                val canUninstall = flags and ApplicationInfo.FLAG_SYSTEM == 0 || flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP != 0
+                AppInfo(if (isWork) "${info.label} · work" else info.label.toString(), cn.packageName, info.getIcon(0), cn, user, key, isWork, canUninstall)
+            }
+        }.sortedBy { it.labelLower }
     }
 
-    fun labelFor(ctx: Context, pkg: String): String =
-        apps.firstOrNull { it.packageName == pkg }?.label
-            ?: try { ctx.packageManager.getApplicationLabel(ctx.packageManager.getApplicationInfo(pkg, 0)).toString() }
-            catch (_: Exception) { pkg }
+    /** The app's main personal icon, for things that only know a package (screen time, shortcuts). */
+    fun mainApps(): List<AppInfo> = apps.filter { it.key == it.packageName }
+
+    fun labelFor(ctx: Context, key: String): String =
+        apps.firstOrNull { it.key == key }?.label
+            ?: try { ctx.packageManager.getApplicationLabel(ctx.packageManager.getApplicationInfo(key, 0)).toString() }
+            catch (_: Exception) { key }
 }

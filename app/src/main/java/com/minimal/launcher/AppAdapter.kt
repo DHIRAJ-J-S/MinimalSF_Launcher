@@ -41,11 +41,12 @@ class AppAdapter(
         DiffUtil.calculateDiff(object : DiffUtil.Callback() {
             override fun getOldListSize() = old.size
             override fun getNewListSize() = newApps.size
-            override fun areItemsTheSame(o: Int, n: Int) = old[o].packageName == newApps[n].packageName
+            override fun areItemsTheSame(o: Int, n: Int) = old[o].key == newApps[n].key
             override fun areContentsTheSame(o: Int, n: Int): Boolean {
                 val a = old[o]; val b = newApps[n]
-                return !queryChanged && a.label == b.label && a.icon === b.icon &&
-                    (a.packageName in oldHidden) == (b.packageName in newHidden)
+                // A search result's number is its position, so a row that moved must rebind too
+                return !queryChanged && (q.isEmpty() || o == n) && a.label == b.label && a.icon === b.icon &&
+                    (a.key in oldHidden) == (b.key in newHidden)
             }
         }, false).dispatchUpdatesTo(this)
     }
@@ -68,7 +69,9 @@ class AppAdapter(
         holder.name.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f * sizeMultiplier)
 
         val name = app.label
-        val idx = if (query.isEmpty()) -1 else app.labelLower.indexOf(query)
+        // Searched in the label itself: lowercasing can change its length ("İ"), which puts labelLower's
+        // positions past the end of the label
+        val idx = if (query.isEmpty()) -1 else name.indexOf(query, ignoreCase = true)
         holder.name.text = if (idx >= 0) {
             SpannableString(name).apply {
                 setSpan(ForegroundColorSpan(Color.WHITE), idx, idx + query.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
@@ -76,8 +79,18 @@ class AppAdapter(
             }
         } else name
 
+        // Only single digits: typing "1" of a "12" would already have opened the first app
+        if (query.isNotEmpty() && position < MAX_BADGES) {
+            holder.badge.visibility = View.VISIBLE
+            holder.badge.typeface = Typeface.create(typeface, Typeface.BOLD)
+            holder.badge.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f * sizeMultiplier)
+            holder.badge.text = (position + 1).toString()
+        } else {
+            holder.badge.visibility = View.GONE
+        }
+
         // Hidden apps still show in "all apps" (so they can be launched/unhidden) but dimmed
-        holder.itemView.alpha = if (app.packageName in hidden) 0.35f else 1f
+        holder.itemView.alpha = if (app.key in hidden) 0.35f else 1f
     }
 
     override fun getItemCount() = apps.size
@@ -85,6 +98,7 @@ class AppAdapter(
     inner class VH(v: View) : RecyclerView.ViewHolder(v) {
         val icon: ImageView = v.findViewById(R.id.appIcon)
         val name: TextView = v.findViewById(R.id.appName)
+        val badge: TextView = v.findViewById(R.id.appBadge)
 
         init {
             icon.colorFilter = GRAYSCALE
@@ -97,6 +111,7 @@ class AppAdapter(
     }
 
     companion object {
+        const val MAX_BADGES = 9
         val GRAYSCALE = ColorMatrixColorFilter(ColorMatrix().apply { setSaturation(0f) })
     }
 }

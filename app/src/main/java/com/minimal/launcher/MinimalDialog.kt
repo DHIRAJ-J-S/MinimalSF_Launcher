@@ -37,7 +37,7 @@ object MinimalDialog {
     private val PRESS = Color.parseColor("#33FFFFFF")
     private val DIVIDER = Color.parseColor("#FF222222")
     private val INPUT_BG = Color.parseColor("#FF0D0D0D")
-    private val ACCENT = Color.parseColor("#FFFF4444")
+    private val ACCENT = Color.parseColor("#FF4488FF")
 
     private fun dp(ctx: Context, v: Int): Int =
         TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v.toFloat(), ctx.resources.displayMetrics).toInt()

@@ -12,6 +12,11 @@
     android:focusable="true"
     android:focusableInTouchMode="true">
 
+    <!-- These four groups stack in portrait. In landscape, LauncherActivity.applyOrientation moves them
+         into two panes: header + footer on the left, results + nav on the right. -->
+    <LinearLayout android:id="@+id/headerGroup" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:orientation="vertical">
+
     <!-- Clock + RAM -->
     <FrameLayout
         android:layout_width="match_parent"
@@ -40,6 +45,11 @@
         android:textColor="@color/grey_mid" android:textSize="11sp" android:fontFamily="monospace" android:letterSpacing="0.04"
         android:background="@drawable/ripple_borderless" android:clickable="true" android:focusable="true"
         android:visibility="gone" />
+
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/resultsGroup" android:layout_width="match_parent"
+        android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical">
 
     <!-- Search TOP slot -->
     <FrameLayout android:id="@+id/searchTopSlot"
@@ -91,6 +101,11 @@
     <FrameLayout android:id="@+id/searchBottomSlot"
         android:layout_width="match_parent" android:layout_height="wrap_content"
         android:paddingHorizontal="20dp" android:paddingVertical="8dp" android:visibility="gone" />
+
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/footerGroup" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:orientation="vertical">
 
     <!-- Music tip (shown on first play) -->
     <LinearLayout android:id="@+id/musicTipView"
@@ -157,8 +172,10 @@
         </LinearLayout>
     </LinearLayout>
 
+    </LinearLayout>
+
     <!-- Bottom nav -->
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+    <LinearLayout android:id="@+id/navGroup" android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="horizontal" android:paddingHorizontal="8dp" android:paddingVertical="4dp"
         android:background="@android:color/black">
         <TextView android:id="@+id/allAppsBtn" android:layout_width="0dp" android:layout_height="wrap_content"
