@@ -1,0 +1,32 @@
+# Assigns new issues and pull requests from other people to the repository owner. GitHub Mobile can
+# push a notification for "Assigned" but not for a new issue, so this is what makes new reports
+# reach the phone. Turn on Assigned under the app's push notification settings.
+name: Assign new issues
+
+on:
+  issues:
+    types: [opened, reopened]
+  # pull_request_target runs with this repository's permissions, which assigning needs. It never
+  # checks out or runs the pull request's code.
+  pull_request_target:
+    types: [opened, reopened]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  assign:
+    runs-on: ubuntu-latest
+    # Your own issues don't need a notification
+    if: github.actor != github.repository_owner
+    steps:
+      - name: Assign to the owner
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+          NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
+        run: |
+          gh api --method POST "repos/$REPO/issues/$NUMBER/assignees" -f "assignees[]=$OWNER" --silent
+          echo "Assigned #$NUMBER to $OWNER"
