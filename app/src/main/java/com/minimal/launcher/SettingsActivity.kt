@@ -3,13 +3,22 @@ package com.minimal.launcher
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Rect
+import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.text.SpannableStringBuilder
+import android.text.style.ReplacementSpan
 import android.provider.Settings
+import android.view.LayoutInflater
 import android.view.View
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -17,17 +26,9 @@ class SettingsActivity : AppCompatActivity() {
     private val sizes = arrayOf("small", "default", "large")
 
     private lateinit var settingsRoot: View
-    private lateinit var setDefaultLabel: TextView
-    private lateinit var setDefaultState: TextView
-    private lateinit var musicState: TextView
-    private lateinit var delayValue: TextView
-    private lateinit var clockState: TextView
-    private lateinit var searchPosState: TextView
-    private lateinit var searchModeState: TextView
-    private lateinit var fontStyleState: TextView
-    private lateinit var fontSizeState: TextView
-    private lateinit var clockSizeState: TextView
-    private var screenTimeStateRef: TextView? = null
+    private lateinit var rows: LinearLayout
+    // Run on every refresh, to show the current values
+    private val updaters = mutableListOf<() -> Unit>()
 
     private val fontPickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri == null) return@registerForActivityResult
@@ -47,107 +48,19 @@ class SettingsActivity : AppCompatActivity() {
         setContentView(R.layout.activity_settings)
 
         settingsRoot = findViewById(R.id.settingsRoot)
-        setDefaultLabel = findViewById(R.id.setDefaultLabel)
-        setDefaultState = findViewById(R.id.setDefaultArrow)
-        musicState = findViewById(R.id.musicToggleState)
-        delayValue = findViewById(R.id.delayValue)
-        clockState = findViewById(R.id.clockToggleState)
-        searchPosState = findViewById(R.id.searchPosState)
-        searchModeState = findViewById(R.id.searchModeState)
-        fontStyleState = findViewById(R.id.fontStyleState)
-        fontSizeState = findViewById(R.id.fontSizeState)
-        clockSizeState = findViewById(R.id.clockSizeState)
+        rows = findViewById(R.id.settingsRows)
 
         // Settings can be opened before the launcher loaded apps (e.g. process restart)
         AppRepository.init(this)
 
         findViewById<TextView>(R.id.backBtn).setOnClickListener { finish() }
 
-        findViewById<TextView>(R.id.versionText).text = "MinimalSF v" + try {
-            packageManager.getPackageInfo(packageName, 0).versionName
-        } catch (_: PackageManager.NameNotFoundException) { "?" }
-
-        // One row: sets default when we aren't, lets you switch away when we are
-        findViewById<View>(R.id.setDefaultBtn).setOnClickListener {
-            if (isDefaultLauncher()) {
-                MinimalDialog.confirm(this, title = "change default launcher",
-                    message = "this will open android's home app settings where you can select a different launcher.",
-                    positiveText = "open", negativeText = "cancel",
-                    onPositive = { openHomeSettings() }
-                )
-            } else openHomeSettings()
-        }
-
-        findViewById<View>(R.id.musicToggle).setOnClickListener {
-            val enabling = !Prefs.showMusic(this)
-            Prefs.setShowMusic(this, enabling); refresh()
-            if (enabling && !MusicNotificationListener.isEnabled(this)) {
-                MinimalDialog.confirm(this, title = "notification access needed",
-                    message = "enable notification access for MinimalSF to read now playing info.\n\nno data is tracked.",
-                    positiveText = "open settings", negativeText = "skip",
-                    onPositive = { SpecialAccess.open(this, Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS) }
-                )
-            }
-        }
-
-        findViewById<View>(R.id.delayBtn).setOnClickListener {
-            MinimalDialog.stepSlider(this, title = "auto-launch delay", steps = delaySteps,
-                currentValue = Prefs.autoDelay(this),
-                onSelect = { ms -> Prefs.setAutoDelay(this, ms); refresh() }
-            )
-        }
-
-        findViewById<View>(R.id.clockToggle).setOnClickListener {
-            Prefs.setUse24hClock(this, !Prefs.use24hClock(this)); refresh()
-        }
-
-        findViewById<View>(R.id.searchPosToggle).setOnClickListener {
-            Prefs.setSearchAtBottom(this, !Prefs.searchAtBottom(this)); refresh()
-        }
-
-        findViewById<View>(R.id.floatingKeyboardToggle).setOnClickListener {
-            Prefs.setFloatingKeyboardLeft(this, !Prefs.floatingKeyboardLeft(this)); refresh()
-        }
-
-        findViewById<View>(R.id.searchModeToggle).setOnClickListener {
-            Prefs.setSearchFromStart(this, !Prefs.searchFromStart(this)); refresh()
-        }
-
-        findViewById<View>(R.id.fontStyleBtn).setOnClickListener { showFontMenu() }
-
-        val screenTimeState = findViewById<TextView>(R.id.screenTimeState)
-        screenTimeStateRef = screenTimeState
-        findViewById<View>(R.id.screenTimeToggle).setOnClickListener {
-            val enabling = !Prefs.showScreenTime(this)
-            Prefs.setShowScreenTime(this, enabling); refresh()
-            if (enabling && !ScreenTime.hasAccess(this)) {
-                MinimalDialog.confirm(this, title = "usage access needed",
-                    message = "to show today's screen time, allow MinimalSF under usage access.\n\nit's read on this device only - nothing is sent anywhere.",
-                    positiveText = "open settings", negativeText = "skip",
-                    onPositive = { ScreenTime.openAccessSettings(this) }
-                )
-            }
-        }
-
-        findViewById<View>(R.id.fontSizeBtn).setOnClickListener {
-            MinimalDialog.singleChoice(this, title = "font size", items = sizes,
-                checkedIndex = sizes.indexOf(Prefs.fontSize(this))
-            ) { which -> Prefs.setFontSize(this, sizes[which]); refresh() }
-        }
-
-        findViewById<View>(R.id.clockSizeBtn).setOnClickListener {
-            MinimalDialog.singleChoice(this, title = "clock size", items = sizes,
-                checkedIndex = sizes.indexOf(Prefs.clockSize(this))
-            ) { which -> Prefs.setClockSize(this, sizes[which]); refresh() }
-        }
-
-        findViewById<View>(R.id.gesturesBtn).setOnClickListener {
-            startActivity(Intent(this, GesturesActivity::class.java))
-        }
-
-        findViewById<View>(R.id.githubBtn).setOnClickListener {
-            try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(REPO_URL))) }
-            catch (_: Exception) { Toast.makeText(this, "no browser found", Toast.LENGTH_SHORT).show() }
+        val page = intent.getStringExtra(EXTRA_PAGE)
+        findViewById<TextView>(R.id.settingsTitle).text = page ?: "settings"
+        when (page) {
+            PAGE_SEARCH -> addSearchRows()
+            PAGE_HOME -> { addHomeRows(); addButtonRows() }
+            else -> addMainRows()
         }
     }
 
@@ -158,41 +71,199 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun refresh() {
-        if (isDefaultLauncher()) {
-            setDefaultLabel.text = "default launcher"
-            setDefaultState.text = "[✓ set]"
-        } else {
-            setDefaultLabel.text = "set as default launcher"
-            setDefaultState.text = "→"
-        }
-
-        musicState.text = when {
-            !Prefs.showMusic(this) -> "[off]"
-            !MusicNotificationListener.isEnabled(this) -> "[on · needs access]"
-            else -> "[on]"
-        }
-        delayValue.text = "[${Prefs.autoDelay(this)}ms]"
-        clockState.text = if (Prefs.use24hClock(this)) "[24h]" else "[12h]"
-        searchPosState.text = if (Prefs.searchAtBottom(this)) "[bottom]" else "[top]"
-        findViewById<TextView>(R.id.floatingKeyboardState).text = if (Prefs.floatingKeyboardLeft(this)) "[left]" else "[right]"
-        searchModeState.text = if (Prefs.searchFromStart(this)) "[starts with]" else "[contains]"
-        val fontName = when (Prefs.fontStyle(this)) {
-            "clean" -> "clean"
-            "system" -> "phone default"
-            "custom" -> Prefs.customFontName(this).lowercase().ifEmpty { "custom" }
-            else -> "mono"
-        }
-        fontStyleState.text = "[$fontName${if (Prefs.fontBold(this)) " · bold" else ""}]"
-        screenTimeStateRef?.text = when {
-            !Prefs.showScreenTime(this) -> "[off]"
-            !ScreenTime.hasAccess(this) -> "[on · needs access]"
-            else -> "[on]"
-        }
-        fontSizeState.text = "[${Prefs.fontSize(this)}]"
-        clockSizeState.text = "[${Prefs.clockSize(this)}]"
-
+        updaters.forEach { it() }
         // Preview the chosen font right here
         FontManager.applyTo(settingsRoot, FontManager.getTypeface(this), FontManager.sizeMultiplier(this))
+    }
+
+    // --- Rows ---
+
+    private fun row(label: String, state: () -> String, onClick: () -> Unit): View {
+        val v = LayoutInflater.from(this).inflate(R.layout.item_setting_row, rows, false)
+        val stateView = v.findViewById<TextView>(R.id.rowState)
+        v.findViewById<TextView>(R.id.rowLabel).text = label
+        updaters += { stateView.text = state() }
+        v.setOnClickListener { onClick() }
+        rows.addView(v)
+        rows.addView(divider())
+        return v
+    }
+
+    /**
+     * One of the line icons at the start of a row's value, inside its brackets ("[✓ set]"), sized to
+     * the text. It goes in the text: the value view spans the row, so a compound drawable would sit
+     * next to the label instead.
+     */
+    private fun setStateIcon(stateView: TextView, res: Int) {
+        val d = ContextCompat.getDrawable(this, res)?.mutate() ?: return
+        val size = (stateView.textSize * 1.3f).toInt()
+        d.setBounds(0, 0, size, size)
+        d.setTint(stateView.currentTextColor)
+        // No space after it: the icon's own padding already spaces it like the "[" before it
+        val value = stateView.text.toString().removePrefix("[")
+        stateView.text = SpannableStringBuilder("[").append(" ", CenteredIconSpan(d), 0).append(value)
+    }
+
+    private fun divider() = View(this).apply {
+        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (resources.displayMetrics.density).toInt().coerceAtLeast(1)).apply {
+            val m = (20 * resources.displayMetrics.density).toInt(); marginStart = m; marginEnd = m
+        }
+        setBackgroundColor(getColor(R.color.grey_border))
+    }
+
+    private fun toggle(label: String, get: () -> Boolean, set: (Boolean) -> Unit) =
+        row(label, { if (get()) "[on]" else "[off]" }) { set(!get()); refresh() }
+
+    /** A row that opens one of the pages below. */
+    private fun pageRow(page: String) = row(page, { "→" }) {
+        startActivity(Intent(this, SettingsActivity::class.java).putExtra(EXTRA_PAGE, page))
+    }
+
+    // --- Pages ---
+
+    private fun addMainRows() {
+        // One row: sets default when we aren't, lets you switch away when we are
+        val defaultRow = row("default launcher", { if (isDefaultLauncher()) "[set]" else "→" }) {
+            if (isDefaultLauncher()) {
+                MinimalDialog.confirm(this, title = "change default launcher",
+                    message = "this will open android's home app settings where you can select a different launcher.",
+                    positiveText = "open", negativeText = "cancel",
+                    onPositive = { openHomeSettings() }
+                )
+            } else openHomeSettings()
+        }
+        updaters += {
+            val isDefault = isDefaultLauncher()
+            defaultRow.findViewById<TextView>(R.id.rowLabel).text = if (isDefault) "default launcher" else "set as default launcher"
+            if (isDefault) setStateIcon(defaultRow.findViewById(R.id.rowState), R.drawable.ic_check)
+        }
+
+        pageRow(PAGE_SEARCH)
+        pageRow(PAGE_HOME)
+        // These two have one setting each, so they open a dialog rather than a page
+        row("all apps view", {
+            if (Prefs.allAppsGrid(this)) "[grid · ${Prefs.allAppsColumns(this)} columns]" else "[list]"
+        }) {
+            MinimalDialog.gridPicker(this, title = "all apps view", isGrid = Prefs.allAppsGrid(this),
+                columns = Prefs.allAppsColumns(this), min = Prefs.MIN_GRID_COLUMNS, max = Prefs.MAX_GRID_COLUMNS
+            ) { grid, columns ->
+                Prefs.setAllAppsGrid(this, grid); Prefs.setAllAppsColumns(this, columns); refresh()
+            }
+        }
+        row("font", {
+            val name = when (Prefs.fontStyle(this)) {
+                "clean" -> "clean"
+                "system" -> "phone default"
+                "custom" -> Prefs.customFontName(this).lowercase().ifEmpty { "custom" }
+                else -> "mono"
+            }
+            val size = Prefs.fontSize(this).takeIf { it != "default" }
+            "[" + listOfNotNull(name, "bold".takeIf { Prefs.fontBold(this) }, size).joinToString(" · ") + "]"
+        }) { showFontMenu() }
+        row("gestures", { "→" }) { startActivity(Intent(this, GesturesActivity::class.java)) }
+
+        findViewById<View>(R.id.creditsGroup).visibility = View.VISIBLE
+        findViewById<TextView>(R.id.versionText).text = "MinimalSF v" + try {
+            packageManager.getPackageInfo(packageName, 0).versionName
+        } catch (_: PackageManager.NameNotFoundException) { "?" }
+        findViewById<View>(R.id.githubBtn).setOnClickListener {
+            try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(REPO_URL))) }
+            catch (_: Exception) { Toast.makeText(this, "no browser found", Toast.LENGTH_SHORT).show() }
+        }
+    }
+
+    private fun addSearchRows() {
+        row("auto-launch delay", { "[${Prefs.autoDelay(this)}ms]" }) {
+            MinimalDialog.stepSlider(this, title = "auto-launch delay", steps = delaySteps,
+                currentValue = Prefs.autoDelay(this),
+                onSelect = { ms -> Prefs.setAutoDelay(this, ms); refresh() }
+            )
+        }
+        row("search matching", { if (Prefs.searchFromStart(this)) "[starts with]" else "[contains]" }) {
+            Prefs.setSearchFromStart(this, !Prefs.searchFromStart(this)); refresh()
+        }
+        toggle("open keyboard on home", { Prefs.autoKeyboard(this) }) { Prefs.setAutoKeyboard(this, it) }
+        row("floating keyboard side (landscape)", { if (Prefs.floatingKeyboardLeft(this)) "[left]" else "[right]" }) {
+            Prefs.setFloatingKeyboardLeft(this, !Prefs.floatingKeyboardLeft(this)); refresh()
+        }
+    }
+
+    private fun addHomeRows() {
+        toggle("show clock", { Prefs.showClock(this) }) { Prefs.setShowClock(this, it) }
+        row("clock format", { if (Prefs.use24hClock(this)) "[24h]" else "[12h]" }) {
+            Prefs.setUse24hClock(this, !Prefs.use24hClock(this)); refresh()
+        }
+        row("clock size", { "[${Prefs.clockSize(this)}]" }) {
+            MinimalDialog.singleChoice(this, title = "clock size", items = sizes,
+                checkedIndex = sizes.indexOf(Prefs.clockSize(this))
+            ) { which -> Prefs.setClockSize(this, sizes[which]); refresh() }
+        }
+        toggle("show date", { Prefs.showDate(this) }) { Prefs.setShowDate(this, it) }
+        row("show screen time", {
+            when {
+                !Prefs.showScreenTime(this) -> "[off]"
+                !ScreenTime.hasAccess(this) -> "[on · needs access]"
+                else -> "[on]"
+            }
+        }) {
+            val enabling = !Prefs.showScreenTime(this)
+            Prefs.setShowScreenTime(this, enabling); refresh()
+            if (enabling && !ScreenTime.hasAccess(this)) {
+                MinimalDialog.confirm(this, title = "usage access needed",
+                    message = "to show today's screen time, allow MinimalSF under usage access.\n\nit's read on this device only - nothing is sent anywhere.",
+                    positiveText = "open settings", negativeText = "skip",
+                    onPositive = { ScreenTime.openAccessSettings(this) }
+                )
+            }
+        }
+        row("show now playing bar", {
+            when {
+                !Prefs.showMusic(this) -> "[off]"
+                !MusicNotificationListener.isEnabled(this) -> "[on · needs access]"
+                else -> "[on]"
+            }
+        }) {
+            val enabling = !Prefs.showMusic(this)
+            Prefs.setShowMusic(this, enabling); refresh()
+            if (enabling && !MusicNotificationListener.isEnabled(this)) {
+                MinimalDialog.confirm(this, title = "notification access needed",
+                    message = "enable notification access for MinimalSF to read now playing info.\n\nno data is tracked.",
+                    positiveText = "open settings", negativeText = "skip",
+                    onPositive = { SpecialAccess.open(this, Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS) }
+                )
+            }
+        }
+        toggle("show todo", { Prefs.showTodo(this) }) { Prefs.setShowTodo(this, it) }
+        row("search bar position", { if (Prefs.searchAtBottom(this)) "[bottom]" else "[top]" }) {
+            Prefs.setSearchAtBottom(this, !Prefs.searchAtBottom(this)); refresh()
+        }
+    }
+
+    private fun addButtonRows() {
+        toggle("show all apps button", { Prefs.showAllAppsButton(this) }) { Prefs.setShowAllAppsButton(this, it) }
+        row("show settings button", { if (Prefs.showSettingsButton(this)) "[on]" else "[off]" }) { toggleSettingsButton() }
+
+        val styles = arrayOf("both", "icon", "text")
+        val styleNames = arrayOf("icon + text", "icon only", "text only")
+        row("button style", { "[${styleNames[styles.indexOf(Prefs.navStyle(this)).coerceAtLeast(0)]}]" }) {
+            MinimalDialog.singleChoice(this, title = "button style", items = styleNames,
+                checkedIndex = styles.indexOf(Prefs.navStyle(this))
+            ) { which -> Prefs.setNavStyle(this, styles[which]); refresh() }
+        }
+    }
+
+    /** Hiding the button must leave a way back in, so settings then appears in the app list. */
+    private fun toggleSettingsButton() {
+        fun apply(show: Boolean) {
+            Prefs.setShowSettingsButton(this, show)
+            AppRepository.reload(this)
+            refresh()
+        }
+        if (!Prefs.showSettingsButton(this)) { apply(true); return }
+        MinimalDialog.confirm(this, title = "hide settings button",
+            message = "you can still open settings by searching \"minimalsf\" or from all apps.",
+            positiveText = "hide", negativeText = "cancel",
+            onPositive = { apply(false) })
     }
 
     // --- Font menu: built-in, the stored custom font, Google Fonts download, or a file ---
@@ -217,7 +288,12 @@ class SettingsActivity : AppCompatActivity() {
         val bold = MinimalDialog.TitleToggle("bold", isOn = { Prefs.fontBold(this) }) {
             Prefs.setFontBold(this, !Prefs.fontBold(this)); FontManager.clearCache(); refresh()
         }
-        MinimalDialog.singleChoice(this, title = "font", items = items.toTypedArray(), checkedIndex = checked, toggle = bold) { actions[it]() }
+        // Size sits under the title too, so the whole font setting is in one place
+        val size = MinimalDialog.Segmented("size", sizes, selected = { sizes.indexOf(Prefs.fontSize(this)) }) {
+            Prefs.setFontSize(this, sizes[it]); refresh()
+        }
+        MinimalDialog.singleChoice(this, title = "font", items = items.toTypedArray(), checkedIndex = checked,
+            toggle = bold, segmented = size) { actions[it]() }
     }
 
     private fun setBuiltInFont(style: String) {
@@ -257,7 +333,29 @@ class SettingsActivity : AppCompatActivity() {
         return ri?.activityInfo?.packageName == packageName
     }
 
+    /**
+     * Draws an icon centred on the middle of lowercase letters. ImageSpan centres on the whole line,
+     * ascent to descent, which leaves the icon sitting above text like "set".
+     */
+    private class CenteredIconSpan(private val icon: Drawable) : ReplacementSpan() {
+        override fun getSize(paint: Paint, text: CharSequence?, start: Int, end: Int, fm: Paint.FontMetricsInt?) =
+            icon.bounds.width()
+
+        override fun draw(canvas: Canvas, text: CharSequence?, start: Int, end: Int, x: Float,
+                          top: Int, y: Int, bottom: Int, paint: Paint) {
+            val xHeight = Rect().also { paint.getTextBounds("x", 0, 1, it) }.height()
+            canvas.save()
+            canvas.translate(x, y - xHeight / 2f - icon.bounds.height() / 2f)
+            icon.draw(canvas)
+            canvas.restore()
+        }
+    }
+
     companion object {
         private const val REPO_URL = "https://github.com/DHIRAJ-J-S/MinimalSF_Launcher"
+        private const val EXTRA_PAGE = "page"
+        // Each page's title, and its row on the main menu
+        private const val PAGE_SEARCH = "search & keyboard"
+        private const val PAGE_HOME = "home screen"
     }
 }

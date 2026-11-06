@@ -13,7 +13,7 @@ data class AppInfo(
     // Identifies this icon in saved settings (keywords, hidden apps, gestures). It's the package name
     // for an app's main icon, so settings saved before apps could have several icons still match.
     val key: String,
-    val isWork: Boolean,
+    val otherProfile: Boolean,
     val canUninstall: Boolean
 ) {
     // Pre-lowercased once so search doesn't allocate per keystroke

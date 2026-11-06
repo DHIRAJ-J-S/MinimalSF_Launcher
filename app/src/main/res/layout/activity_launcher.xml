@@ -17,20 +17,15 @@
     <LinearLayout android:id="@+id/headerGroup" android:layout_width="match_parent"
         android:layout_height="wrap_content" android:orientation="vertical">
 
-    <!-- Clock + RAM -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
-        <!-- Clock sits below the RAM line so a wide "12:59 PM" can't run into it -->
         <TextView android:id="@+id/clockText" android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal" android:layout_marginTop="32dp" android:paddingHorizontal="16dp"
             android:gravity="center" android:textColor="@android:color/white" android:textSize="52sp"
             android:fontFamily="monospace" android:textStyle="bold" android:letterSpacing="-0.04"
             android:background="@drawable/ripple_borderless"
             android:clickable="true" android:focusable="true" android:text="00:00" />
-        <TextView android:id="@+id/ramText" android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:layout_gravity="end|top" android:paddingEnd="16dp" android:paddingTop="8dp"
-            android:textColor="#FF555555" android:textSize="11sp" android:fontFamily="monospace" android:text="ram ---mb" />
     </FrameLayout>
 
     <TextView android:id="@+id/dateText" android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -176,7 +171,7 @@
 
     <!-- Bottom nav -->
     <LinearLayout android:id="@+id/navGroup" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:paddingHorizontal="8dp" android:paddingVertical="4dp"
+        android:orientation="horizontal" android:gravity="end" android:paddingHorizontal="8dp" android:paddingVertical="4dp"
         android:background="@android:color/black">
         <TextView android:id="@+id/allAppsBtn" android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:text="all apps" android:textColor="@color/grey_text"

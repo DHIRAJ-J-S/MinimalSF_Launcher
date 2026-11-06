@@ -27,6 +27,7 @@ class AppAdapter(
     private var hidden: Set<String> = emptySet()
     private var typeface: Typeface = Typeface.MONOSPACE
     private var sizeMultiplier: Float = 1f
+    private var grid = false
 
     val items: List<AppInfo> get() = apps
 
@@ -57,8 +58,18 @@ class AppAdapter(
         notifyItemRangeChanged(0, apps.size)
     }
 
+    /** Cells instead of rows. The caller swaps the list's layout manager to match. */
+    fun setGrid(on: Boolean) {
+        if (on == grid) return
+        grid = on
+        notifyDataSetChanged()
+    }
+
+    override fun getItemViewType(position: Int) = if (grid) VIEW_GRID else VIEW_ROW
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-        return VH(LayoutInflater.from(parent.context).inflate(R.layout.item_app, parent, false))
+        val layout = if (viewType == VIEW_GRID) R.layout.item_app_grid else R.layout.item_app
+        return VH(LayoutInflater.from(parent.context).inflate(layout, parent, false))
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {
@@ -66,7 +77,7 @@ class AppAdapter(
         holder.icon.setImageDrawable(app.icon)
 
         holder.name.typeface = typeface
-        holder.name.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f * sizeMultiplier)
+        holder.name.setTextSize(TypedValue.COMPLEX_UNIT_SP, (if (grid) 11f else 14f) * sizeMultiplier)
 
         val name = app.label
         // Searched in the label itself: lowercasing can change its length ("İ"), which puts labelLower's
@@ -80,13 +91,15 @@ class AppAdapter(
         } else name
 
         // Only single digits: typing "1" of a "12" would already have opened the first app
-        if (query.isNotEmpty() && position < MAX_BADGES) {
-            holder.badge.visibility = View.VISIBLE
-            holder.badge.typeface = Typeface.create(typeface, Typeface.BOLD)
-            holder.badge.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f * sizeMultiplier)
-            holder.badge.text = (position + 1).toString()
-        } else {
-            holder.badge.visibility = View.GONE
+        holder.badge?.let { badge ->
+            if (query.isNotEmpty() && position < MAX_BADGES) {
+                badge.visibility = View.VISIBLE
+                badge.typeface = Typeface.create(typeface, Typeface.BOLD)
+                badge.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f * sizeMultiplier)
+                badge.text = (position + 1).toString()
+            } else {
+                badge.visibility = View.GONE
+            }
         }
 
         // Hidden apps still show in "all apps" (so they can be launched/unhidden) but dimmed
@@ -98,7 +111,7 @@ class AppAdapter(
     inner class VH(v: View) : RecyclerView.ViewHolder(v) {
         val icon: ImageView = v.findViewById(R.id.appIcon)
         val name: TextView = v.findViewById(R.id.appName)
-        val badge: TextView = v.findViewById(R.id.appBadge)
+        val badge: TextView? = v.findViewById(R.id.appBadge)
 
         init {
             icon.colorFilter = GRAYSCALE
@@ -112,6 +125,8 @@ class AppAdapter(
 
     companion object {
         const val MAX_BADGES = 9
+        private const val VIEW_ROW = 0
+        private const val VIEW_GRID = 1
         val GRAYSCALE = ColorMatrixColorFilter(ColorMatrix().apply { setSaturation(0f) })
     }
 }

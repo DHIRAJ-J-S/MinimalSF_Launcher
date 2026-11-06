@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherApps
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.Process
@@ -20,6 +21,9 @@ import java.util.concurrent.Executors
  * instead of re-querying PackageManager on every resume.
  */
 object AppRepository {
+
+    private const val USER_TYPE_CLONE = "android.os.usertype.profile.CLONE"
+    private val DUAL_APP_USER_IDS = setOf(95, 999) // Samsung, Xiaomi and others
 
     @Volatile
     var apps: List<AppInfo> = emptyList()
@@ -86,20 +90,41 @@ object AppRepository {
         val um = ctx.getSystemService(UserManager::class.java)
         val me = Process.myUserHandle()
         return la.profiles.flatMap { user ->
-            val activities = la.getActivityList(null, user).filter { it.componentName.packageName != ctx.packageName }
+            // Our own entry opens settings, and is only listed when the settings button is hidden
+            val activities = la.getActivityList(null, user).filter {
+                it.componentName.packageName != ctx.packageName || (user == me && !Prefs.showSettingsButton(ctx))
+            }
             val iconCount = activities.groupingBy { it.componentName.packageName }.eachCount()
             activities.map { info ->
                 val cn = info.componentName
                 val isMain = user == me && (iconCount[cn.packageName] == 1 ||
                     ctx.packageManager.getLaunchIntentForPackage(cn.packageName)?.component == cn)
                 val key = if (isMain) cn.packageName else "${um?.getSerialNumberForUser(user)}/${cn.flattenToShortString()}"
-                val isWork = user != me
+                val otherProfile = user != me
                 // Preinstalled apps can't be removed, but an updated one can go back to its factory version
                 val flags = info.applicationInfo.flags
                 val canUninstall = flags and ApplicationInfo.FLAG_SYSTEM == 0 || flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP != 0
-                AppInfo(if (isWork) "${info.label} · work" else info.label.toString(), cn.packageName, info.getIcon(0), cn, user, key, isWork, canUninstall)
+                val label = when {
+                    otherProfile -> "${info.label} · ${profileName(ctx, user)}"
+                    cn.packageName == ctx.packageName -> "${info.label} settings"
+                    else -> info.label.toString()
+                }
+                AppInfo(label, cn.packageName, info.getIcon(0), cn, user, key, otherProfile, canUninstall)
             }
         }.sortedBy { it.labelLower }
+    }
+
+    /**
+     * "dual" for a second copy of an app (Samsung Dual Messenger, Xiaomi Dual Apps...), otherwise "work".
+     * The label Android would badge an app with can't tell them apart: Samsung says "Work" for both.
+     */
+    private fun profileName(ctx: Context, user: UserHandle): String {
+        val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            try { ctx.getSystemService(LauncherApps::class.java)?.getLauncherUserInfo(user)?.userType } catch (_: Exception) { null }
+        } else null
+        // Older versions have no public way to ask, but these makers use fixed user ids for it
+        val dual = type?.let { it == USER_TYPE_CLONE } ?: (user.hashCode() in DUAL_APP_USER_IDS)
+        return if (dual) "dual" else "work"
     }
 
     /** The app's main personal icon, for things that only know a package (screen time, shortcuts). */

@@ -1,7 +1,6 @@
 package com.minimal.launcher
 
 import android.annotation.SuppressLint
-import android.app.ActivityManager
 import android.app.ActivityOptions
 import android.content.ComponentName
 import android.content.Intent
@@ -45,6 +44,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.DefaultItemAnimator
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import java.text.SimpleDateFormat
@@ -74,10 +74,10 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
     private lateinit var musicBar: LinearLayout
     private lateinit var musicTitle: TextView
     private lateinit var musicIconView: ImageView
-    private lateinit var ramText: TextView
     private lateinit var homeTipView: TextView
     private lateinit var musicTipView: LinearLayout
     private lateinit var allAppsBtn: TextView
+    private lateinit var settingsBtn: TextView
     private lateinit var headerGroup: LinearLayout
     private lateinit var resultsGroup: LinearLayout
     private lateinit var footerGroup: LinearLayout
@@ -85,6 +85,9 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
     // Landscape: two panes, and the keyboard is either docked (takes height) or floating (covers a side)
     private var landscape = false
+    // Landscape's left pane (clock, music, todo) and the line beside it
+    private var infoPane: View? = null
+    private var paneDivider: View? = null
     private var dockedIme = false
     private var floatingIme = false
 
@@ -151,7 +154,6 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
             handler.postDelayed(this, 60_000 - System.currentTimeMillis() % 60_000 + 20)
         }
     }
-    private val statsPollRunnable = object : Runnable { override fun run() { updateSystemStats(); handler.postDelayed(this, 2_000) } }
 
     private lateinit var homeGestureDetector: GestureDetector
 
@@ -176,10 +178,10 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         musicBar = findViewById(R.id.musicBar)
         musicTitle = findViewById(R.id.musicTitle)
         musicIconView = findViewById(R.id.musicIcon)
-        ramText = findViewById(R.id.ramText)
         homeTipView = findViewById(R.id.homeTipView)
         musicTipView = findViewById(R.id.musicTipView)
         allAppsBtn = findViewById(R.id.allAppsBtn)
+        settingsBtn = findViewById(R.id.settingsBtn)
         todoList = findViewById(R.id.todoList)
         todoDivider = findViewById(R.id.todoDivider)
         todoSection = findViewById(R.id.todoSection)
@@ -249,7 +251,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         }
         findViewById<View>(R.id.addTodoBtn).setOnClickListener { addTodo() }
         screenTimeText.setOnClickListener { onScreenTimeClick() }
-        findViewById<TextView>(R.id.settingsBtn).setOnClickListener {
+        settingsBtn.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
         updateTodoCount()
@@ -358,6 +360,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         setIntent(intent)
         // Home pressed while already home
         resetHomeState()
+        if (!Prefs.autoKeyboard(this)) hideKeyboard()
     }
 
     /**
@@ -391,18 +394,23 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
             apps.addView(resultsGroup, rows(0, 1f))
             apps.addView(navGroup, rows(wrap))
             rootLayout.addView(info)
-            rootLayout.addView(View(this).apply {
+            val divider = View(this).apply {
                 layoutParams = LinearLayout.LayoutParams(dp(1f).toInt(), ViewGroup.LayoutParams.MATCH_PARENT)
                 setBackgroundColor(getColor(R.color.grey_border))
-            })
+            }
+            rootLayout.addView(divider)
             rootLayout.addView(apps)
+            infoPane = info
+            paneDivider = divider
         } else {
+            infoPane = null
+            paneDivider = null
             rootLayout.addView(headerGroup, rows(wrap))
             rootLayout.addView(resultsGroup, rows(0, 1f))
             rootLayout.addView(footerGroup, rows(wrap))
             rootLayout.addView(navGroup, rows(wrap))
         }
-        // There's less height in landscape, and the RAM text no longer shares the clock's width
+        // There's less height in landscape
         (clockText.layoutParams as ViewGroup.MarginLayoutParams).topMargin = dp(if (land) 16f else 32f).toInt()
         focused?.requestFocus()
     }
@@ -503,8 +511,10 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
     private fun applyUi() {
         uiDirty = false
         applySearchPosition()
+        applyHomeVisibility()
         applyFont()
         updateMusicBarVisibility()
+        applyAppListLayout()
         updateHomeTip()
         clockFormat = null
         updateClock()
@@ -541,8 +551,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         todoAdapter.setTypeface(tf, m)
 
         // Icon size follows the text size, so re-apply after a font size change
-        setNavIcon(allAppsBtn, if (showingAllApps) R.drawable.ic_close else R.drawable.ic_grid)
-        setNavIcon(findViewById(R.id.settingsBtn), R.drawable.ic_settings)
+        applyNavButtons()
     }
 
     override fun onResume() {
@@ -550,13 +559,11 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         if (uiDirty) applyUi()
 
         handler.removeCallbacks(clockRunnable); handler.post(clockRunnable)
-        handler.removeCallbacks(statsPollRunnable); handler.post(statsPollRunnable)
     }
 
     override fun onPause() {
         super.onPause()
         handler.removeCallbacks(clockRunnable)
-        handler.removeCallbacks(statsPollRunnable)
         cancelAutoLaunch()
     }
 
@@ -589,7 +596,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         // On first launch the welcome prompt is about to open (once apps load); showing the keyboard
         // now would make it flash open and shut. It opens normally once the prompts are dismissed.
         if (Prefs.isFirstLaunch(this)) return
-        if (hasFocus && !showingAllApps && !todoInput.hasFocus()) showKeyboard()
+        if (hasFocus && !showingAllApps && !todoInput.hasFocus() && Prefs.autoKeyboard(this)) showKeyboard()
     }
 
     // --- First launch ---
@@ -769,13 +776,27 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         val compact = if (landscape) dockedIme else showingAllApps || searchInput.text.isNotBlank()
         val editingTodo = landscape && dockedIme && todoInput.hasFocus()
         headerGroup.visibility = if (editingTodo) View.GONE else View.VISIBLE
-        val todo = if (compact && !editingTodo) View.GONE else View.VISIBLE
+        val todo = if ((compact && !editingTodo) || !Prefs.showTodo(this)) View.GONE else View.VISIBLE
         if (todoSection.visibility != todo) { todoSection.visibility = todo; todoDivider.visibility = todo }
         val music = if (landscape) !editingTodo else !compact
         musicBar.visibility = if (Prefs.showMusic(this) && music) View.VISIBLE else View.GONE
         if (compact || !Prefs.showMusic(this)) musicTipView.visibility = View.GONE
         // Beside a docked keyboard the results only have room for a row or two without these buttons
         navGroup.visibility = if (landscape && dockedIme && searchInput.text.isNotBlank()) View.GONE else View.VISIBLE
+        // Stays visible in all apps even if hidden, as it's the way to close it
+        allAppsBtn.visibility = if (Prefs.showAllAppsButton(this) || showingAllApps) View.VISIBLE else View.GONE
+        settingsBtn.visibility = if (Prefs.showSettingsButton(this)) View.VISIBLE else View.GONE
+        updatePanes()
+    }
+
+    /** With everything on the left hidden, search and apps take the whole width instead of half. */
+    private fun updatePanes() {
+        val info = infoPane ?: return
+        val hasContent = listOf(clockText, dateText, screenTimeText, musicBar, musicTipView, todoSection)
+            .any { it.visibility == View.VISIBLE }
+        val v = if (hasContent) View.VISIBLE else View.GONE
+        info.visibility = v
+        paneDivider?.visibility = v
     }
 
     // --- Todo ---
@@ -882,10 +903,12 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         val trailing = arrayOfNulls<String>(shortcuts.size) +
             menu.map { if (it.first == "set keyword") currentKeyword.ifEmpty { null } else null }.toTypedArray()
         // Usage stats only cover this profile
-        val usage = if (screenTimeActive() && !app.isWork) ScreenTime.today[app.packageName]?.let { "${ScreenTime.format(it)} today" } else null
+        val usage = if (screenTimeActive() && !app.otherProfile) ScreenTime.today[app.packageName]?.let { "${ScreenTime.format(it)} today" } else null
+        val version = try { packageManager.getPackageInfo(app.packageName, 0).versionName } catch (_: Exception) { null }
+        val details = listOfNotNull(app.packageName, version?.let { "version $it" }, usage).joinToString("\n")
 
         MinimalDialog.options(this, title = app.label, items = items.toTypedArray(), icons = icons,
-            subtitle = usage, trailing = trailing) { picked ->
+            subtitle = details, trailing = trailing) { picked ->
             if (picked < shortcuts.size) {
                 val s = shortcuts[picked]
                 if (!AppShortcuts.start(this, s.`package`, s.id, user = app.user)) Toast.makeText(this, "shortcut unavailable", Toast.LENGTH_SHORT).show()
@@ -941,8 +964,10 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
     private fun screenTimeActive() = Prefs.showScreenTime(this) && ScreenTime.hasAccess(this)
 
     private fun refreshScreenTime() {
-        if (!Prefs.showScreenTime(this)) { screenTimeText.visibility = View.GONE; return }
-        screenTimeText.visibility = View.VISIBLE
+        val show = Prefs.showScreenTime(this)
+        screenTimeText.visibility = if (show) View.VISIBLE else View.GONE
+        updatePanes()
+        if (!show) return
         if (!ScreenTime.hasAccess(this)) { screenTimeText.text = "tap to allow screen time"; return }
         if (ScreenTime.today.isEmpty()) screenTimeText.text = "screen time …"
         ScreenTime.refresh(this) {
@@ -968,15 +993,54 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
     }
 
     /** Line icon left of a text button, sized to the text so both nav buttons match. */
-    private fun setNavIcon(tv: TextView, res: Int) {
-        val d = androidx.core.content.ContextCompat.getDrawable(this, res)?.mutate() ?: return
+    private fun setNavIcon(tv: TextView, res: Int?) {
+        val d = res?.let { androidx.core.content.ContextCompat.getDrawable(this, it)?.mutate() }
         val size = (tv.textSize * 1.25f).toInt()
-        d.setBounds(0, 0, size, size)
-        d.setTint(tv.currentTextColor)
+        d?.setBounds(0, 0, size, size)
+        d?.setTint(tv.currentTextColor)
         tv.setCompoundDrawablesRelative(d, null, null, null)
     }
 
-    // --- Clock & stats ---
+    /** The two bottom buttons, shown as icon + text, icon only or text only. */
+    private fun applyNavButtons() {
+        val style = Prefs.navStyle(this)
+        fun apply(tv: TextView, label: String, icon: Int) {
+            tv.text = if (style == "icon") "" else label
+            tv.contentDescription = label
+            setNavIcon(tv, if (style == "text") null else icon)
+        }
+        apply(allAppsBtn, if (showingAllApps) "close" else "all apps", if (showingAllApps) R.drawable.ic_close else R.drawable.ic_grid)
+        apply(settingsBtn, "settings", R.drawable.ic_settings)
+    }
+
+    /** All apps can be a grid; search results are always a list, so their numbers stay readable. */
+    private fun applyAppListLayout() {
+        val columns = if (showingAllApps && Prefs.allAppsGrid(this)) Prefs.allAppsColumns(this) else 0
+        val current = appList.layoutManager
+        if (columns > 0) {
+            if (current is GridLayoutManager) current.spanCount = columns
+            else appList.layoutManager = GridLayoutManager(this, columns)
+        } else if (current is GridLayoutManager) {
+            appList.layoutManager = LinearLayoutManager(this)
+        }
+        adapter.setGrid(columns > 0)
+    }
+
+    /** Hides whatever the user turned off in settings, keeping the spacing right for what's left. */
+    private fun applyHomeVisibility() {
+        val clock = Prefs.showClock(this)
+        val date = Prefs.showDate(this)
+        fun shown(on: Boolean) = if (on) View.VISIBLE else View.GONE
+        clockText.visibility = shown(clock)
+        dateText.visibility = shown(date)
+        // The date's bottom padding normally separates the header from the search bar
+        val gap = dp(12f).toInt()
+        headerGroup.setPadding(0, if (!clock && !date) gap else 0, 0, if (!date) gap else 0)
+        (screenTimeText.layoutParams as ViewGroup.MarginLayoutParams).topMargin = if (date) dp(-14f).toInt() else 0
+        updatePanes()
+    }
+
+    // --- Clock ---
 
     private fun updateClock() {
         val use24 = Prefs.use24hClock(this)
@@ -989,14 +1053,6 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         val now = Date()
         clockText.text = fmt.format(now)
         dateText.text = dateFormat.format(now)
-    }
-
-    private fun updateSystemStats() {
-        try {
-            val mi = ActivityManager.MemoryInfo()
-            (getSystemService(ACTIVITY_SERVICE) as ActivityManager).getMemoryInfo(mi)
-            ramText.text = "ram ${mi.availMem / (1024 * 1024)}/${mi.totalMem / (1024 * 1024)}mb"
-        } catch (_: Exception) { ramText.text = "ram ---mb" }
     }
 
     // --- Search ---
@@ -1113,6 +1169,8 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
     private fun launchApp(app: AppInfo, source: View? = null) {
         cancelAutoLaunch()
         if (launchCooldown) return
+        // Our own entry in the list, shown when the settings button is hidden
+        if (app.packageName == packageName) { startActivity(Intent(this, SettingsActivity::class.java)); return }
         keepAllAppsOpen = false
         // Reveal the app from the icon that was tapped
         val opts = source?.takeIf { it.isShown && it.width > 0 }?.let {
@@ -1146,14 +1204,14 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
     private fun closeAllApps() {
         setAllAppsMode(false)
         if (searchInput.text.isNotEmpty()) searchInput.text.clear() else showResults(Results.IDLE)
-        showKeyboard()
+        if (Prefs.autoKeyboard(this)) showKeyboard()
     }
 
     private fun setAllAppsMode(on: Boolean) {
         showingAllApps = on
         updateCompact()
-        allAppsBtn.text = if (on) "close" else "all apps"
-        setNavIcon(allAppsBtn, if (on) R.drawable.ic_close else R.drawable.ic_grid)
+        applyNavButtons()
+        applyAppListLayout()
         if (on) {
             results = Results.LIST
             appList.visibility = View.VISIBLE

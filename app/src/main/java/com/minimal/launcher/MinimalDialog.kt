@@ -8,6 +8,7 @@ import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
+import android.os.Build
 import android.text.InputType
 import android.util.TypedValue
 import android.view.Gravity
@@ -82,12 +83,16 @@ object MinimalDialog {
     /** An on/off switch shown on the right of a dialog's title (e.g. "bold" in the font picker). */
     class TitleToggle(val label: String, val isOn: () -> Boolean, val onToggle: () -> Unit)
 
+    /** A row of small buttons under a dialog's title for a related setting, e.g. font size in the font picker. */
+    class Segmented(val label: String, val options: Array<String>, val selected: () -> Int, val onSelect: (Int) -> Unit)
+
     /** Options list that marks the current value - used for every multi-value setting. */
     fun singleChoice(ctx: Context, title: String, items: Array<String>, checkedIndex: Int,
-                     toggle: TitleToggle? = null, onSelect: (Int) -> Unit) {
+                     toggle: TitleToggle? = null, segmented: Segmented? = null, onSelect: (Int) -> Unit) {
         val dialog = newDialog(ctx)
         val root = frame(ctx)
         root.addView(if (toggle == null) title(ctx, title) else titleWithToggle(ctx, title, toggle)); root.addView(divider(ctx))
+        if (segmented != null) { root.addView(segmentedRow(ctx, segmented)); root.addView(divider(ctx)) }
         root.addView(list(ctx, items.mapIndexed { i, label ->
             val checked = i == checkedIndex
             row(ctx, if (checked) R.drawable.ic_radio_on else R.drawable.ic_radio_off,
@@ -96,16 +101,31 @@ object MinimalDialog {
         show(dialog, root, 290)
     }
 
-    /** Rows separated by dividers; scrolls when there are more than fit on screen. */
+    /**
+     * Rows separated by dividers; scrolls when there are more than fit on screen. A long list has to
+     * look scrollable: it ends halfway through a row, fades out at the bottom and keeps a scroll bar
+     * showing. Without these, people took the rows on screen for the whole list.
+     */
     private fun list(ctx: Context, rows: List<View>): View {
         val col = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
         rows.forEachIndexed { i, r -> if (i > 0) col.addView(divider(ctx)); col.addView(r) }
         if (rows.size <= 7) return col
+        val rowHeight = dp(ctx, 49)
+        val maxHeight = (ctx.resources.displayMetrics.heightPixels * 0.55f).toInt()
+        val wholeRows = ((maxHeight - rowHeight / 2) / rowHeight).coerceAtLeast(1)
         return android.widget.ScrollView(ctx).apply {
-            isVerticalScrollBarEnabled = false
             overScrollMode = View.OVER_SCROLL_NEVER
             layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                minOf(rows.size * dp(ctx, 49), (ctx.resources.displayMetrics.heightPixels * 0.55f).toInt()))
+                minOf(rows.size * rowHeight, wholeRows * rowHeight + rowHeight / 2))
+            isVerticalScrollBarEnabled = true
+            isScrollbarFadingEnabled = false
+            scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                verticalScrollbarThumbDrawable = GradientDrawable().apply { setColor(MUTED); setSize(dp(ctx, 3), dp(ctx, 24)) }
+                verticalScrollbarTrackDrawable = GradientDrawable().apply { setColor(DIVIDER); setSize(dp(ctx, 3), dp(ctx, 24)) }
+            }
+            isVerticalFadingEdgeEnabled = true
+            setFadingEdgeLength(dp(ctx, 40))
             addView(col)
         }
     }
@@ -316,6 +336,105 @@ object MinimalDialog {
             paint()
         }
         addView(chip)
+    }
+
+    /** Chips in the same style as the title toggle: the chosen one white with a white outline. */
+    private fun segmentedRow(ctx: Context, seg: Segmented) = LinearLayout(ctx).apply {
+        orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+        setPadding(dp(ctx, 20), dp(ctx, 12), dp(ctx, 12), dp(ctx, 12))
+        addView(TextView(ctx).apply {
+            text = seg.label; setTextColor(MUTED); textSize = 12f; typeface = tf(ctx)
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        })
+        val chips = seg.options.map { option ->
+            TextView(ctx).apply {
+                text = option; textSize = 12f; gravity = Gravity.CENTER
+                setPadding(dp(ctx, 10), dp(ctx, 5), dp(ctx, 10), dp(ctx, 5))
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { marginEnd = dp(ctx, 8) }
+                isClickable = true; isFocusable = true
+            }
+        }
+        fun paint() {
+            val selected = seg.selected()
+            chips.forEachIndexed { i, chip ->
+                val on = i == selected
+                chip.typeface = tf(ctx)
+                chip.setTextColor(if (on) Color.WHITE else MUTED)
+                chip.background = RippleDrawable(ColorStateList.valueOf(PRESS),
+                    GradientDrawable().apply { setColor(BG); setStroke(dp(ctx, 1), if (on) Color.WHITE else DIVIDER) }, null)
+                chip.contentDescription = "${seg.label} ${seg.options[i]}${if (on) ", selected" else ""}"
+            }
+        }
+        chips.forEachIndexed { i, chip ->
+            chip.setOnClickListener { seg.onSelect(i); paint() }
+            addView(chip)
+        }
+        paint()
+    }
+
+    /**
+     * List or grid, with a columns slider that appears once grid is picked. Picking list closes the
+     * dialog; with grid it stays open so the size can be set. Every change is passed on straight away.
+     */
+    fun gridPicker(ctx: Context, title: String, isGrid: Boolean, columns: Int, min: Int, max: Int,
+                   onChange: (grid: Boolean, columns: Int) -> Unit) {
+        val dialog = newDialog(ctx)
+        val root = frame(ctx)
+        root.addView(title(ctx, title)); root.addView(divider(ctx))
+        var grid = isGrid
+        var cols = columns.coerceIn(min, max)
+
+        val sizeLabel = TextView(ctx).apply {
+            setTextColor(MUTED); textSize = 12f; typeface = tf(ctx)
+            setPadding(dp(ctx, 20), dp(ctx, 14), dp(ctx, 20), dp(ctx, 4))
+        }
+        fun showSize() { sizeLabel.text = "columns · $cols" }
+        val sizeSection = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(sizeLabel)
+            addView(SeekBar(ctx).apply {
+                this.max = max - min; progress = cols - min
+                setPadding(dp(ctx, 24), dp(ctx, 8), dp(ctx, 24), dp(ctx, 16))
+                progressTintList = ColorStateList.valueOf(Color.WHITE)
+                progressBackgroundTintList = ColorStateList.valueOf(MUTED)
+                thumbTintList = ColorStateList.valueOf(Color.WHITE)
+                contentDescription = "columns"
+                setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                    override fun onProgressChanged(sb: SeekBar?, value: Int, fromUser: Boolean) {
+                        cols = value + min; showSize(); onChange(true, cols)
+                    }
+                    override fun onStartTrackingTouch(sb: SeekBar?) {}
+                    override fun onStopTrackingTouch(sb: SeekBar?) {}
+                })
+            })
+        }
+
+        lateinit var listRow: LinearLayout
+        lateinit var gridRow: LinearLayout
+        fun paint() {
+            for ((r, on) in listOf(listRow to !grid, gridRow to grid)) {
+                (r.getChildAt(0) as android.widget.ImageView).apply {
+                    setImageResource(if (on) R.drawable.ic_radio_on else R.drawable.ic_radio_off)
+                    imageTintList = ColorStateList.valueOf(if (on) Color.WHITE else MUTED)
+                }
+                (r.getChildAt(1) as TextView).setTextColor(if (on) Color.WHITE else OPTION)
+            }
+            sizeSection.visibility = if (grid) View.VISIBLE else View.GONE
+            showSize()
+        }
+        listRow = row(ctx, R.drawable.ic_radio_off, MUTED, "list", OPTION) {
+            grid = false; onChange(false, cols); dialog.dismiss()
+        }
+        gridRow = row(ctx, R.drawable.ic_radio_off, MUTED, "grid", OPTION) {
+            grid = true; onChange(true, cols); paint()
+        }
+        root.addView(list(ctx, listOf(listRow, gridRow)))
+        root.addView(sizeSection)
+        root.addView(divider(ctx))
+        root.addView(buttonRow(ctx, listOf("done" to { dialog.dismiss() })))
+        paint()
+        show(dialog, root, 290)
     }
 
     private fun divider(ctx: Context) = View(ctx).apply {

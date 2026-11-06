@@ -32,6 +32,39 @@ object Prefs {
     fun searchAtBottom(c: Context) = p(c).getBoolean("search_bottom", false)
     fun setSearchAtBottom(c: Context, v: Boolean) { p(c).edit().putBoolean("search_bottom", v).apply() }
 
+    // --- What's on the home screen ---
+    fun showClock(c: Context) = p(c).getBoolean("show_clock", true)
+    fun setShowClock(c: Context, v: Boolean) { p(c).edit().putBoolean("show_clock", v).apply() }
+
+    fun showDate(c: Context) = p(c).getBoolean("show_date", true)
+    fun setShowDate(c: Context, v: Boolean) { p(c).edit().putBoolean("show_date", v).apply() }
+
+    fun showTodo(c: Context) = p(c).getBoolean("show_todo", true)
+    fun setShowTodo(c: Context, v: Boolean) { p(c).edit().putBoolean("show_todo", v).apply() }
+
+    fun showAllAppsButton(c: Context) = p(c).getBoolean("show_all_apps_button", true)
+    fun setShowAllAppsButton(c: Context, v: Boolean) { p(c).edit().putBoolean("show_all_apps_button", v).apply() }
+
+    fun showSettingsButton(c: Context) = p(c).getBoolean("show_settings_button", true)
+    fun setShowSettingsButton(c: Context, v: Boolean) { p(c).edit().putBoolean("show_settings_button", v).apply() }
+
+    // "both", "icon", "text"
+    fun navStyle(c: Context): String = p(c).getString("nav_style", "both") ?: "both"
+    fun setNavStyle(c: Context, v: String) { p(c).edit().putString("nav_style", v).apply() }
+
+    fun autoKeyboard(c: Context) = p(c).getBoolean("auto_keyboard", true)
+    fun setAutoKeyboard(c: Context, v: Boolean) { p(c).edit().putBoolean("auto_keyboard", v).apply() }
+
+    // All apps view: a list, or a grid (the size is kept while the list is selected)
+    const val MIN_GRID_COLUMNS = 2
+    const val MAX_GRID_COLUMNS = 7
+
+    fun allAppsGrid(c: Context) = p(c).getBoolean("all_apps_grid", false)
+    fun setAllAppsGrid(c: Context, v: Boolean) { p(c).edit().putBoolean("all_apps_grid", v).apply() }
+
+    fun allAppsColumns(c: Context) = p(c).getInt("all_apps_grid_columns", 4)
+    fun setAllAppsColumns(c: Context, v: Int) { p(c).edit().putInt("all_apps_grid_columns", v).apply() }
+
     fun floatingKeyboardLeft(c: Context) = p(c).getBoolean("floating_keyboard_left", false)
     fun setFloatingKeyboardLeft(c: Context, v: Boolean) { p(c).edit().putBoolean("floating_keyboard_left", v).apply() }
 
