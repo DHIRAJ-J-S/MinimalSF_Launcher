@@ -1,0 +1,20 @@
+// Signs the release build in CI, with the key kept in GitHub secrets. It lives outside app/build.gradle
+// so F-Droid, which builds from the same source, still produces an unsigned APK to compare with ours.
+allprojects {
+    afterEvaluate { project ->
+        if (project.plugins.hasPlugin('com.android.application')) {
+            project.android.signingConfigs {
+                ciRelease {
+                    storeFile file(System.getenv('KEYSTORE_FILE'))
+                    storePassword System.getenv('KEYSTORE_PASSWORD')
+                    keyAlias System.getenv('KEY_ALIAS')
+                    keyPassword System.getenv('KEY_PASSWORD')
+                    enableV1Signing true
+                    enableV2Signing true
+                    enableV3Signing true
+                }
+            }
+            project.android.buildTypes.release.signingConfig = project.android.signingConfigs.ciRelease
+        }
+    }
+}
