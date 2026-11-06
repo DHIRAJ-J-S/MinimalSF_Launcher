@@ -1,5 +1,36 @@
 # Changelog
 
+## v1.3
+
+### New
+- **Number shortcuts** - search results are numbered, and typing the number opens that app: `w2` opens the 2nd result for `w`. An app with a number in its name still wins, so `fifa 2` keeps listing "FIFA 22" and "FIFA 23".
+- **Landscape layout** - clock, music and todo on the left, search and apps on the right. Makes room for a floating keyboard (choose its side in settings) and adapts to a full keyboard.
+- **Work profile and dual apps** - work apps are listed as `Name · work` and dual apps (Samsung Dual Messenger, Xiaomi Dual Apps...) as `Name · dual`, each opening in its own profile. Apps with several launcher icons now show all of them.
+- **Hide anything** - the clock, date, screen time, now playing bar and todo list can each be turned off, and so can the all apps and settings buttons. With the settings button hidden, "MinimalSF settings" appears in all apps and search.
+- **Button style** - bottom buttons as icon + text, icon only or text only.
+- **Keyboard option** - choose whether the keyboard opens on its own on the home screen.
+- **All apps grid** - show all apps as a list or a grid of 2-7 columns. Search results stay a list.
+- **App details** - long press shows the package name and version.
+
+### Changed
+- Settings are grouped into a short menu: search & keyboard, home screen, all apps view, font and gestures. Font size moved into the font picker.
+- The RAM indicator is removed.
+- Long lists in dialogs show a scroll bar and fade at the bottom, so it's clear they scroll.
+- In landscape, search and apps use the full width when everything on the left is hidden.
+- Default auto-launch delay is 100ms (was 200ms). A delay you already chose is kept.
+- Preinstalled apps that can't be removed no longer offer uninstall.
+- The 404ms easter egg is blue.
+
+### Fixes
+- Clock kept the old time after a timezone change.
+- Typing went into the todo box after returning home if it had focus.
+- Now playing bar read "no music playing" while the home screen was partly covered.
+- Android 13+ blocks accessibility and notification access for some sideloaded installs; the app now explains how to allow it.
+- First flashlight toggle did nothing if the torch was already on.
+- Crash when searching an app name containing letters like "İ".
+- Crash when the camera service refused a flashlight request.
+- Crash on every start if the saved todo list was damaged.
+
 ## v1.2.2
 - New app ID: `io.github.dhiraj_j_s.minimalsf` (was `com.minimal.launcher`, which another app on Google Play already uses)
 - Because the ID changed, this installs as a separate app. Set it as your home app, then uninstall the old version. Settings do not carry over.

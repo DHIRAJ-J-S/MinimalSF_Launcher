@@ -7,8 +7,10 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 
 <a href="https://github.com/DHIRAJ-J-S/MinimalSF_Launcher/releases/latest"><img src="https://raw.githubusercontent.com/Kunzisoft/Github-badge/main/get-it-on-github.png" alt="Get it on GitHub" height="54"></a>
 <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/DHIRAJ-J-S/MinimalSF_Launcher"><img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="54"></a>
+<a href="https://f-droid.org/packages/io.github.dhiraj_j_s.minimalsf/"><img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" height="54"></a>
 
 [![Latest release](https://img.shields.io/github/v/release/DHIRAJ-J-S/MinimalSF_Launcher?label=release)](https://github.com/DHIRAJ-J-S/MinimalSF_Launcher/releases/latest)
+[![F-Droid](https://img.shields.io/f-droid/v/io.github.dhiraj_j_s.minimalsf?label=F-Droid)](https://f-droid.org/packages/io.github.dhiraj_j_s.minimalsf/)
 [![Downloads](https://img.shields.io/github/downloads/DHIRAJ-J-S/MinimalSF_Launcher/total?label=downloads)](https://github.com/DHIRAJ-J-S/MinimalSF_Launcher/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 ![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)
@@ -18,10 +20,11 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 ## Features
 
 ### ⌨️ Type-to-Launch
-- Keyboard always ready - start typing immediately to search apps
+- Keyboard ready as soon as you're home - start typing immediately (can be turned off)
 - Real-time filtering as you type
 - Single match auto-launches after configurable delay
 - Press enter / go on the keyboard to open the top result
+- Results are numbered: type the number after your search to open that app, e.g. `w2` opens the 2nd result for `w`
 - Results ranked: name prefix → keyword → word start → anywhere
 - Matched letters highlighted in white
 - Custom keywords per app (long press → set keyword), e.g. `wa` → WhatsApp
@@ -32,8 +35,9 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 - Adjustable delay
 
 ### 📱 All Apps
-- Tap "all apps" to browse every installed app in a scrollable list
-- Long press any app for app info, uninstall, keyword, or hide from search
+- Tap "all apps" to browse every installed app, as a list or a grid of 2-7 columns
+- Work profile and dual apps are included, labelled `· work` and `· dual`
+- Long press any app for its shortcuts, package name, version, app info, uninstall, keyword, or hide from search
 - Hidden apps stay in all apps, dimmed
 
 ### 🔽 Pull-Down Notifications
@@ -56,7 +60,7 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 - Long press to open the music player
 
 ### ☐ Inline Todo Checklist
-- Always visible at the bottom of the home screen
+- At the bottom of the home screen (can be hidden)
 - Add tasks, mark as done, mark as important (red), or remove
 - Tap the `!` button to toggle important
 
@@ -64,6 +68,7 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 - Large monospace bold clock on home screen
 - Tap to open the system clock/alarms app
 - 12-hour AM/PM by default, switchable to 24-hour
+- Clock and date can each be hidden
 
 ### 👆 Gestures
 - Settings → gestures: double tap, long press, swipe left / right / up / down on empty home space
@@ -79,9 +84,10 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 - Long press an app to see its time today
 - Needs "usage access" (Settings → Usage access). Read on-device only; totals can differ from Digital Wellbeing by a few minutes
 
-### 💾 RAM Display
-- Small text in the top-right showing free/total RAM
-- Updates every 2 seconds while the home screen is visible
+### 🧹 Show only what you want
+- Hide the clock, date, screen time, now playing bar or todo list
+- Bottom buttons as icon + text, icon only or text only, or hide them
+- With the settings button hidden, "MinimalSF settings" appears in all apps and search
 
 ### 🎨 Custom UI
 - Every dialog, prompt, menu, and picker uses a custom-built monochrome UI system
@@ -91,24 +97,33 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 
 ## ⚙️ Settings
 
-| Setting | Options |
+| Menu | Options |
 |---|---|
-| 🏠 Set as default launcher | Shows ✓ when active |
-| 🔄 Change default launcher | Opens Android home settings |
-| 🎵 Now playing bar | On / Off |
-| ⏱️ Auto-launch delay | 0–600ms step slider |
-| 🕐 Clock format | 12h / 24h |
-| 🔍 Search bar position | Top / Bottom |
-| 🔎 Search matching | Starts with / Contains |
-| 🔤 Font | Monospace / Clean / Google Fonts download / Import .ttf/.otf |
-| ⏱️ Screen time | On / Off |
-| 🔠 Font size / Clock size | Small / Default / Large |
-| 👆 Double tap action | Lock screen / Open app |
-| ✊ Long press action | None / Open app |
+| 🏠 Default launcher | Shows ✓ when set; opens Android's home app settings |
+| ⌨️ Search & keyboard | Auto-launch delay (0–600ms), matching (starts with / contains), open keyboard on home, floating keyboard side (landscape) |
+| 🖥️ Home screen | Show clock / date / screen time / now playing bar / todo, clock format and size, search bar position, bottom buttons and their style |
+| 📱 All apps view | List or grid, with 2–7 columns |
+| 🔤 Font | Monospace / clean / phone default / Google Fonts / import .ttf/.otf, bold, and size |
+| 👆 Gestures | Double tap, long press and four swipes, each with its own action |
 
 ---
 
-## 🆕 What's new in 1.2
+## 🆕 What's new in 1.3
+
+- **Number shortcuts:** results are numbered, and typing the number opens that app (`w2` opens the 2nd result for `w`)
+- **Landscape layout:** clock, music and todo on one side, search and apps on the other, with room for a floating keyboard
+- **Show only what you want:** hide the clock, date, todo and more, and choose how the bottom buttons look
+- **All apps as a grid**, with 2–7 columns
+- **Work profile and dual apps** are listed, and apps with several launcher icons show all of them
+- **Simpler settings**, grouped into a short menu
+- Option to keep the keyboard closed on the home screen
+- Long press shows the app's package name and version
+- The RAM indicator is removed, and the default auto-launch delay is now 100ms
+- Fixed: clock after a timezone change, todo box keeping focus, now playing bar, first flashlight toggle, and three crashes
+
+See [CHANGELOG.md](CHANGELOG.md) for the full list.
+
+## What's new in 1.2
 
 - **Smoother:** the layout now moves with the keyboard animation instead of jumping when the keyboard opens or closes
 - **Faster:** apps load once in the background and refresh only when something is installed or removed, so returning home no longer re-reads every app icon on the main thread
@@ -174,7 +189,7 @@ From the command line: `./gradlew assembleRelease`
 
 - **Obtainium** (recommended): tap the Obtainium badge at the top on your phone, or add `https://github.com/DHIRAJ-J-S/MinimalSF_Launcher` in [Obtainium](https://github.com/ImranR98/Obtainium). You get updates automatically from each new release.
 - **Direct download:** get the latest APK from [Releases](../../releases).
-- **F-Droid:** submitted and awaiting review.
+- **F-Droid:** [get it on F-Droid](https://f-droid.org/en/packages/io.github.dhiraj_j_s.minimalsf/). New versions appear there a few days after each release.
 
 ---
 

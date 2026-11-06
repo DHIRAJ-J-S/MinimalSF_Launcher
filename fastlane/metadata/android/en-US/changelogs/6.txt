@@ -1,0 +1,8 @@
+• Number shortcuts: type w2 to open the 2nd result for w
+• Hide the clock, date, todo, music bar or buttons
+• All apps as a list or a grid of 2-7 columns
+• Work profile and dual apps are listed
+• Landscape layout for full and floating keyboards
+• Simpler settings menu, option to keep the keyboard closed
+• RAM indicator removed, default delay now 100ms
+• Fixed: clock after a timezone change, todo focus, now playing bar, flashlight, 3 crashes
