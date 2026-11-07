@@ -14,6 +14,7 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 [![Downloads](https://img.shields.io/github/downloads/DHIRAJ-J-S/MinimalSF_Launcher/total?label=downloads)](https://github.com/DHIRAJ-J-S/MinimalSF_Launcher/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 ![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)
+[![VirusTotal: v1.3.1, 0 detections](https://img.shields.io/badge/VirusTotal-v1.3.1%20%C2%B7%200%20detections-brightgreen?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/468948d1536ddfa744b284f9008558381e8d36e6d26e3cdbab1119fc92cc3b46/detection)
 
 ⭐ **Like MinimalSF? Star the repo** - it helps more people find it.
 
@@ -143,6 +144,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the full list.
 - 🚫 **Zero location** - no GPS or location access
 - 💾 All data stored locally on device in SharedPreferences
 - 🔓 Full source code available for audit
+- 🧪 Release APKs scanned on [VirusTotal](https://www.virustotal.com/gui/file/468948d1536ddfa744b284f9008558381e8d36e6d26e3cdbab1119fc92cc3b46/detection): 0 detections (v1.3.1)
 
 ---
 
