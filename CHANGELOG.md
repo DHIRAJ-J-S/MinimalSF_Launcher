@@ -5,10 +5,18 @@
 ### New
 - **List without icons** - all apps view has a third choice, "list - without icons", for a list of just app names. It also applies to search results. Grid view always shows icons.
 - **RAM indicator** - back as an option: settings > home screen > show ram. Off by default.
+- **A-Z scrubber** - an optional letter strip on the right of all apps; touch or drag a letter to jump there. Turn it on in settings. Off by default.
+- **Search in the app picker** - pick an app for a gesture by typing part of its name.
+- **Undo for removed tasks** - removing a todo shows "removed · undo" for a few seconds.
+- **Edit tasks** - long press a task to read all of it and change it.
 
 ### Changed
 - **New app icon** - a sharper M with a raised SF and a cursor, with a themed (monochrome) version for Android 13+.
-- **Smaller download** - the APK is about 0.86 MB, down from 1.6 MB, after removing an unused library.
+- **Smaller download** - the APK is about 0.87 MB, down from 1.6 MB, after removing an unused library.
+- **One welcome prompt** instead of three in a row. It offers to set MinimalSF as home (only if it isn't already); the now playing bar stays in settings.
+- **Easier to read** - faint text and icons (tips, todo buttons, dialog hints, RAM) are brighter, at least 4.5:1 contrast.
+- **Dialogs follow the font size setting**, and long messages scroll instead of being cut off in landscape.
+- **Music bar** shows press feedback, and works with TalkBack (tap to play or pause, actions for next and previous).
 - **Bottom search bar** - the best result now sits right above the search bar, closest to your thumb.
 - **Double tap and long press** work anywhere on empty space, not just over the app list.
 
@@ -18,10 +26,12 @@
 - Hardware keyboard Enter in the todo box showing a grey block over the results
 - Saved shortcuts can now be removed (gestures > saved shortcuts > remove a saved shortcut)
 - An uninstalled app keeping its keyword, so no other app could use it
-- First-run setup asking to set MinimalSF as default launcher when it already was
 - Clock wrapping onto two lines with a large clock and a big system font
 - Lock prompt always saying "double-tap", whichever gesture you used
 - Notification and quick settings gestures now say so when the phone doesn't allow them
+- Turning bold off in the font picker left the picker's own text bold until it was reopened
+- An empty gap on the home screen when both tip gestures were set to none
+- A leaked window error when pressing home with a settings dialog open
 
 ## v1.3
 
