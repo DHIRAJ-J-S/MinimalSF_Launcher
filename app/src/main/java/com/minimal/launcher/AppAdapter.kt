@@ -83,6 +83,7 @@ class AppAdapter(
     override fun onBindViewHolder(holder: VH, position: Int) {
         val app = apps[position]
         holder.icon.setImageDrawable(app.icon)
+        holder.icon.colorFilter = if (colourIcons) null else GRAYSCALE
         holder.icon.visibility = if (grid || showIcons) View.VISIBLE else View.GONE
 
         holder.name.typeface = typeface
@@ -123,7 +124,6 @@ class AppAdapter(
         val badge: TextView? = v.findViewById(R.id.appBadge)
 
         init {
-            icon.colorFilter = GRAYSCALE
             v.setOnClickListener { appAt()?.let { onClick(it, icon) } }
             v.setOnLongClickListener { appAt()?.let { onLongClick(it) }; true }
         }
@@ -137,5 +137,7 @@ class AppAdapter(
         private const val VIEW_ROW = 0
         private const val VIEW_GRID = 1
         val GRAYSCALE = ColorMatrixColorFilter(ColorMatrix().apply { setSaturation(0f) })
+        /** Icons in colour instead of black and white (MinimalSF Extended's "coloured app icons"). */
+        var colourIcons = false
     }
 }

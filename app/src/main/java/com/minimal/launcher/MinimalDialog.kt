@@ -98,14 +98,49 @@ object MinimalDialog {
      * labels line up; [trailing] shows a dim value on the right of a row (e.g. usage time).
      */
     fun options(ctx: Context, title: String? = null, items: Array<String>, icons: IntArray? = null,
-                subtitle: String? = null, trailing: Array<String?>? = null, onSelect: (Int) -> Unit) {
+                subtitle: String? = null, trailing: Array<String?>? = null,
+                iconDrawables: List<android.graphics.drawable.Drawable?>? = null, onSelect: (Int) -> Unit) {
         val dialog = newDialog(ctx)
         val root = frame(ctx)
         if (title != null) { root.addView(title(ctx, title, subtitle)); root.addView(divider(ctx)) }
         root.addView(list(ctx, items.mapIndexed { i, label ->
-            row(ctx, icons?.getOrNull(i), OPTION, label, OPTION, trailing?.getOrNull(i)) { dialog.dismiss(); onSelect(i) }
+            row(ctx, icons?.getOrNull(i), OPTION, label, OPTION, trailing?.getOrNull(i),
+                iconDrawables?.getOrNull(i)) { dialog.dismiss(); onSelect(i) }
         }))
         show(dialog, root, 290)
+    }
+
+    /**
+     * A row in [toggleMenu]. With [isOn] it's a toggle: tapping it calls [onClick] and redraws its
+     * [on] / [off] in place, the dialog stays open. Without, it's a link (→) that closes the dialog first.
+     */
+    class MenuRow(val label: String, val icon: Int? = null, val drawable: android.graphics.drawable.Drawable? = null,
+                  val isOn: (() -> Boolean)? = null, val onClick: () -> Unit)
+
+    /** A menu of toggles and links, like a settings page in a box (settings > extended menu). */
+    fun toggleMenu(ctx: Context, title: String, subtitle: String? = null, rows: List<MenuRow>) {
+        val dialog = newDialog(ctx)
+        val root = frame(ctx)
+        root.addView(title(ctx, title, subtitle)); root.addView(divider(ctx))
+        root.addView(list(ctx, rows.map { r ->
+            val isOn = r.isOn
+            lateinit var view: LinearLayout
+            fun paint() {
+                if (isOn == null) return
+                val on = isOn()
+                (view.getChildAt(view.childCount - 1) as TextView).apply {
+                    text = if (on) "[on]" else "[off]"
+                    setTextColor(if (on) Color.WHITE else MUTED)
+                }
+                view.contentDescription = "${r.label}, ${if (on) "on" else "off"}"
+            }
+            view = row(ctx, r.icon, OPTION, r.label, OPTION, if (isOn == null) "→" else "", r.drawable) {
+                if (isOn == null) { dialog.dismiss(); r.onClick() } else { r.onClick(); paint() }
+            }
+            paint()
+            view
+        }))
+        show(dialog, root, 300)
     }
 
     /** An on/off switch shown on the right of a dialog's title (e.g. "bold" in the font picker). */
@@ -159,12 +194,14 @@ object MinimalDialog {
     }
 
     private fun row(ctx: Context, icon: Int?, iconTint: Int, label: String, labelColor: Int,
-                    trailing: String? = null, onClick: () -> Unit) = LinearLayout(ctx).apply {
+                    trailing: String? = null, drawable: android.graphics.drawable.Drawable? = null,
+                    onClick: () -> Unit) = LinearLayout(ctx).apply {
         orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
         minimumHeight = dp(ctx, 48)
         setPadding(dp(ctx, 20), dp(ctx, 12), dp(ctx, 20), dp(ctx, 12))
-        if (icon != null) addView(android.widget.ImageView(ctx).apply {
-            setImageResource(icon)
+        // An icon from another app (e.g. the MinimalSF Extended plugin) comes as a Drawable
+        if (icon != null || drawable != null) addView(android.widget.ImageView(ctx).apply {
+            if (drawable != null) setImageDrawable(drawable) else setImageResource(icon!!)
             imageTintList = ColorStateList.valueOf(iconTint)
             layoutParams = LinearLayout.LayoutParams(dp(ctx, 18), dp(ctx, 18)).apply { marginEnd = dp(ctx, 16) }
         })
@@ -525,12 +562,24 @@ object MinimalDialog {
                 layoutParams = LinearLayout.LayoutParams(dp(ctx, 1), ViewGroup.LayoutParams.MATCH_PARENT)
                 setBackgroundColor(DIVIDER)
             })
-            addView(TextView(ctx).apply {
-                text = label; setTextColor(OPTION); font(ctx, 12f); gravity = Gravity.CENTER
-                // Three buttons share the width, so they get less side padding to keep labels on one line
-                val side = dp(ctx, if (buttons.size > 2) 6 else 16)
+            // Three buttons share the width, so they get less side padding to keep labels on one line
+            val side = dp(ctx, if (buttons.size > 2) 6 else 16)
+            // A label ending in ↗ opens a website: the arrow is drawn as an icon, since fonts draw it tiny
+            val external = label.endsWith("↗")
+            addView(LinearLayout(ctx).apply {
+                orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
                 setPadding(side, dp(ctx, 14), side, dp(ctx, 14))
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                addView(TextView(ctx).apply {
+                    text = label.removeSuffix("↗").trimEnd(); setTextColor(OPTION); font(ctx, 12f); gravity = Gravity.CENTER
+                })
+                if (external) addView(android.widget.ImageView(ctx).apply {
+                    setImageResource(R.drawable.ic_external)
+                    imageTintList = ColorStateList.valueOf(OPTION)
+                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                    layoutParams = LinearLayout.LayoutParams(dp(ctx, 14), dp(ctx, 14)).apply { marginStart = dp(ctx, 6) }
+                })
+                if (external) contentDescription = label.removeSuffix("↗").trimEnd() + ", opens a website"
                 pressable(this, action)
             })
         }

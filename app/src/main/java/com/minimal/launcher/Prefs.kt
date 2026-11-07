@@ -203,5 +203,8 @@ object Prefs {
 
     // Search mode: true = match from beginning only, false = match anywhere
     fun searchFromStart(c: Context) = p(c).getBoolean("search_from_start", true)
+    /** An app with a keyword is searched by the keyword alone, not its name. Off by default. */
+    fun keywordReplacesName(c: Context) = p(c).getBoolean("keyword_replaces_name", false)
+    fun setKeywordReplacesName(c: Context, on: Boolean) { p(c).edit().putBoolean("keyword_replaces_name", on).apply() }
     fun setSearchFromStart(c: Context, v: Boolean) { p(c).edit().putBoolean("search_from_start", v).apply() }
 }

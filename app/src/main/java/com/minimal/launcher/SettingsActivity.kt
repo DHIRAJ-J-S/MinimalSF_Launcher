@@ -168,6 +168,26 @@ class SettingsActivity : AppCompatActivity() {
             "[" + listOfNotNull(name, "bold".takeIf { Prefs.fontBold(this) }, size).joinToString(" · ") + "]"
         }) { showFontMenu() }
         row("gestures", { "→" }) { startActivity(Intent(this, GesturesActivity::class.java)) }
+        // The optional plugin: its menu when it's installed, otherwise what it adds and where to get it
+        val extendedRow = row("want more features?", { "→" }) {
+            if (Extended.available(this)) { showExtendedMenu(); return@row }
+            MinimalDialog.confirm(this, title = "MinimalSF Extended",
+                message = "install the MinimalSF Extended plugin to add these to the long press menu " +
+                    "(needs Shizuku or root):\n\n" +
+                    "• open in freeform\n• force stop\n• clear cache (root)\n• clear data\n• freeze\n\n" +
+                    "it also adds an extended menu here, no Shizuku or root needed: coloured icons, " +
+                    "hide the search bar, auto-launch on / off and what the long press menu shows.",
+                // ↗: opens a website
+                negativeText = "close", positiveText = "get it ↗",
+                onPositive = {
+                    try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(EXTENDED_URL))) }
+                    catch (_: Exception) { Toast.makeText(this, "no browser found", Toast.LENGTH_SHORT).show() }
+                })
+        }
+        updaters += {
+            extendedRow.findViewById<TextView>(R.id.rowLabel).text =
+                if (Extended.available(this)) "extended menu" else "want more features?"
+        }
 
         findViewById<View>(R.id.creditsGroup).visibility = View.VISIBLE
         findViewById<TextView>(R.id.versionText).text = "MinimalSF v" + try {
@@ -189,6 +209,7 @@ class SettingsActivity : AppCompatActivity() {
         row("search matching", { if (Prefs.searchFromStart(this)) "[starts with]" else "[contains]" }) {
             Prefs.setSearchFromStart(this, !Prefs.searchFromStart(this)); refresh()
         }
+        toggle("keyword replaces app name", { Prefs.keywordReplacesName(this) }) { Prefs.setKeywordReplacesName(this, it) }
         toggle("open keyboard on home", { Prefs.autoKeyboard(this) }) { Prefs.setAutoKeyboard(this, it) }
         row("floating keyboard side (landscape)", { if (Prefs.floatingKeyboardLeft(this)) "[left]" else "[right]" }) {
             Prefs.setFloatingKeyboardLeft(this, !Prefs.floatingKeyboardLeft(this)); refresh()
@@ -359,8 +380,44 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * settings > extended menu. The plugin decides what's listed (pages, toggles), so new options arrive
+     * with a plugin update; MinimalSF draws them and saves changes back to the plugin. [page] is a page
+     * row whose rows to show, null for the top level.
+     */
+    private fun showExtendedMenu(page: Extended.Setting? = null) {
+        val all = Extended.settings(this)
+        // A plugin older than 1.1 has no menu: just open it, as before
+        if (all.isEmpty()) { openExtended(); return }
+        val rows = all.filter { it.parent == (page?.id ?: "") }.map { s ->
+            when (s.kind) {
+                Extended.TOGGLE -> {
+                    var on = s.on
+                    // MinimalSF's own long press entries use its own icons
+                    val own = EXTENDED_ICONS[s.id]
+                    MinimalDialog.MenuRow(s.label, icon = own, drawable = if (own == null) s.icon else null, isOn = { on }) {
+                        if (Extended.set(this, s.id, !on)) on = !on
+                        else Toast.makeText(this, "couldn't save - is MinimalSF Extended still installed?", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                Extended.PAGE -> MinimalDialog.MenuRow(s.label, drawable = s.icon) { showExtendedMenu(s) }
+                else -> MinimalDialog.MenuRow(s.label, drawable = s.icon) { openExtended() }
+            }
+        }
+        MinimalDialog.toggleMenu(this, title = page?.label ?: "extended menu",
+            subtitle = if (page == null) "from MinimalSF Extended" else null, rows = rows)
+    }
+
+    private fun openExtended() {
+        packageManager.getLaunchIntentForPackage(Extended.PACKAGE)?.let { startActivity(it) }
+    }
+
     companion object {
         private const val REPO_URL = "https://github.com/DHIRAJ-J-S/MinimalSF_Launcher"
+        private const val EXTENDED_URL = "https://github.com/DHIRAJ-J-S/MinimalSF_Extended/releases/latest"
+        // Icons for MinimalSF's own long press entries in the extended menu, the same as in that menu
+        private val EXTENDED_ICONS = mapOf("menu_shortcuts" to R.drawable.ic_shortcut, "menu_app_info" to R.drawable.ic_info,
+            "menu_uninstall" to R.drawable.ic_uninstall, "menu_keyword" to R.drawable.ic_keyword, "menu_hide" to R.drawable.ic_eye_off)
         private const val EXTRA_PAGE = "page"
         // Each page's title, and its row on the main menu
         private const val PAGE_SEARCH = "search & keyboard"

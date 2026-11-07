@@ -18,6 +18,8 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 
 ⭐ **Like MinimalSF? Star the repo** - it helps more people find it.
 
+🧩 **Need more features?** Get the optional [MinimalSF Extended](https://github.com/DHIRAJ-J-S/MinimalSF_Extended) plugin.
+
 ---
 
 ## Features
@@ -31,6 +33,7 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 - Results ranked: name prefix → keyword → word start → anywhere
 - Matched letters highlighted in white
 - Custom keywords per app (long press → set keyword), e.g. `wa` → WhatsApp
+- Optional: an app's keyword replaces its name in search (settings → search & keyboard, off by default)
 - Search bar position configurable: top or bottom of screen
 
 ### 🚀 Auto-Launch
@@ -41,7 +44,7 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 - Tap "all apps" to browse every installed app, as a list, a list of names only (no icons), or a grid of 2-7 columns
 - Optional A-Z strip on the right: touch or drag a letter to jump there (settings, off by default)
 - Work profile and dual apps are included, labelled `· work` and `· dual`
-- Long press any app for its shortcuts, package name, version, app info, uninstall, keyword, or hide from search
+- Long press any app for its shortcuts, package name, version, app info, uninstall, keyword, or hide from search (plus **extended…** with the plugin below)
 - Hidden apps stay in all apps, dimmed
 
 ### 🎵 Now Playing Music Bar
@@ -94,26 +97,22 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 | Menu | Options |
 |---|---|
 | 🏠 Default launcher | Shows ✓ when set; opens Android's home app settings |
-| ⌨️ Search & keyboard | Auto-launch delay (0–600ms), matching (starts with / contains), open keyboard on home, floating keyboard side (landscape) |
+| ⌨️ Search & keyboard | Auto-launch delay (0–600ms), matching (starts with / contains), keyword replaces app name, open keyboard on home, floating keyboard side (landscape) |
 | 🖥️ Home screen | Show clock / date / RAM / screen time / now playing bar / todo, clock format and size, search bar position, bottom buttons and their style |
 | 📱 All apps view | List, list without icons, or grid with 2–7 columns |
 | 🔠 A-Z scrubber | Letter strip on the right of all apps (off by default) |
 | 🔤 Font | Monospace / clean / phone default / Google Fonts / import .ttf/.otf, bold, and size |
 | 👆 Gestures | Double tap, long press and four swipes, each with its own action |
+| 🧩 Extended menu | With the MinimalSF Extended plugin: long press menu entries, coloured icons, hidden search bar, auto-launch on/off (otherwise "want more features?") |
 
 ---
 
-## 🆕 What's new in 1.3.1
+## 🆕 What's new in 1.3.2
 
-- **List without icons:** all apps and search results as plain app names
-- **RAM indicator** is back as an option, showing used / total memory
-- **A-Z scrubber** for all apps (optional) and **search in the app picker**
-- **Todo:** undo a removed task, and long press a task to read and edit it
-- **New app icon**, with a themed version for Android 13+
-- **Under 1 MB:** the download is about 0.87 MB, down from 1.6 MB
-- **One welcome prompt** instead of three, brighter faint text, and dialogs that follow the font size
-- Bottom search bar puts the best result next to your thumb; double tap and long press work on any empty space
-- Fixed: gestures running while results were showing, keyboard not coming back after back, saved shortcuts that couldn't be removed, and more
+- **[MinimalSF Extended](https://github.com/DHIRAJ-J-S/MinimalSF_Extended) support:** an optional plugin for open in freeform, force stop, clear cache / data and freeze, through Shizuku or root
+- **Extended menu** (with the plugin): pick what the long press menu shows, coloured icons, hide the empty search bar, turn off auto-launch for a single match
+- **Keyword replaces app name:** an app with a keyword can be found by the keyword alone (off by default)
+- **Smaller:** about 0.81 MB, down from 0.87 MB
 
 See [CHANGELOG.md](CHANGELOG.md) for the full list.
 

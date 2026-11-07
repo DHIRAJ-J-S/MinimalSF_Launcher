@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.3.2
+
+### New
+- **MinimalSF Extended support** - with the optional [MinimalSF Extended](https://github.com/DHIRAJ-J-S/MinimalSF_Extended) plugin (through Shizuku or root), long press an app > "extended…" to open it in freeform, force stop it, clear its cache or data, or freeze it. Without the plugin, nothing changes.
+- **"want more features?"** in settings says what the plugin adds and links to it; with the plugin installed it becomes **"extended menu"**.
+- **Keyword replaces app name** - an app with a keyword is found by its keyword alone, so its name no longer crowds other results. Off by default; settings > search & keyboard.
+- **Extended menu** (plugin 1.1 or newer) - choose which entries the long press menu shows, and turn on extras that stay out of the launcher itself: hide the search bar until you type, coloured app icons, and turning off auto-launch for a single match. The plugin decides what's in this menu, so new options can arrive with a plugin update.
+
+### Changes
+- **Smaller APK** - about 66 KB smaller (813 KB), from tighter code and resource shrinking. No visible change.
+
 ## v1.3.1
 
 ### New

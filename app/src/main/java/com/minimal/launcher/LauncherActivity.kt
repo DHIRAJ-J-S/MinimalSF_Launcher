@@ -117,6 +117,8 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
     // Set when any setting changes; UI is re-applied on next resume instead of every resume
     private var uiDirty = true
+    // What the optional MinimalSF Extended plugin's toggles change here; the defaults without it
+    private var ext = Extended.DEFAULT
     private val prefsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> uiDirty = true }
     private val appsListener: () -> Unit = { onAppsChanged() }
 
@@ -567,6 +569,29 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
     // --- Settings-driven UI ---
 
+    /**
+     * Re-reads MinimalSF Extended's toggles (settings > extended menu). Cheap: they're a local copy, and
+     * the plugin itself isn't woken. Also catches the plugin being uninstalled, which puts back the defaults.
+     */
+    private fun applyExtended() {
+        val old = ext
+        ext = Extended.flags(this)
+        if (ext.colourIcons != AppAdapter.colourIcons) {
+            AppAdapter.colourIcons = ext.colourIcons
+            @Suppress("NotifyDataSetChanged") adapter.notifyDataSetChanged()
+        }
+        autoLaunchIcon.colorFilter = if (ext.colourIcons) null else AppAdapter.GRAYSCALE
+        if (old.hideSearch != ext.hideSearch) updateSearchVisibility()
+    }
+
+    /**
+     * "hide search bar until you type": the bar is see-through while it's empty, but stays in place, so
+     * typing still goes into it and tapping where it is still opens the keyboard.
+     */
+    private fun updateSearchVisibility() {
+        searchInput.alpha = if (ext.hideSearch && searchInput.text.isNullOrEmpty()) 0f else 1f
+    }
+
     private fun applyUi() {
         uiDirty = false
         applySearchPosition()
@@ -617,6 +642,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
     override fun onResume() {
         super.onResume()
         if (uiDirty) applyUi()
+        applyExtended()
 
         handler.removeCallbacks(clockRunnable); handler.post(clockRunnable)
         handler.removeCallbacks(ramRunnable)
@@ -980,12 +1006,16 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         val currentKeyword = Prefs.getKeywords(this)[app.key] ?: ""
 
         // The app's own shortcuts first ("new chat", "navigate home"…), like other launchers show them
-        val shortcuts = AppShortcuts.forPackage(this, app.packageName, app.user).take(4)
+        // Each entry can be turned off in settings > extended menu > long press menu (MinimalSF Extended)
+        val shortcuts = if (!ext.shows("menu_shortcuts")) emptyList()
+            else AppShortcuts.forPackage(this, app.packageName, app.user).take(4)
         val menu = listOfNotNull(
-            Triple("app info", R.drawable.ic_info) { keepAllAppsOpen = showingAllApps; try { getSystemService(LauncherApps::class.java)?.startAppDetailsActivity(app.component, app.user, null, null) } catch (_: Exception) {}; Unit },
-            if (!app.canUninstall) null else Triple("uninstall", R.drawable.ic_uninstall) { keepAllAppsOpen = showingAllApps; try { startActivity(Intent(Intent.ACTION_DELETE, Uri.parse("package:${app.packageName}")).putExtra(Intent.EXTRA_USER, app.user)) } catch (_: Exception) {}; Unit },
-            Triple("set keyword", R.drawable.ic_keyword) { promptKeyword(app, currentKeyword) },
-            Triple(if (isHidden) "show in search" else "hide from search", if (isHidden) R.drawable.ic_eye else R.drawable.ic_eye_off) {
+            if (!ext.shows("menu_app_info")) null else Triple("app info", R.drawable.ic_info) { keepAllAppsOpen = showingAllApps; try { getSystemService(LauncherApps::class.java)?.startAppDetailsActivity(app.component, app.user, null, null) } catch (_: Exception) {}; Unit },
+            if (!app.canUninstall || !ext.shows("menu_uninstall")) null else Triple("uninstall", R.drawable.ic_uninstall) { keepAllAppsOpen = showingAllApps; try { startActivity(Intent(Intent.ACTION_DELETE, Uri.parse("package:${app.packageName}")).putExtra(Intent.EXTRA_USER, app.user)) } catch (_: Exception) {}; Unit },
+            if (!ext.shows("menu_keyword")) null else Triple("set keyword", R.drawable.ic_keyword) { promptKeyword(app, currentKeyword) },
+            // Only with the optional MinimalSF Extended plugin installed, and some of its actions turned on
+            if (!Extended.available(this) || !ext.anyAction) null else Triple("extended…", R.drawable.ic_extended) { showExtended(app) },
+            if (!ext.shows("menu_hide")) null else Triple(if (isHidden) "show in search" else "hide from search", if (isHidden) R.drawable.ic_eye else R.drawable.ic_eye_off) {
                 Prefs.setAppHidden(this, app.key, !isHidden)
                 if (showingAllApps) { adapter.update(AppRepository.apps, "", Prefs.getHiddenApps(this)); updateScrubber() }
                 else filterApps(searchInput.text.toString(), allowAutoLaunch = false)
@@ -1008,6 +1038,26 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
                 return@options
             }
             menu[picked - shortcuts.size].third()
+        }
+    }
+
+    /** MinimalSF Extended's actions (force stop, clear, freeze, freeform), run by the plugin through Shizuku. */
+    /**
+     * The plugin decides what's in this menu (names, icons, confirm prompts), so new actions arrive with
+     * a plugin update; MinimalSF only shows the list and passes the chosen action back.
+     */
+    private fun showExtended(app: AppInfo) {
+        val actions = Extended.actions(this)
+        if (actions.isEmpty()) { Toast.makeText(this, "MinimalSF Extended has no actions to offer", Toast.LENGTH_SHORT).show(); return }
+        MinimalDialog.options(this, title = app.label, subtitle = "MinimalSF Extended",
+            items = actions.map { it.label }.toTypedArray(), iconDrawables = actions.map { it.icon }) { picked ->
+            val action = actions[picked]
+            val run = { if (!Extended.run(this, action.id, app)) Toast.makeText(this, "MinimalSF Extended isn't available", Toast.LENGTH_SHORT).show() }
+            val confirm = action.confirm
+            if (confirm == null) run()
+            else MinimalDialog.confirm(this, title = confirm.title.replace("{app}", app.label),
+                message = confirm.message.replace("{app}", app.label),
+                positiveText = confirm.button, negativeText = "cancel", onPositive = run)
         }
     }
 
@@ -1189,9 +1239,17 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
     /**
      * Ranking: label prefix → keyword prefix → word start → anywhere in label → anywhere in keyword.
-     * "starts with" mode only allows the first two.
+     * "starts with" mode only allows the first two. With "keyword replaces app name" on, an app that has
+     * a keyword matches on the keyword only.
      */
-    private fun rank(app: AppInfo, q: String, keyword: String?, fromStart: Boolean): Int? {
+    private fun rank(app: AppInfo, q: String, keyword: String?, fromStart: Boolean, keywordOnly: Boolean): Int? {
+        // "keyword replaces app name": an app with a keyword is found by its keyword alone
+        if (keywordOnly && keyword != null) return when {
+            keyword.startsWith(q) -> 0
+            fromStart -> null
+            keyword.contains(q) -> 3
+            else -> null
+        }
         val label = app.labelLower
         return when {
             label.startsWith(q) -> 0
@@ -1206,9 +1264,10 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
     private fun searchApps(q: String, hidden: Set<String>, keywords: Map<String, String>): List<AppInfo> {
         val fromStart = Prefs.searchFromStart(this)
+        val keywordOnly = Prefs.keywordReplacesName(this)
         return AppRepository.apps.mapNotNull { app ->
             if (app.key in hidden) null
-            else rank(app, q, keywords[app.key], fromStart)?.let { app to it }
+            else rank(app, q, keywords[app.key], fromStart, keywordOnly)?.let { app to it }
         }.sortedBy { it.second }.map { it.first }
     }
 
@@ -1220,6 +1279,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         val q = raw.trim().lowercase()
         updateCompact()
         clearBtn.visibility = if (raw.isNotEmpty()) View.VISIBLE else View.GONE
+        updateSearchVisibility()
 
         if (q.isNotEmpty() && showingAllApps) setAllAppsMode(false)
         if (q.isEmpty()) {
@@ -1256,7 +1316,12 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
         when (matches.size) {
             0 -> { bestMatch = null; showResults(Results.NO_MATCH) }
-            1 -> showAutoLaunch(matches[0], allowAutoLaunch)
+            // With auto-launch turned off (MinimalSF Extended) a single match is a normal row: tap or Enter opens it
+            1 -> if (ext.autoLaunch) showAutoLaunch(matches[0], allowAutoLaunch) else {
+                bestMatch = matches[0]
+                adapter.update(matches, q, hidden)
+                showResults(Results.LIST)
+            }
             else -> {
                 bestMatch = matches[0]
                 adapter.update(matches, q, hidden)

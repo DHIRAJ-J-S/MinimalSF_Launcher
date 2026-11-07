@@ -1,0 +1,4 @@
+• Works with the optional MinimalSF Extended plugin (Shizuku or root): open in freeform, force stop, clear cache or data, and freeze from the long press menu
+• With the plugin, settings > extended menu: choose what the long press menu shows, coloured icons, hide the empty search bar, turn off auto-launch for one match
+• New option: a keyword can replace the app's name in search (off by default)
+• About 66 KB smaller

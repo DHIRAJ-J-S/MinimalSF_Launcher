@@ -4,7 +4,18 @@
 
     <!-- App list: only apps with a launcher icon are needed, so a <queries> intent is enough.
          QUERY_ALL_PACKAGES is a restricted permission and isn't needed. -->
+    <!-- MinimalSF Extended (optional plugin): only apps signed with the same key get this. Declared
+         here as well as in the plugin, so it's granted whichever app is installed first. -->
+    <permission
+        android:name="io.github.dhiraj_j_s.minimalsf.permission.EXTENDED"
+        android:protectionLevel="signature"
+        android:label="use MinimalSF Extended"
+        android:description="@string/extended_permission_desc" />
+    <uses-permission android:name="io.github.dhiraj_j_s.minimalsf.permission.EXTENDED" />
+
     <queries>
+        <!-- The optional MinimalSF Extended plugin -->
+        <package android:name="io.github.dhiraj_j_s.minimalsf.extended" />
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
