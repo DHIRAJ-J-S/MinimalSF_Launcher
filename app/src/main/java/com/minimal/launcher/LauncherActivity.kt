@@ -7,6 +7,7 @@ import android.content.ComponentName
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.LauncherApps
+import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Paint
@@ -23,6 +24,7 @@ import android.os.Looper
 import android.provider.AlarmClock
 import android.provider.Settings
 import android.text.Editable
+import android.text.TextPaint
 import android.text.TextWatcher
 import android.util.TypedValue
 import android.view.GestureDetector
@@ -163,6 +165,8 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
     }
 
     private lateinit var homeGestureDetector: GestureDetector
+    // The gesture that ran last, so prompts can name it ("to lock the screen with swipe down...")
+    private var lastGesture = Prefs.Gesture.DOUBLE_TAP
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -208,20 +212,24 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         findViewById<View>(R.id.musicTipClose).setOnClickListener { dismissMusicTip() }
 
         clockText.setOnClickListener { openClock() }
+        // Re-fit when the clock's space changes (rotation, landscape panes)
+        (clockText.parent as View).addOnLayoutChangeListener { _, l, _, r, _, ol, _, or, _ ->
+            if (r - l != or - ol) fitClock()
+        }
 
-        // Home gesture: double-tap & long-press on empty space (not on an app row)
+        // Home gesture: double-tap & long-press on empty space anywhere on the home screen. Fed from
+        // dispatchTouchEvent, so it also works where the app list is short or squeezed by the keyboard.
         homeGestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
             override fun onDoubleTap(e: MotionEvent): Boolean {
-                if (!isEmptySpace(e)) return false
+                if (!gesturesAllowed() || !isEmptySpace(e)) return false
                 dismissHomeTip()
                 runGesture(Prefs.Gesture.DOUBLE_TAP)
                 return true
             }
             override fun onLongPress(e: MotionEvent) {
-                if (isEmptySpace(e)) runGesture(Prefs.Gesture.LONG_PRESS)
+                if (gesturesAllowed() && isEmptySpace(e)) runGesture(Prefs.Gesture.LONG_PRESS)
             }
         })
-        appList.setOnTouchListener { _, event -> homeGestureDetector.onTouchEvent(event); false }
 
         adapter = AppAdapter(
             onClick = { app, view -> launchApp(app, view) },
@@ -229,6 +237,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         )
         appList.layoutManager = LinearLayoutManager(this)
         appList.adapter = adapter
+        appList.defaultFocusHighlightEnabled = false
         appList.itemAnimator = null
         appList.setHasFixedSize(true)
 
@@ -239,10 +248,13 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         })
         // Enter / "go" launches the top result
         searchInput.setOnEditorActionListener { _, actionId, event ->
+            val hardwareEnter = event?.keyCode == KeyEvent.KEYCODE_ENTER
             val enter = actionId == EditorInfo.IME_ACTION_GO || actionId == EditorInfo.IME_ACTION_DONE ||
-                (event?.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN)
+                (hardwareEnter && event?.action == KeyEvent.ACTION_DOWN)
             if (enter) bestMatch?.let { launchApp(it, if (results == Results.AUTO) autoLaunchIcon else null) }
-            enter
+            // Also swallow Enter's key-up: unhandled, Android moves focus down to the results list.
+            // It lands here after a hardware Enter in the todo box, which moves focus to search.
+            enter || hardwareEnter
         }
         clearBtn.setOnClickListener { searchInput.text.clear(); searchInput.requestFocus() }
 
@@ -254,8 +266,14 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
             supportsChangeAnimations = false
             addDuration = 140; removeDuration = 140; moveDuration = 160
         }
-        todoInput.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_DONE) { addTodo(); true } else false
+        todoInput.setOnEditorActionListener { _, actionId, event ->
+            when {
+                actionId == EditorInfo.IME_ACTION_DONE -> { addTodo(); true }
+                // A hardware Enter arrives as key events; handling both stops Android moving focus
+                // down to the results list (which shows as a grey block)
+                event?.keyCode == KeyEvent.KEYCODE_ENTER -> { if (event.action == KeyEvent.ACTION_DOWN) addTodo(); true }
+                else -> false
+            }
         }
         findViewById<View>(R.id.addTodoBtn).setOnClickListener { addTodo() }
         screenTimeText.setOnClickListener { onScreenTimeClick() }
@@ -368,7 +386,10 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         setIntent(intent)
         // Home pressed while already home
         resetHomeState()
+        // Already home with the keyboard closed (e.g. with back): home brings it back. Coming from
+        // another app, the window isn't focused yet and onWindowFocusChanged shows it instead.
         if (!Prefs.autoKeyboard(this)) hideKeyboard()
+        else if (hasWindowFocus() && !Prefs.isFirstLaunch(this)) showKeyboard()
     }
 
     /**
@@ -473,12 +494,26 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
     // --- Gestures ---
 
-    private fun isEmptySpace(e: MotionEvent) = appList.findChildViewUnder(e.x, e.y) == null
+    /** Not on anything you can tap: the clock, search, todo, music bar, buttons or an app row. */
+    private fun isEmptySpace(e: MotionEvent): Boolean {
+        if (startsIn(e, clockText, screenTimeText, searchTopSlot, searchBottomSlot, autoLaunchBar,
+                musicBar, musicTipView, todoSection, navGroup)) return false
+        if (!appList.isShown || !appList.getGlobalVisibleRect(hitRect)) return true
+        if (!hitRect.contains(e.rawX.toInt(), e.rawY.toInt())) return true
+        return appList.findChildViewUnder(e.rawX - hitRect.left, e.rawY - hitRect.top) == null
+    }
+
+    /**
+     * Home gestures only run on the plain home screen. While searching or in all apps the screen is a
+     * list, where a stray double tap (lock) or a swipe would interrupt picking an app.
+     */
+    private fun gesturesAllowed() = !showingAllApps && searchInput.text.isNullOrEmpty()
 
     /** Runs whatever the user put on [g] in settings → gestures. Returns false if it's set to "none". */
     private fun runGesture(g: Prefs.Gesture): Boolean {
         val code = Prefs.gesture(this, g)
         if (code.isEmpty()) return false
+        lastGesture = g
         if (g == Prefs.Gesture.LONG_PRESS) appList.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
         return GestureActions.run(this, code, this)
     }
@@ -500,14 +535,14 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
     override fun lockScreen() {
         if (!LockAccessibilityService.isSupported) {
             MinimalDialog.confirm(this, title = "screen lock unavailable",
-                message = "double-tap to lock needs android 9 or newer.\n\nyou can set double tap to open an app instead in settings.",
+                message = "locking the screen needs android 9 or newer.\n\nyou can set ${lastGesture.title} to do something else in settings → gestures.",
                 positiveText = "ok", onPositive = {})
             return
         }
         if (LockAccessibilityService.instance?.lock() == true) return
         MinimalDialog.confirm(this,
             title = "enable screen lock",
-            message = "to lock screen by double-tap, MinimalSF needs accessibility permission.\n\nonly the lock action is used - no data is read or collected.",
+            message = "to lock the screen with ${lastGesture.title}, MinimalSF needs accessibility permission.\n\nonly the lock action is used - no data is read or collected.",
             positiveText = "open settings",
             negativeText = "cancel",
             onPositive = { SpecialAccess.open(this, Settings.ACTION_ACCESSIBILITY_SETTINGS) }
@@ -553,7 +588,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
         FontManager.applyTo(rootLayout, tf, m, skip = setOf(clockText))
         clockText.typeface = Typeface.create(tf, Typeface.BOLD)
-        clockText.setTextSize(TypedValue.COMPLEX_UNIT_SP, FontManager.clockSizeSp(this))
+        fitClock()
 
         adapter.setTypeface(tf, m)
         todoAdapter.setTypeface(tf, m)
@@ -623,7 +658,13 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         )
     }
 
+    private fun isDefaultLauncher(): Boolean {
+        val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        return packageManager.resolveActivity(home, PackageManager.MATCH_DEFAULT_ONLY)?.activityInfo?.packageName == packageName
+    }
+
     private fun showDefaultLauncherPrompt() {
+        if (isDefaultLauncher()) { showMusicSetupPrompt(); return }
         MinimalDialog.confirm(this, title = "set as default launcher?",
             message = "set MinimalSF as your default home screen for the fastest app launching experience.",
             positiveText = "set default", negativeText = "later",
@@ -651,12 +692,14 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
     // --- Swipes (down / up / left / right) on the home screen ---
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        // Watches every touch for double tap / long press; it never consumes them
+        homeGestureDetector.onTouchEvent(ev)
         when (ev.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 pullStartX = ev.rawX; pullStartY = ev.rawY; pullTriggered = false
                 // Only watch directions that have an action, and never steal a scroll from a list
                 // that can still move that way, or a horizontal drag inside the music bar / text boxes
-                val home = !showingAllApps
+                val home = gesturesAllowed()
                 swipeDown = home && Prefs.gesture(this, Prefs.Gesture.SWIPE_DOWN).isNotEmpty() && !startsInList(ev, -1)
                 swipeUp = home && Prefs.gesture(this, Prefs.Gesture.SWIPE_UP).isNotEmpty() && !startsInList(ev, 1)
                 val sideways = home && !startsIn(ev, musicBar, searchInput, todoInput)
@@ -702,7 +745,11 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
     @SuppressLint("WrongConstant")
     private fun expandStatusBar(method: String) {
-        try { Class.forName("android.app.StatusBarManager").getMethod(method).invoke(getSystemService("statusbar")) } catch (_: Exception) {}
+        try { Class.forName("android.app.StatusBarManager").getMethod(method).invoke(getSystemService("statusbar")) }
+        catch (_: Exception) {
+            val what = if (method == "expandSettingsPanel") "quick settings" else "notifications"
+            Toast.makeText(this, "can't open $what on this phone - try another gesture action", Toast.LENGTH_SHORT).show()
+        }
     }
 
     // --- Media ---
@@ -1031,8 +1078,13 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         if (columns > 0) {
             if (current is GridLayoutManager) current.spanCount = columns
             else appList.layoutManager = GridLayoutManager(this, columns)
-        } else if (current is GridLayoutManager) {
-            appList.layoutManager = LinearLayoutManager(this)
+        } else {
+            val lm = (current as? LinearLayoutManager)?.takeIf { it !is GridLayoutManager }
+                ?: LinearLayoutManager(this).also { appList.layoutManager = it }
+            // With the search bar at the bottom, results start right above it (closest to the thumb).
+            // Positions don't change, so the number badges still read 1, 2, 3 from the best match.
+            val reverse = Prefs.searchAtBottom(this) && !showingAllApps
+            if (lm.reverseLayout != reverse) lm.reverseLayout = reverse
         }
         adapter.setGrid(columns > 0)
         adapter.setShowIcons(Prefs.showAppIcons(this))
@@ -1075,6 +1127,27 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         val now = Date()
         clockText.text = fmt.format(now)
         dateText.text = dateFormat.format(now)
+        fitClock()
+    }
+
+    /** The chosen clock size, made smaller only if the time wouldn't fit on one line. */
+    private fun fitClock() {
+        val dm = resources.displayMetrics
+        val want = FontManager.clockSizeSp(this)
+        val avail = (clockText.parent as View).width - clockText.paddingLeft - clockText.paddingRight
+        var size = want
+        if (avail > 0) {
+            val paint = TextPaint(clockText.paint)
+            val text = clockText.text.toString()
+            while (size > 20f) {
+                paint.textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, size, dm)
+                if (paint.measureText(text) <= avail) break
+                size -= 2f
+            }
+        }
+        if (clockText.textSize != TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, size, dm)) {
+            clockText.setTextSize(TypedValue.COMPLEX_UNIT_SP, size)
+        }
     }
 
     // --- Search ---
