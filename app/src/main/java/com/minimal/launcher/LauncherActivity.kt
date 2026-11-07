@@ -1059,7 +1059,8 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         ramText.text = try {
             val mi = ActivityManager.MemoryInfo()
             (getSystemService(ACTIVITY_SERVICE) as ActivityManager).getMemoryInfo(mi)
-            "ram ${mi.availMem / (1024 * 1024)}/${mi.totalMem / (1024 * 1024)}mb"
+            // Used/total, the way storage and system monitors read; availMem includes what Android can reclaim
+            "ram ${(mi.totalMem - mi.availMem) / (1024 * 1024)}/${mi.totalMem / (1024 * 1024)}mb"
         } catch (_: Exception) { "ram ---mb" }
     }
 

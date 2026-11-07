@@ -39,7 +39,7 @@ object Prefs {
     fun showDate(c: Context) = p(c).getBoolean("show_date", true)
     fun setShowDate(c: Context, v: Boolean) { p(c).edit().putBoolean("show_date", v).apply() }
 
-    // Off by default: free/total memory in the top corner, for those who like the look
+    // Off by default: used/total memory in the top corner, for those who like the look
     fun showRam(c: Context) = p(c).getBoolean("show_ram", false)
     fun setShowRam(c: Context, v: Boolean) { p(c).edit().putBoolean("show_ram", v).apply() }
 
