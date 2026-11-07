@@ -665,23 +665,27 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
     // --- First launch ---
 
     /**
-     * One welcome prompt instead of three in a row. Setting it as home is the only step that matters on
-     * day one; the now playing bar and the rest are mentioned and live in settings.
+     * One welcome prompt instead of three in a row: a tip, a way into settings, and - only when it isn't
+     * already - setting MinimalSF as the default launcher. The now playing bar and the rest live in settings.
      */
     private fun showFirstLaunchSetup() {
         val isDefault = isDefaultLauncher()
-        MinimalDialog.confirm(this, title = "welcome to MinimalSF",
-            message = "type to launch any app - one match opens on its own.\n\n" +
-                "fonts, gestures, the now playing bar and more are in settings." +
-                (if (isDefault) "" else "\n\nset MinimalSF as your home screen so it opens when you press home."),
-            positiveText = if (isDefault) "go to settings" else "set as home",
-            negativeText = "later",
-            onPositive = {
-                if (isDefault) startActivity(Intent(this, SettingsActivity::class.java))
-                else try { startActivity(Intent(Settings.ACTION_HOME_SETTINGS)) } catch (_: Exception) {}
-            },
-            onNegative = {}
-        )
+        val openSettings = { startActivity(Intent(this, SettingsActivity::class.java)) }
+        val message = "type to launch any app - one match opens on its own.\n\n" +
+            "tip: long press an app to give it a keyword, like \"wa\" for whatsapp.\n\n" +
+            "fonts, gestures, the now playing bar and more are in settings." +
+            (if (isDefault) "" else "\n\nset MinimalSF as your default launcher so it opens when you press home.")
+        if (isDefault) {
+            MinimalDialog.confirm(this, title = "welcome to MinimalSF", message = message,
+                negativeText = "later", onNegative = {},
+                positiveText = "settings", onPositive = { openSettings() })
+        } else {
+            MinimalDialog.confirm(this, title = "welcome to MinimalSF", message = message,
+                negativeText = "later", onNegative = {},
+                neutralText = "settings", onNeutral = { openSettings() },
+                positiveText = "set default",
+                onPositive = { try { startActivity(Intent(Settings.ACTION_HOME_SETTINGS)) } catch (_: Exception) {} })
+        }
     }
 
     private fun isDefaultLauncher(): Boolean {

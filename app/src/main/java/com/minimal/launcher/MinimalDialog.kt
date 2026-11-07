@@ -71,9 +71,10 @@ object MinimalDialog {
         addView(child)
     }
 
+    /** Message with up to three buttons, left to right: [negativeText], [neutralText], [positiveText]. */
     fun confirm(ctx: Context, title: String? = null, message: String, positiveText: String,
                 negativeText: String? = null, onPositive: () -> Unit, onNegative: (() -> Unit)? = null,
-                onDismiss: (() -> Unit)? = null) {
+                onDismiss: (() -> Unit)? = null, neutralText: String? = null, onNeutral: (() -> Unit)? = null) {
         val dialog = newDialog(ctx)
         // Fires for any close: button, back, or tapping outside
         if (onDismiss != null) dialog.setOnDismissListener { onDismiss() }
@@ -86,6 +87,7 @@ object MinimalDialog {
         root.addView(divider(ctx))
         val buttons = mutableListOf<Pair<String, () -> Unit>>()
         if (negativeText != null) buttons += negativeText to { dialog.dismiss(); onNegative?.invoke(); Unit }
+        if (neutralText != null) buttons += neutralText to { dialog.dismiss(); onNeutral?.invoke(); Unit }
         buttons += positiveText to { dialog.dismiss(); onPositive() }
         root.addView(buttonRow(ctx, buttons))
         show(dialog, root, 300)
@@ -525,7 +527,9 @@ object MinimalDialog {
             })
             addView(TextView(ctx).apply {
                 text = label; setTextColor(OPTION); font(ctx, 12f); gravity = Gravity.CENTER
-                setPadding(dp(ctx, 16), dp(ctx, 14), dp(ctx, 16), dp(ctx, 14))
+                // Three buttons share the width, so they get less side padding to keep labels on one line
+                val side = dp(ctx, if (buttons.size > 2) 6 else 16)
+                setPadding(side, dp(ctx, 14), side, dp(ctx, 14))
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                 pressable(this, action)
             })

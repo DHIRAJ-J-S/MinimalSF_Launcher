@@ -13,7 +13,7 @@
 ### Changed
 - **New app icon** - a sharper M with a raised SF and a cursor, with a themed (monochrome) version for Android 13+.
 - **Smaller download** - the APK is about 0.87 MB, down from 1.6 MB, after removing an unused library.
-- **One welcome prompt** instead of three in a row. It offers to set MinimalSF as home (only if it isn't already); the now playing bar stays in settings.
+- **One welcome prompt** instead of three in a row, with a tip, a settings button and - only if it isn't already - a button to set MinimalSF as the default launcher. The now playing bar stays in settings.
 - **Easier to read** - faint text and icons (tips, todo buttons, dialog hints, RAM) are brighter, at least 4.5:1 contrast.
 - **Dialogs follow the font size setting**, and long messages scroll instead of being cut off in landscape.
 - **Music bar** works with TalkBack (tap to play or pause, hold to open, actions for next and previous).
