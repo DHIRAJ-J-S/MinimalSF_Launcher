@@ -9,7 +9,9 @@ allprojects {
                     storePassword System.getenv('KEYSTORE_PASSWORD')
                     keyAlias System.getenv('KEY_ALIAS')
                     keyPassword System.getenv('KEY_PASSWORD')
-                    enableV1Signing true
+                    // v1 (JAR) signing is only read by Android 6 and older. minSdk is 26, so it was
+                    // dead weight: about 34 KB of META-INF files in every APK.
+                    enableV1Signing false
                     enableV2Signing true
                     enableV3Signing true
                 }
