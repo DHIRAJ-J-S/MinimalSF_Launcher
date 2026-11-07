@@ -29,7 +29,7 @@
         <!-- Optional (settings > home screen > show ram); sits above the clock's top margin -->
         <TextView android:id="@+id/ramText" android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:layout_gravity="end|top" android:paddingEnd="16dp" android:paddingTop="8dp"
-            android:textColor="#FF555555" android:textSize="11sp" android:fontFamily="monospace"
+            android:textColor="@color/grey_faint" android:textSize="11sp" android:fontFamily="monospace"
             android:visibility="gone" />
     </FrameLayout>
 
@@ -68,16 +68,23 @@
     </FrameLayout>
 
     <!-- Results -->
-    <androidx.recyclerview.widget.RecyclerView android:id="@+id/appList"
-        android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
-        android:paddingHorizontal="20dp" android:paddingTop="4dp" android:clipToPadding="false" android:scrollbars="none"
-        android:overScrollMode="never" />
+    <FrameLayout android:id="@+id/appListFrame"
+        android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <androidx.recyclerview.widget.RecyclerView android:id="@+id/appList"
+            android:layout_width="match_parent" android:layout_height="match_parent"
+            android:paddingHorizontal="20dp" android:paddingTop="4dp" android:clipToPadding="false" android:scrollbars="none"
+            android:overScrollMode="never" />
+        <!-- All apps only: A-Z jump strip over the list's right padding -->
+        <com.minimal.launcher.AlphabetScrubber android:id="@+id/alphabetScrubber"
+            android:layout_width="24dp" android:layout_height="match_parent" android:layout_gravity="end"
+            android:paddingVertical="8dp" android:visibility="gone" />
+    </FrameLayout>
 
     <!-- Home tip (shown on first use, inside the black space). Text is set in code. -->
     <TextView android:id="@+id/homeTipView"
         android:layout_width="match_parent" android:layout_height="wrap_content"
         android:gravity="center" android:paddingVertical="20dp"
-        android:textColor="#FF444444" android:textSize="12sp"
+        android:textColor="@color/grey_faint" android:textSize="12sp"
         android:fontFamily="monospace" android:lineSpacingMultiplier="1.4"
         android:visibility="gone" />
 
@@ -114,14 +121,14 @@
         android:paddingHorizontal="20dp" android:paddingVertical="6dp"
         android:background="@color/search_bg" android:visibility="gone">
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="«" android:textColor="#FF444444" android:textSize="12sp" android:fontFamily="monospace" />
+            android:text="«" android:textColor="@color/grey_faint" android:textSize="12sp" android:fontFamily="monospace" />
         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
             android:gravity="center" android:text="swipe to skip  ·  tap to play/pause  ·  hold to open"
-            android:textColor="#FF444444" android:textSize="10sp" android:fontFamily="monospace" />
+            android:textColor="@color/grey_faint" android:textSize="10sp" android:fontFamily="monospace" />
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="»" android:textColor="#FF444444" android:textSize="12sp" android:fontFamily="monospace" />
+            android:text="»" android:textColor="@color/grey_faint" android:textSize="12sp" android:fontFamily="monospace" />
         <ImageView android:id="@+id/musicTipClose" android:layout_width="32dp" android:layout_height="32dp"
-            android:padding="9dp" android:src="@drawable/ic_close" app:tint="#FF555555"
+            android:padding="9dp" android:src="@drawable/ic_close" app:tint="@color/grey_faint"
             android:background="@drawable/ripple_borderless" android:contentDescription="dismiss tip"
             android:clickable="true" android:focusable="true" />
     </LinearLayout>
@@ -129,7 +136,8 @@
     <!-- Music bar -->
     <LinearLayout android:id="@+id/musicBar" android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="20dp"
-        android:paddingVertical="14dp" android:background="@color/search_bg" android:visibility="gone">
+        android:paddingVertical="14dp" android:background="@drawable/ripple_music" android:visibility="gone"
+        android:clickable="true" android:focusable="true" android:contentDescription="now playing - tap to play or pause, hold to open">
         <!-- Drawn icon, not a ▶/⏸ character: some OEM fonts (e.g. Samsung) force ⏸ to colour emoji -->
         <ImageView android:id="@+id/musicIcon" android:layout_width="18dp" android:layout_height="18dp"
             android:layout_marginEnd="14dp" android:src="@drawable/ic_music" app:tint="@color/grey_dim"
@@ -151,6 +159,12 @@
                 android:fontFamily="monospace" android:letterSpacing="0.06" />
             <TextView android:id="@+id/todoCount" android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:textColor="@color/grey_mid" android:textSize="11sp" android:fontFamily="monospace" />
+            <!-- Shown for a few seconds after a task is removed -->
+            <TextView android:id="@+id/todoUndo" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginVertical="-8dp" android:paddingHorizontal="8dp" android:paddingVertical="8dp"
+                android:layout_marginEnd="-8dp" android:text="removed · undo" android:textColor="@color/grey_text"
+                android:textSize="11sp" android:fontFamily="monospace" android:background="@drawable/ripple_borderless"
+                android:clickable="true" android:focusable="true" android:visibility="gone" />
         </LinearLayout>
         <com.minimal.launcher.MaxHeightRecyclerView android:id="@+id/todoList"
             android:layout_width="match_parent" android:layout_height="wrap_content" android:maxHeight="140dp"

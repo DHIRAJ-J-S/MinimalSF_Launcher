@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Music bar: its usual background with press feedback on top -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="#22FFFFFF">
+    <item android:drawable="@color/search_bg" />
+</ripple>

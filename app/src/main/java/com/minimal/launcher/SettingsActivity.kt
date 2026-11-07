@@ -140,7 +140,7 @@ class SettingsActivity : AppCompatActivity() {
 
         pageRow(PAGE_SEARCH)
         pageRow(PAGE_HOME)
-        // These two have one setting each, so they open a dialog rather than a page
+        // All apps view and font open a dialog rather than a page
         row("all apps view", {
             when {
                 Prefs.allAppsGrid(this) -> "[grid · ${Prefs.allAppsColumns(this)} columns]"
@@ -156,6 +156,7 @@ class SettingsActivity : AppCompatActivity() {
                 Prefs.setAllAppsColumns(this, columns); refresh()
             }
         }
+        toggle("a-z scrubber in all apps", { Prefs.showAlphabetScrubber(this) }) { Prefs.setShowAlphabetScrubber(this, it) }
         row("font", {
             val name = when (Prefs.fontStyle(this)) {
                 "clean" -> "clean"

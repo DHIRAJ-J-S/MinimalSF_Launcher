@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
-    <color name="grey_dark">#FF111111</color>
     <color name="grey_mid">#FF666666</color>
     <color name="grey_text">#FFBBBBBB</color>
     <color name="grey_dim">#FF888888</color>
+    <!-- Faint small text and icons: 5.3:1 on black, 4.9:1 on search_bg (4.5:1 is the target for small text) -->
+    <color name="grey_faint">#FF808080</color>
     <color name="grey_border">#FF222222</color>
     <color name="search_bg">#FF0D0D0D</color>
 </resources>

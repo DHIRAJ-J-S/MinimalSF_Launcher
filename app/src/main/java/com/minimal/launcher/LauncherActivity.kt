@@ -100,6 +100,9 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
     private lateinit var todoSection: View
     private lateinit var todoInput: EditText
     private lateinit var todoCount: TextView
+    private lateinit var todoUndo: TextView
+    private lateinit var appListFrame: View
+    private lateinit var scrubber: AlphabetScrubber
     private var todos = mutableListOf<TodoItem>()
     private lateinit var todoAdapter: InlineTodoAdapter
 
@@ -199,6 +202,10 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         todoSection = findViewById(R.id.todoSection)
         todoInput = findViewById(R.id.todoInput)
         todoCount = findViewById(R.id.todoCount)
+        todoUndo = findViewById(R.id.todoUndo)
+        appListFrame = findViewById(R.id.appListFrame)
+        scrubber = findViewById(R.id.alphabetScrubber)
+        scrubber.onJump = { pos -> (appList.layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(pos, 0) }
         headerGroup = findViewById(R.id.headerGroup)
         resultsGroup = findViewById(R.id.resultsGroup)
         footerGroup = findViewById(R.id.footerGroup)
@@ -301,7 +308,21 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
                 return false
             }
         })
-        musicBar.setOnTouchListener { _, event -> musicGesture.onTouchEvent(event); true }
+        musicBar.setOnTouchListener { v, event ->
+            // The detector eats every touch, so the ripple is driven by hand
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> { v.background?.setHotspot(event.x, event.y); v.isPressed = true }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> v.isPressed = false
+                MotionEvent.ACTION_MOVE -> if (abs(event.x - (v.getTag(R.id.tag_touch_x) as? Float ?: event.x)) > dp(16f)) v.isPressed = false
+            }
+            if (event.actionMasked == MotionEvent.ACTION_DOWN) v.setTag(R.id.tag_touch_x, event.x)
+            musicGesture.onTouchEvent(event); true
+        }
+        // TalkBack doesn't send touches: double tap is a click, and skip / open are in its actions menu
+        musicBar.setOnClickListener { if (musicNeedsAccess) openNotificationAccess() else togglePlayPause() }
+        musicBar.setOnLongClickListener { openMusicPlayer(); true }
+        ViewCompat.addAccessibilityAction(musicBar, "next track") { _, _ -> skipNext(); true }
+        ViewCompat.addAccessibilityAction(musicBar, "previous track") { _, _ -> skipPrev(); true }
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -331,7 +352,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
     private fun onAppsChanged() {
         // Refresh whatever is on screen. Only auto-launch if the user is actively on the home screen
         // (e.g. typed before the first load finished), not because a package changed in the background.
-        if (showingAllApps) adapter.update(AppRepository.apps, "", Prefs.getHiddenApps(this))
+        if (showingAllApps) { adapter.update(AppRepository.apps, "", Prefs.getHiddenApps(this)); updateScrubber() }
         else filterApps(searchInput.text.toString(), allowAutoLaunch = hasWindowFocus())
 
         if (Prefs.isFirstLaunch(this)) { Prefs.setFirstLaunchDone(this); showFirstLaunchSetup() }
@@ -467,8 +488,11 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
             .mapNotNull { (g, verb) ->
                 Prefs.gesture(this, g).takeIf { it.isNotEmpty() }?.let { "$verb: ${GestureActions.label(this, it).lowercase()}" }
             }.joinToString("\n\n")
-        homeTipView.visibility = if (results == Results.IDLE && !showingAllApps) View.VISIBLE else View.GONE
+        homeTipView.visibility = if (homeTipWanted(results)) View.VISIBLE else View.GONE
     }
+
+    /** The tip only shows on the idle home screen, and not at all when both its gestures are set to none. */
+    private fun homeTipWanted(state: Results) = state == Results.IDLE && !showingAllApps && homeTipView.text.isNotEmpty()
 
     private fun dismissHomeTip() {
         if (!Prefs.homeTipShown(this)) {
@@ -561,7 +585,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         updateHomeTip()
         clockFormat = null
         updateClock()
-        if (showingAllApps) adapter.update(AppRepository.apps, "", Prefs.getHiddenApps(this))
+        if (showingAllApps) { adapter.update(AppRepository.apps, "", Prefs.getHiddenApps(this)); updateScrubber() }
         // The floating keyboard side may have changed
         ViewCompat.requestApplyInsets(rootLayout)
     }
@@ -592,6 +616,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
         adapter.setTypeface(tf, m)
         todoAdapter.setTypeface(tf, m)
+        scrubber.setTypeface(tf)
 
         // Icon size follows the text size, so re-apply after a font size change
         applyNavButtons()
@@ -647,46 +672,29 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
     // --- First launch ---
 
+    /**
+     * One welcome prompt instead of three in a row. Setting it as home is the only step that matters on
+     * day one; the now playing bar and the rest are mentioned and live in settings.
+     */
     private fun showFirstLaunchSetup() {
+        val isDefault = isDefaultLauncher()
         MinimalDialog.confirm(this, title = "welcome to MinimalSF",
             message = "type to launch any app - one match opens on its own.\n\n" +
-                "fonts, gestures, screen time, search and more can be changed in settings.",
-            positiveText = "go to settings", negativeText = "later",
-            // Settings has the default-launcher row too, so the next prompt isn't needed after it
-            onPositive = { startActivity(Intent(this, SettingsActivity::class.java)) },
-            onNegative = { showDefaultLauncherPrompt() }
+                "fonts, gestures, the now playing bar and more are in settings." +
+                (if (isDefault) "" else "\n\nset MinimalSF as your home screen so it opens when you press home."),
+            positiveText = if (isDefault) "go to settings" else "set as home",
+            negativeText = "later",
+            onPositive = {
+                if (isDefault) startActivity(Intent(this, SettingsActivity::class.java))
+                else try { startActivity(Intent(Settings.ACTION_HOME_SETTINGS)) } catch (_: Exception) {}
+            },
+            onNegative = {}
         )
     }
 
     private fun isDefaultLauncher(): Boolean {
         val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
         return packageManager.resolveActivity(home, PackageManager.MATCH_DEFAULT_ONLY)?.activityInfo?.packageName == packageName
-    }
-
-    private fun showDefaultLauncherPrompt() {
-        if (isDefaultLauncher()) { showMusicSetupPrompt(); return }
-        MinimalDialog.confirm(this, title = "set as default launcher?",
-            message = "set MinimalSF as your default home screen for the fastest app launching experience.",
-            positiveText = "set default", negativeText = "later",
-            onPositive = {
-                try { startActivity(Intent(Settings.ACTION_HOME_SETTINGS)) } catch (_: Exception) {}
-                handler.postDelayed({ showMusicSetupPrompt() }, 500)
-            },
-            onNegative = { Prefs.setDefaultPromptDismissed(this); showMusicSetupPrompt() }
-        )
-    }
-
-    private fun showMusicSetupPrompt() {
-        if (isFinishing || isDestroyed) return
-        MinimalDialog.confirm(this, title = "enable now playing bar?",
-            message = "show currently playing music on your home screen with playback controls.\n\nrequires notification access to read music info.\n\nno data is tracked.",
-            positiveText = "enable", negativeText = "no thanks",
-            onPositive = {
-                Prefs.setShowMusic(this, true)
-                if (!MusicNotificationListener.isEnabled(this)) openNotificationAccess()
-            },
-            onNegative = { Prefs.setShowMusic(this, false) }
-        )
     }
 
     // --- Swipes (down / up / left / right) on the home screen ---
@@ -871,7 +879,24 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
     private fun saveTodos() { TodoStore.save(this, todos); updateTodoCount() }
 
+    private val hideUndo = Runnable { todoUndo.visibility = View.GONE; updateTodoCount() }
+
+    /** Delete sits next to "important", so a removal can be undone for a few seconds. */
+    private fun offerUndo(item: TodoItem, position: Int) {
+        handler.removeCallbacks(hideUndo)
+        todoCount.visibility = View.GONE
+        todoUndo.visibility = View.VISIBLE
+        todoUndo.setOnClickListener {
+            handler.removeCallbacks(hideUndo)
+            val at = position.coerceIn(0, todos.size)
+            todos.add(at, item); saveTodos(); todoAdapter.notifyItemInserted(at)
+            hideUndo.run()
+        }
+        handler.postDelayed(hideUndo, 5000)
+    }
+
     private fun updateTodoCount() {
+        todoCount.visibility = if (todoUndo.visibility == View.VISIBLE) View.GONE else View.VISIBLE
         todoCount.text = todos.count { !it.done }.let { if (it > 0) "$it" else "" }
     }
 
@@ -901,7 +926,21 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
                 importantBtn.setOnClickListener { edit { it.copy(important = !it.important) } }
                 removeBtn.setOnClickListener {
                     val p = bindingAdapterPosition
-                    if (p != RecyclerView.NO_POSITION) { todos.removeAt(p); saveTodos(); notifyItemRemoved(p) }
+                    if (p != RecyclerView.NO_POSITION) {
+                        val removed = todos.removeAt(p); saveTodos(); notifyItemRemoved(p)
+                        offerUndo(removed, p)
+                    }
+                }
+                // Rows are one line; long press shows the whole task and lets it be changed
+                todoText.setOnLongClickListener {
+                    val p = bindingAdapterPosition
+                    if (p == RecyclerView.NO_POSITION) return@setOnLongClickListener false
+                    val id = todos[p].id
+                    MinimalDialog.textInput(this@LauncherActivity, "edit task", "task", todos[p].text) { text ->
+                        val i = todos.indexOfFirst { it.id == id }
+                        if (i >= 0 && text.isNotEmpty()) { todos[i] = todos[i].copy(text = text); saveTodos(); notifyItemChanged(i) }
+                    }
+                    true
                 }
             }
 
@@ -952,7 +991,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
             Triple("set keyword", R.drawable.ic_keyword) { promptKeyword(app, currentKeyword) },
             Triple(if (isHidden) "show in search" else "hide from search", if (isHidden) R.drawable.ic_eye else R.drawable.ic_eye_off) {
                 Prefs.setAppHidden(this, app.key, !isHidden)
-                if (showingAllApps) adapter.update(AppRepository.apps, "", Prefs.getHiddenApps(this))
+                if (showingAllApps) { adapter.update(AppRepository.apps, "", Prefs.getHiddenApps(this)); updateScrubber() }
                 else filterApps(searchInput.text.toString(), allowAutoLaunch = false)
             }
         )
@@ -1189,7 +1228,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         if (q.isNotEmpty() && showingAllApps) setAllAppsMode(false)
         if (q.isEmpty()) {
             bestMatch = null
-            if (showingAllApps) adapter.update(AppRepository.apps, "", Prefs.getHiddenApps(this))
+            if (showingAllApps) { adapter.update(AppRepository.apps, "", Prefs.getHiddenApps(this)); updateScrubber() }
             else showResults(Results.IDLE)
             return
         }
@@ -1243,14 +1282,14 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         val prev = results
         results = state
         if (state != Results.LIST) adapter.update(emptyList(), "")
-        appList.visibility = if (state == Results.IDLE || state == Results.LIST) View.VISIBLE else View.GONE
+        setAppListShown(state == Results.IDLE || state == Results.LIST)
         noMatch.visibility = if (state == Results.NO_MATCH) View.VISIBLE else View.GONE
         autoLaunchBar.visibility = if (state == Results.AUTO) View.VISIBLE else View.GONE
         if (state == Results.AUTO && prev != Results.AUTO) {
             autoLaunchBar.alpha = 0f
             autoLaunchBar.animate().alpha(1f).setDuration(120).start()
         }
-        if (!Prefs.homeTipShown(this)) homeTipView.visibility = if (state == Results.IDLE && !showingAllApps) View.VISIBLE else View.GONE
+        if (!Prefs.homeTipShown(this)) homeTipView.visibility = if (homeTipWanted(state)) View.VISIBLE else View.GONE
     }
 
     private fun scheduleAutoLaunch(app: AppInfo) {
@@ -1293,7 +1332,22 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         if (searchInput.text.isNotEmpty()) searchInput.text.clear()
         adapter.update(AppRepository.apps, "", Prefs.getHiddenApps(this))
         appList.scrollToPosition(0)
+        updateScrubber()
         hideKeyboard()
+    }
+
+    /** The list and its frame go together, so a hidden list doesn't keep its share of the space. */
+    private fun setAppListShown(shown: Boolean) {
+        val v = if (shown) View.VISIBLE else View.GONE
+        appList.visibility = v; appListFrame.visibility = v
+    }
+
+    /** A-Z strip: all apps only, when turned on in settings and the list is long enough to need it. */
+    private fun updateScrubber() {
+        val items = adapter.items
+        val wanted = showingAllApps && Prefs.showAlphabetScrubber(this) && items.size > 20
+        if (wanted) scrubber.setLabels(items.map { it.label })
+        scrubber.visibility = if (wanted && scrubber.hasLetters) View.VISIBLE else View.GONE
     }
 
     private fun closeAllApps() {
@@ -1304,12 +1358,13 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
     private fun setAllAppsMode(on: Boolean) {
         showingAllApps = on
+        if (!on) scrubber.visibility = View.GONE
         updateCompact()
         applyNavButtons()
         applyAppListLayout()
         if (on) {
             results = Results.LIST
-            appList.visibility = View.VISIBLE
+            setAppListShown(true)
             noMatch.visibility = View.GONE
             autoLaunchBar.visibility = View.GONE
             homeTipView.visibility = View.GONE
@@ -1336,7 +1391,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
     companion object {
         private val RED = Color.parseColor("#FF4444")
         private val GREY = Color.parseColor("#888888")
-        private val FAINT = Color.parseColor("#4A4A4A")
+        private val FAINT = Color.parseColor("#808080")
         private const val KEYBOARD_MIN_DOCKED_DP = 100f
         private const val FLOATING_KEYBOARD_DP = 345f
     }

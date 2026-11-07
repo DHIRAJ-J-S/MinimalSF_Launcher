@@ -34,7 +34,7 @@ object MinimalDialog {
     private val TEXT = Color.parseColor("#FFCCCCCC")
     private val TITLE = Color.WHITE
     private val OPTION = Color.parseColor("#FFDDDDDD")
-    private val MUTED = Color.parseColor("#FF555555")
+    private val MUTED = Color.parseColor("#FF808080")
     private val PRESS = Color.parseColor("#33FFFFFF")
     private val DIVIDER = Color.parseColor("#FF222222")
     private val INPUT_BG = Color.parseColor("#FF0D0D0D")
@@ -45,6 +45,32 @@ object MinimalDialog {
 
     private fun tf(ctx: Context): Typeface = FontManager.getTypeface(ctx)
 
+    /** Sets the dialog font at [sp] scaled by the font size setting, and remembers [sp] for [refont]. */
+    private fun TextView.font(ctx: Context, sp: Float) {
+        setTag(R.id.tag_dialog_sp, sp)
+        textSize = sp * FontManager.sizeMultiplier(ctx)
+        typeface = tf(ctx)
+    }
+
+    /** Re-applies the current font and size to an open dialog after the font settings change. */
+    private fun refont(ctx: Context, v: View) {
+        if (v is TextView) (v.getTag(R.id.tag_dialog_sp) as? Float)?.let { v.font(ctx, it) }
+        if (v is ViewGroup) for (i in 0 until v.childCount) refont(ctx, v.getChildAt(i))
+    }
+
+    /** Scrolls [child] once it's taller than [maxFraction] of the screen, so long text can't push the buttons off. */
+    private fun scrollable(ctx: Context, child: View, maxFraction: Float = 0.5f) = object : android.widget.ScrollView(ctx) {
+        override fun onMeasure(widthSpec: Int, heightSpec: Int) {
+            val max = (resources.displayMetrics.heightPixels * maxFraction).toInt()
+            super.onMeasure(widthSpec, MeasureSpec.makeMeasureSpec(max, MeasureSpec.AT_MOST))
+        }
+    }.apply {
+        overScrollMode = View.OVER_SCROLL_NEVER
+        isScrollbarFadingEnabled = false
+        scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+        addView(child)
+    }
+
     fun confirm(ctx: Context, title: String? = null, message: String, positiveText: String,
                 negativeText: String? = null, onPositive: () -> Unit, onNegative: (() -> Unit)? = null,
                 onDismiss: (() -> Unit)? = null) {
@@ -53,10 +79,10 @@ object MinimalDialog {
         if (onDismiss != null) dialog.setOnDismissListener { onDismiss() }
         val root = frame(ctx)
         if (title != null) { root.addView(title(ctx, title)); root.addView(divider(ctx)) }
-        root.addView(TextView(ctx).apply {
-            text = message; setTextColor(TEXT); textSize = 13f; typeface = tf(ctx)
+        root.addView(scrollable(ctx, TextView(ctx).apply {
+            text = message; setTextColor(TEXT); font(ctx, 13f)
             setPadding(dp(ctx, 20), dp(ctx, 16), dp(ctx, 20), dp(ctx, 16)); setLineSpacing(dp(ctx, 4).toFloat(), 1f)
-        })
+        }))
         root.addView(divider(ctx))
         val buttons = mutableListOf<Pair<String, () -> Unit>>()
         if (negativeText != null) buttons += negativeText to { dialog.dismiss(); onNegative?.invoke(); Unit }
@@ -141,11 +167,11 @@ object MinimalDialog {
             layoutParams = LinearLayout.LayoutParams(dp(ctx, 18), dp(ctx, 18)).apply { marginEnd = dp(ctx, 16) }
         })
         addView(TextView(ctx).apply {
-            text = label; setTextColor(labelColor); textSize = 13f; typeface = tf(ctx)
+            text = label; setTextColor(labelColor); font(ctx, 13f)
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         })
         if (trailing != null) addView(TextView(ctx).apply {
-            text = trailing; setTextColor(MUTED); textSize = 12f; typeface = tf(ctx)
+            text = trailing; setTextColor(MUTED); font(ctx, 12f)
             setPadding(dp(ctx, 12), 0, 0, 0)
         })
         pressable(this, onClick)
@@ -163,7 +189,7 @@ object MinimalDialog {
         val currentIdx = steps.indices.minByOrNull { kotlin.math.abs(steps[it] - currentValue) } ?: 0
 
         val valueText = TextView(ctx).apply {
-            textSize = 24f; typeface = tf(ctx); gravity = Gravity.CENTER
+            font(ctx, 24f); gravity = Gravity.CENTER
             setPadding(dp(ctx, 20), dp(ctx, 20), dp(ctx, 20), dp(ctx, 8))
         }
         fun showValue(v: Long) {
@@ -179,8 +205,8 @@ object MinimalDialog {
         }
         steps.forEach { v ->
             labelsRow.addView(TextView(ctx).apply {
-                text = "$v"; setTextColor(MUTED); textSize = 9f
-                typeface = tf(ctx); gravity = Gravity.CENTER
+                text = "$v"; setTextColor(MUTED); font(ctx, 9f)
+                gravity = Gravity.CENTER
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             })
         }
@@ -215,7 +241,7 @@ object MinimalDialog {
         root.addView(divider(ctx))
 
         val adapter = AppAdapter(onClick = { app, _ -> dialog.dismiss(); onTap(app) })
-        adapter.setTypeface(tf(ctx), 0.93f)
+        adapter.setTypeface(tf(ctx), 0.93f * FontManager.sizeMultiplier(ctx))
         val list = RecyclerView(ctx).apply {
             layoutManager = LinearLayoutManager(ctx)
             this.adapter = adapter
@@ -227,6 +253,34 @@ object MinimalDialog {
                 (ctx.resources.displayMetrics.heightPixels * 0.55f).toInt().coerceAtMost(dp(ctx, 420)))
         }
         adapter.update(apps, "")
+        // Long app lists get a filter box: type part of a name
+        if (apps.size > 10) {
+            val search = EditText(ctx).apply {
+                hint = "search"; setHintTextColor(MUTED)
+                setTextColor(Color.WHITE); font(ctx, 13f)
+                background = GradientDrawable().apply { setColor(INPUT_BG); setStroke(dp(ctx, 1), DIVIDER) }
+                setPadding(dp(ctx, 12), dp(ctx, 8), dp(ctx, 12), dp(ctx, 8))
+                inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+                imeOptions = EditorInfo.IME_ACTION_DONE or EditorInfo.IME_FLAG_NO_EXTRACT_UI
+                isSingleLine = true
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    setMargins(dp(ctx, 16), dp(ctx, 10), dp(ctx, 16), dp(ctx, 4))
+                }
+                addTextChangedListener(object : android.text.TextWatcher {
+                    override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+                    override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+                    override fun afterTextChanged(s: android.text.Editable?) {
+                        val q = s?.toString()?.trim().orEmpty()
+                        adapter.update(if (q.isEmpty()) apps else apps.filter { it.label.contains(q, ignoreCase = true) }, "")
+                        list.scrollToPosition(0)
+                    }
+                })
+            }
+            root.addView(search)
+            // Opening a picker shouldn't throw up the keyboard; it comes up when the box is tapped
+            dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN or
+                WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        }
         root.addView(list)
 
         root.addView(divider(ctx))
@@ -245,12 +299,14 @@ object MinimalDialog {
         val input = EditText(ctx).apply {
             setHint(hint); setHintTextColor(MUTED)
             setText(prefill); setSelection(prefill.length)
-            setTextColor(Color.WHITE); textSize = 14f; typeface = tf(ctx)
+            setTextColor(Color.WHITE); font(ctx, 14f)
             background = GradientDrawable().apply { setColor(INPUT_BG); setStroke(dp(ctx, 1), DIVIDER) }
             setPadding(dp(ctx, 14), dp(ctx, 12), dp(ctx, 14), dp(ctx, 12))
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
             imeOptions = EditorInfo.IME_ACTION_DONE
-            isSingleLine = true
+            // Single-line input (Enter means done), but long text wraps instead of scrolling sideways.
+            // Turning single line off would add the multi-line flag and make Enter insert a new line.
+            isSingleLine = true; setHorizontallyScrolling(false); maxLines = 6
             layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
                 setMargins(dp(ctx, 16), dp(ctx, 14), dp(ctx, 16), dp(ctx, 14))
             }
@@ -272,6 +328,17 @@ object MinimalDialog {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         setCancelable(true)
         setCanceledOnTouchOutside(true)
+        // Close with the activity: home destroys settings (the launcher clears its task), and a dialog
+        // still showing then leaks its window.
+        val owner = ctx as? androidx.lifecycle.LifecycleOwner ?: return@apply
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_DESTROY && isShowing) dismiss()
+        }
+        owner.lifecycle.addObserver(observer)
+        window?.decorView?.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v: View) {}
+            override fun onViewDetachedFromWindow(v: View) { owner.lifecycle.removeObserver(observer) }
+        })
     }
 
     private fun show(dialog: Dialog, root: View, widthDp: Int) {
@@ -295,7 +362,7 @@ object MinimalDialog {
 
     private fun title(ctx: Context, t: String, subtitle: String? = null): View {
         val titleView = TextView(ctx).apply {
-            text = t; setTextColor(TITLE); textSize = 14f; typeface = tf(ctx)
+            text = t; setTextColor(TITLE); font(ctx, 14f)
             setPadding(dp(ctx, 20), dp(ctx, 16), dp(ctx, 20), dp(ctx, if (subtitle == null) 12 else 2))
         }
         if (subtitle == null) return titleView
@@ -303,7 +370,7 @@ object MinimalDialog {
             orientation = LinearLayout.VERTICAL
             addView(titleView)
             addView(TextView(ctx).apply {
-                text = subtitle; setTextColor(MUTED); textSize = 11f; typeface = tf(ctx)
+                text = subtitle; setTextColor(MUTED); font(ctx, 11f)
                 setPadding(dp(ctx, 20), 0, dp(ctx, 20), dp(ctx, 12))
             })
         }
@@ -313,7 +380,7 @@ object MinimalDialog {
         orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
         addView(title(ctx, t).apply { layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f) })
         val chip = TextView(ctx).apply {
-            text = toggle.label; textSize = 12f; gravity = Gravity.CENTER
+            text = toggle.label; font(ctx, 12f); gravity = Gravity.CENTER
             setPadding(dp(ctx, 12), dp(ctx, 5), dp(ctx, 12), dp(ctx, 5))
             layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
                 .apply { marginEnd = dp(ctx, 16) }
@@ -331,8 +398,8 @@ object MinimalDialog {
         paint()
         chip.setOnClickListener {
             toggle.onToggle()
-            // Re-font the whole dialog so its own text reflects the change immediately
-            FontManager.applyTo(chip.rootView, tf(ctx), 1f)
+            // Re-font the whole dialog so its own text reflects the change immediately (bold off too)
+            refont(ctx, chip.rootView)
             paint()
         }
         addView(chip)
@@ -343,12 +410,12 @@ object MinimalDialog {
         orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
         setPadding(dp(ctx, 20), dp(ctx, 12), dp(ctx, 12), dp(ctx, 12))
         addView(TextView(ctx).apply {
-            text = seg.label; setTextColor(MUTED); textSize = 12f; typeface = tf(ctx)
+            text = seg.label; setTextColor(MUTED); font(ctx, 12f)
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         })
         val chips = seg.options.map { option ->
             TextView(ctx).apply {
-                text = option; textSize = 12f; gravity = Gravity.CENTER
+                text = option; font(ctx, 12f); gravity = Gravity.CENTER
                 setPadding(dp(ctx, 10), dp(ctx, 5), dp(ctx, 10), dp(ctx, 5))
                 layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
                     .apply { marginEnd = dp(ctx, 8) }
@@ -367,7 +434,7 @@ object MinimalDialog {
             }
         }
         chips.forEachIndexed { i, chip ->
-            chip.setOnClickListener { seg.onSelect(i); paint() }
+            chip.setOnClickListener { seg.onSelect(i); refont(ctx, chip.rootView); paint() }
             addView(chip)
         }
         paint()
@@ -388,7 +455,7 @@ object MinimalDialog {
         var cols = columns.coerceIn(min, max)
 
         val sizeLabel = TextView(ctx).apply {
-            setTextColor(MUTED); textSize = 12f; typeface = tf(ctx)
+            setTextColor(MUTED); font(ctx, 12f)
             setPadding(dp(ctx, 20), dp(ctx, 14), dp(ctx, 20), dp(ctx, 4))
         }
         fun showSize() { sizeLabel.text = "columns · $cols" }
@@ -457,7 +524,7 @@ object MinimalDialog {
                 setBackgroundColor(DIVIDER)
             })
             addView(TextView(ctx).apply {
-                text = label; setTextColor(OPTION); textSize = 12f; typeface = tf(ctx); gravity = Gravity.CENTER
+                text = label; setTextColor(OPTION); font(ctx, 12f); gravity = Gravity.CENTER
                 setPadding(dp(ctx, 16), dp(ctx, 14), dp(ctx, 16), dp(ctx, 14))
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                 pressable(this, action)

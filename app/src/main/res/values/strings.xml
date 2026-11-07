@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">MinimalSF</string>
     <string name="search_hint">type to launch…</string>
     <string name="no_match">no match</string>
-    <string name="settings">settings</string>
-    <string name="accessibility_desc">MinimalSF uses this only to lock your screen on double-tap. No data is collected or read.</string>
+    <string name="accessibility_desc">MinimalSF uses this only to lock your screen with the gesture you choose. No data is collected or read.</string>
 </resources>

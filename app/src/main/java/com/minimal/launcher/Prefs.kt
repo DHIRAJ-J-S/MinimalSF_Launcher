@@ -26,8 +26,6 @@ object Prefs {
     fun isFirstLaunch(c: Context) = !p(c).getBoolean("first_launch_done", false)
     fun setFirstLaunchDone(c: Context) { p(c).edit().putBoolean("first_launch_done", true).apply() }
 
-    fun isDefaultPromptDismissed(c: Context) = p(c).getBoolean("default_prompt_dismissed", false)
-    fun setDefaultPromptDismissed(c: Context) { p(c).edit().putBoolean("default_prompt_dismissed", true).apply() }
 
     fun searchAtBottom(c: Context) = p(c).getBoolean("search_bottom", false)
     fun setSearchAtBottom(c: Context, v: Boolean) { p(c).edit().putBoolean("search_bottom", v).apply() }
@@ -70,6 +68,10 @@ object Prefs {
     fun showAppIcons(c: Context) = p(c).getBoolean("show_app_icons", true)
     fun setShowAppIcons(c: Context, v: Boolean) { p(c).edit().putBoolean("show_app_icons", v).apply() }
 
+    /** A-Z jump strip on the right of all apps. Off by default to keep the list clean. */
+    fun showAlphabetScrubber(c: Context) = p(c).getBoolean("show_alphabet_scrubber", false)
+    fun setShowAlphabetScrubber(c: Context, v: Boolean) { p(c).edit().putBoolean("show_alphabet_scrubber", v).apply() }
+
     fun allAppsColumns(c: Context) = p(c).getInt("all_apps_grid_columns", 4)
     fun setAllAppsColumns(c: Context, v: Int) { p(c).edit().putInt("all_apps_grid_columns", v).apply() }
 
@@ -94,8 +96,6 @@ object Prefs {
 
     fun gesture(c: Context, g: Gesture): String = p(c).getString(g.key, defaultGesture(g)) ?: ""
     fun setGesture(c: Context, g: Gesture, v: String) { p(c).edit().putString(g.key, v).apply() }
-
-    fun doubleTapAction(c: Context) = gesture(c, Gesture.DOUBLE_TAP)
 
     // --- Shortcuts other apps pinned to us ("add to home screen", Activity Launcher): "pkg|id|label" ---
     private const val PINNED_KEY = "pinned_shortcuts"
