@@ -144,12 +144,31 @@ class GesturesActivity : AppCompatActivity() {
     private fun pickPinned(g: Prefs.Gesture) {
         val pinned = Prefs.pinnedShortcuts(this)
         MinimalDialog.options(this, title = "saved shortcuts", subtitle = "added from other apps",
-            items = pinned.map { it.substringAfterLast('|') }.toTypedArray(),
-            icons = IntArray(pinned.size) { R.drawable.ic_shortcut },
-            trailing = pinned.map { AppRepository.labelFor(this, it.substringBefore('|')).lowercase() as String? }.toTypedArray()
+            items = (pinned.map { it.substringAfterLast('|') } + "remove a saved shortcut…").toTypedArray(),
+            icons = IntArray(pinned.size) { R.drawable.ic_shortcut } + R.drawable.ic_close,
+            trailing = (pinned.map { AppRepository.labelFor(this, it.substringBefore('|')).lowercase() as String? } + null).toTypedArray()
         ) { i ->
+            if (i == pinned.size) { removePinned(); return@options }
             val p = pinned[i].split('|')
             save(g, GestureActions.shortcut(p[0], p.getOrElse(1) { "" }, p.getOrElse(2) { "shortcut" }))
+        }
+    }
+
+    private fun removePinned() {
+        val pinned = Prefs.pinnedShortcuts(this)
+        MinimalDialog.options(this, title = "remove saved shortcut", subtitle = "gestures already using it keep working",
+            items = pinned.map { it.substringAfterLast('|') }.toTypedArray(),
+            icons = IntArray(pinned.size) { R.drawable.ic_close },
+            trailing = pinned.map { AppRepository.labelFor(this, it.substringBefore('|')).lowercase() as String? }.toTypedArray()
+        ) { i ->
+            val name = pinned[i].substringAfterLast('|')
+            MinimalDialog.confirm(this, title = "remove shortcut", message = "remove \"$name\" from saved shortcuts?",
+                positiveText = "remove", negativeText = "cancel",
+                onPositive = {
+                    Prefs.removePinnedShortcut(this, pinned[i])
+                    Toast.makeText(this, "removed $name", Toast.LENGTH_SHORT).show()
+                    refresh()
+                })
         }
     }
 
