@@ -22,7 +22,7 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 ## Features
 
 ### ⌨️ Type-to-Launch
-- Keyboard ready as soon as you're home - start typing immediately (can be turned off)
+- Keyboard ready as soon as you're home - start typing immediately
 - Real-time filtering as you type
 - Single match auto-launches after configurable delay
 - Press enter / go on the keyboard to open the top result
@@ -34,7 +34,7 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 
 ### 🚀 Auto-Launch
 - When only one app matches your search, it opens automatically
-- Adjustable delay
+- Adjustable delay (Default: 100ms)
 
 ### 📱 All Apps
 - Tap "all apps" to browse every installed app, as a list, a list of names only (no icons), or a grid of 2-7 columns
@@ -43,54 +43,40 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 - Long press any app for its shortcuts, package name, version, app info, uninstall, keyword, or hide from search
 - Hidden apps stay in all apps, dimmed
 
-### 🔽 Pull-Down Notifications
-- Swipe down anywhere on the home screen to open the notification panel
-
-### 🔒 Double-Tap to Lock Screen
-- Double-tap the empty black space to lock your device
-- Uses Android Accessibility Service - no data is read or collected
-- Configurable: put lock on any gesture, or have double tap open an app instead
-
-### 👆 Long Press Gesture
-- Disabled by default
-- Configurable in settings to launch any app on long press of empty space
-
 ### 🎵 Now Playing Music Bar
-- Optional bar showing currently playing song and artist
-- Works with any music app (YT Music, Spotify, Musicolet, etc.)
+- Bar showing currently playing song and artist
+- Works with any music app (YT Music, Spotify, Apple Music, etc.)
 - Tap to play/pause
 - Swipe left for next track, right for previous
 - Long press to open the music player
 
 ### ☐ Inline Todo Checklist
-- At the bottom of the home screen (can be hidden)
+- At the bottom of the home screen
 - Add tasks, mark as done, mark as important (red), or remove
 - Tap the `!` button to toggle important
 - Removed a task by mistake? Tap "undo" within a few seconds
 - Long press a task to read all of it and edit it
 
 ### 🕐 Clock
-- Large monospace bold clock on home screen
+- Large bold clock on home screen
 - Tap to open the system clock/alarms app
 - 12-hour AM/PM by default, switchable to 24-hour
-- Clock and date can each be hidden
 
 ### 👆 Gestures
-- Settings → gestures: double tap, long press, swipe left / right / up / down on empty home space
-- Actions: open an app, call a contact, an app shortcut (e.g. WhatsApp "new chat"), a specific app screen
-  (Activity Launcher style), flashlight, camera, play/pause, next track, notifications, quick settings,
-  all apps, lock screen, or nothing
-- Pick the app for a gesture by typing part of its name
-- "Add to home screen" shortcuts from other apps (Chrome, Activity Launcher, …) are saved and can be put on a gesture, and removed again
-- Long press an app to see its shortcuts at the top of the menu
+- Settings → Gestures: double tap, long press, swipe left / right / up / down on empty home space
+- Defaults: double tap → lock screen, swipe down → notifications
+- Actions: open an app, call a contact, app shortcut (e.g. WhatsApp "new chat"), specific app screen (Activity Launcher style), flashlight, camera & more
+- Pick an app for a gesture by typing part of its name
+- "Add to home screen" shortcuts from other apps (Chrome, Activity Launcher, etc.) are saved and can be assigned to gestures
+- Long-press an app to see its shortcuts at the top of the menu
 
-### ⏱️ Screen Time (optional)
+### ⏱️ Screen Time
 - Today's screen time under the date, e.g. `screen time 2h 14m`
 - Tap for today's top apps; opens Digital Wellbeing if the phone has it
 - Long press an app to see its time today
 - Needs "usage access" (Settings → Usage access). Read on-device only; totals can differ from Digital Wellbeing by a few minutes
 
-### 🧹 Show only what you want
+### ✨ Make Your Home Screen Yours
 - Hide the clock, date, screen time, now playing bar or todo list
 - Optional RAM use in the top corner, e.g. `ram 3988/5388mb` (off by default)
 - Bottom buttons as icon + text, icon only or text only, or hide them
@@ -141,7 +127,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the full list.
 | `<queries>` for launcher apps | List apps that have a launcher icon (no `QUERY_ALL_PACKAGES` needed) |
 | `EXPAND_STATUS_BAR` | Pull down notification panel from home screen |
 | `REQUEST_DELETE_PACKAGES` | Uninstall apps from long-press menu |
-| `SET_ALARM` | Tap the clock to open alarms (Samsung requires it; granted automatically) |
+| `SET_ALARM` | Tap the clock to open alarms |
 | `PACKAGE_USAGE_STATS` | Screen time (optional, user-granted "usage access") |
 | `CALL_PHONE` | "Call contact" gesture calls directly (optional; without it the dialer opens) |
 | `BIND_NOTIFICATION_LISTENER_SERVICE` | Read currently playing music info (optional, user-enabled) |
