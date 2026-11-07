@@ -35,3 +35,7 @@ google-services.json
 # Release build output (APKs are published on GitHub Releases, not committed)
 /app/release/
 .kotlin/
+
+# Local to-do notes
+/TODO.md
+/tools/check-fdroid.sh
