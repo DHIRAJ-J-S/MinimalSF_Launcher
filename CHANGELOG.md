@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.3.1
+
+### New
+- **Names only** - all apps view has a third choice, "names only (no icons)", for a list of just app names. It also applies to search results. Grid view always shows icons.
+- **RAM indicator** - back as an option: settings > home screen > show ram. Off by default.
+
+### Changed
+- **New app icon** - a sharper M with a raised SF and a cursor, with a themed (monochrome) version for Android 13+.
+- **Smaller download** - the APK is about 0.86 MB, down from 1.6 MB, after removing an unused library.
+
 ## v1.3
 
 ### New
