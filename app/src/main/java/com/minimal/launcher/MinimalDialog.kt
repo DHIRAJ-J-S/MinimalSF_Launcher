@@ -429,7 +429,7 @@ object MinimalDialog {
         listRow = row(ctx, R.drawable.ic_radio_off, MUTED, "list", OPTION) {
             grid = false; withIcons = true; onChange(false, true, cols); dialog.dismiss()
         }
-        namesRow = row(ctx, R.drawable.ic_radio_off, MUTED, "names only (no icons)", OPTION) {
+        namesRow = row(ctx, R.drawable.ic_radio_off, MUTED, "list - without icons", OPTION) {
             grid = false; withIcons = false; onChange(false, false, cols); dialog.dismiss()
         }
         gridRow = row(ctx, R.drawable.ic_radio_off, MUTED, "grid", OPTION) {

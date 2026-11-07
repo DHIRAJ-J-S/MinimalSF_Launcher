@@ -3,7 +3,7 @@
 ## v1.3.1
 
 ### New
-- **Names only** - all apps view has a third choice, "names only (no icons)", for a list of just app names. It also applies to search results. Grid view always shows icons.
+- **List without icons** - all apps view has a third choice, "list - without icons", for a list of just app names. It also applies to search results. Grid view always shows icons.
 - **RAM indicator** - back as an option: settings > home screen > show ram. Off by default.
 
 ### Changed

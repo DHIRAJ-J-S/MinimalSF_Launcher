@@ -144,7 +144,7 @@ class SettingsActivity : AppCompatActivity() {
         row("all apps view", {
             when {
                 Prefs.allAppsGrid(this) -> "[grid · ${Prefs.allAppsColumns(this)} columns]"
-                !Prefs.showAppIcons(this) -> "[names only]"
+                !Prefs.showAppIcons(this) -> "[list - without icons]"
                 else -> "[list]"
             }
         }) {
