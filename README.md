@@ -130,41 +130,7 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 
 See [CHANGELOG.md](CHANGELOG.md) for the full list.
 
-## What's new in 1.3
 
-- **Number shortcuts:** results are numbered, and typing the number opens that app (`w2` opens the 2nd result for `w`)
-- **Landscape layout:** clock, music and todo on one side, search and apps on the other, with room for a floating keyboard
-- **Show only what you want:** hide the clock, date, todo and more, and choose how the bottom buttons look
-- **All apps as a grid**, with 2–7 columns
-- **Work profile and dual apps** are listed, and apps with several launcher icons show all of them
-- **Simpler settings**, grouped into a short menu
-- Option to keep the keyboard closed on the home screen
-- Long press shows the app's package name and version
-- The RAM indicator is removed, and the default auto-launch delay is now 100ms
-- Fixed: clock after a timezone change, todo box keeping focus, now playing bar, first flashlight toggle, and three crashes
-
-## What's new in 1.2
-
-- **Smoother:** the layout now moves with the keyboard animation instead of jumping when the keyboard opens or closes
-- **Faster:** apps load once in the background and refresh only when something is installed or removed, so returning home no longer re-reads every app icon on the main thread
-- Apps open with a reveal animation from their icon
-- Music bar updates from media events instead of polling every 3 seconds
-- Lock-screen accessibility service no longer listens to every UI event on the phone
-- Fixed: switching the search bar bottom → top made it disappear
-- Fixed: match highlight didn't update while typing
-- Fixed: long-pressing an app also fired the home long-press gesture
-- Fixed: the todo list grew without limit and pushed results off screen
-- Fixed: pull-down for notifications triggered while scrolling results
-- Fixed: font choice only applied to some text; it now applies everywhere, including dialogs and settings
-- Settings show the current choice in every picker, flag missing permissions, and show the real version
-- No more `QUERY_ALL_PACKAGES`: the app list uses a `<queries>` declaration instead
-- Targets Android 16 (API 36)
-- Screen time on the home screen (optional)
-- Download free fonts from Google Fonts right in the font menu (via Google Play services, so the app itself still has no internet permission)
-- One consistent line-icon set for menus, pickers, todo items and navigation
-- Gestures screen with swipe left/right/up/down, app shortcuts, app screens, contacts and more
-- Saves "add to home screen" shortcuts from other apps (works with Activity Launcher)
-- GitHub link in settings
 
 ---
 
