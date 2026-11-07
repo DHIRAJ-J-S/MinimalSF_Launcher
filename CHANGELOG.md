@@ -9,6 +9,19 @@
 ### Changed
 - **New app icon** - a sharper M with a raised SF and a cursor, with a themed (monochrome) version for Android 13+.
 - **Smaller download** - the APK is about 0.86 MB, down from 1.6 MB, after removing an unused library.
+- **Bottom search bar** - the best result now sits right above the search bar, closest to your thumb.
+- **Double tap and long press** work anywhere on empty space, not just over the app list.
+
+### Fixed
+- Gestures (swipes, double tap, long press) running while search results or all apps are showing - a double tap there could lock the phone
+- Keyboard not coming back when you closed it with back and pressed home
+- Hardware keyboard Enter in the todo box showing a grey block over the results
+- Saved shortcuts can now be removed (gestures > saved shortcuts > remove a saved shortcut)
+- An uninstalled app keeping its keyword, so no other app could use it
+- First-run setup asking to set MinimalSF as default launcher when it already was
+- Clock wrapping onto two lines with a large clock and a big system font
+- Lock prompt always saying "double-tap", whichever gesture you used
+- Notification and quick settings gestures now say so when the phone doesn't allow them
 
 ## v1.3
 

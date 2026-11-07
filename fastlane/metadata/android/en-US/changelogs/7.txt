@@ -2,3 +2,5 @@
 • RAM indicator is back as an option (off by default)
 • New app icon, with a themed version for Android 13+
 • Smaller download: 0.86 MB instead of 1.6 MB
+• Bottom search bar: best result next to your thumb
+• Fixed: gestures while searching, keyboard after back, saved shortcuts can be removed, and more
