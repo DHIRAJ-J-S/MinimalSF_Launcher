@@ -1,7 +1,7 @@
 
 <h1><img src="assets/MSF_icon.png" width="50" align="absmiddle" alt="icon">&nbsp;MinimalSF</h1>
 
-**Super Fast. Minimal. Monochrome. Just 1.5Mb**
+**Super Fast. Minimal. Monochrome. Under 1 MB.**
 
 A lightweight, black & white Android home launcher built purely for speed. Type to search, auto-launch apps instantly. No bloat, no ads, no tracking, no network calls.
 
@@ -14,6 +14,8 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 [![Downloads](https://img.shields.io/github/downloads/DHIRAJ-J-S/MinimalSF_Launcher/total?label=downloads)](https://github.com/DHIRAJ-J-S/MinimalSF_Launcher/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 ![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)
+
+⭐ **Like MinimalSF? Star the repo** - it helps more people find it.
 
 ---
 
@@ -35,7 +37,8 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 - Adjustable delay
 
 ### 📱 All Apps
-- Tap "all apps" to browse every installed app, as a list or a grid of 2-7 columns
+- Tap "all apps" to browse every installed app, as a list, a list of names only (no icons), or a grid of 2-7 columns
+- Optional A-Z strip on the right: touch or drag a letter to jump there (settings, off by default)
 - Work profile and dual apps are included, labelled `· work` and `· dual`
 - Long press any app for its shortcuts, package name, version, app info, uninstall, keyword, or hide from search
 - Hidden apps stay in all apps, dimmed
@@ -46,7 +49,7 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 ### 🔒 Double-Tap to Lock Screen
 - Double-tap the empty black space to lock your device
 - Uses Android Accessibility Service - no data is read or collected
-- Configurable: can be changed to open any app instead of locking
+- Configurable: put lock on any gesture, or have double tap open an app instead
 
 ### 👆 Long Press Gesture
 - Disabled by default
@@ -63,6 +66,8 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 - At the bottom of the home screen (can be hidden)
 - Add tasks, mark as done, mark as important (red), or remove
 - Tap the `!` button to toggle important
+- Removed a task by mistake? Tap "undo" within a few seconds
+- Long press a task to read all of it and edit it
 
 ### 🕐 Clock
 - Large monospace bold clock on home screen
@@ -75,7 +80,8 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 - Actions: open an app, call a contact, an app shortcut (e.g. WhatsApp "new chat"), a specific app screen
   (Activity Launcher style), flashlight, camera, play/pause, next track, notifications, quick settings,
   all apps, lock screen, or nothing
-- "Add to home screen" shortcuts from other apps (Chrome, Activity Launcher, …) are saved and can be put on a gesture
+- Pick the app for a gesture by typing part of its name
+- "Add to home screen" shortcuts from other apps (Chrome, Activity Launcher, …) are saved and can be put on a gesture, and removed again
 - Long press an app to see its shortcuts at the top of the menu
 
 ### ⏱️ Screen Time (optional)
@@ -86,6 +92,7 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 
 ### 🧹 Show only what you want
 - Hide the clock, date, screen time, now playing bar or todo list
+- Optional RAM use in the top corner, e.g. `ram 3988/5388mb` (off by default)
 - Bottom buttons as icon + text, icon only or text only, or hide them
 - With the settings button hidden, "MinimalSF settings" appears in all apps and search
 
@@ -101,14 +108,29 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 |---|---|
 | 🏠 Default launcher | Shows ✓ when set; opens Android's home app settings |
 | ⌨️ Search & keyboard | Auto-launch delay (0–600ms), matching (starts with / contains), open keyboard on home, floating keyboard side (landscape) |
-| 🖥️ Home screen | Show clock / date / screen time / now playing bar / todo, clock format and size, search bar position, bottom buttons and their style |
-| 📱 All apps view | List or grid, with 2–7 columns |
+| 🖥️ Home screen | Show clock / date / RAM / screen time / now playing bar / todo, clock format and size, search bar position, bottom buttons and their style |
+| 📱 All apps view | List, list without icons, or grid with 2–7 columns |
+| 🔠 A-Z scrubber | Letter strip on the right of all apps (off by default) |
 | 🔤 Font | Monospace / clean / phone default / Google Fonts / import .ttf/.otf, bold, and size |
 | 👆 Gestures | Double tap, long press and four swipes, each with its own action |
 
 ---
 
-## 🆕 What's new in 1.3
+## 🆕 What's new in 1.3.1
+
+- **List without icons:** all apps and search results as plain app names
+- **RAM indicator** is back as an option, showing used / total memory
+- **A-Z scrubber** for all apps (optional) and **search in the app picker**
+- **Todo:** undo a removed task, and long press a task to read and edit it
+- **New app icon**, with a themed version for Android 13+
+- **Under 1 MB:** the download is about 0.87 MB, down from 1.6 MB
+- **One welcome prompt** instead of three, brighter faint text, and dialogs that follow the font size
+- Bottom search bar puts the best result next to your thumb; double tap and long press work on any empty space
+- Fixed: gestures running while results were showing, keyboard not coming back after back, saved shortcuts that couldn't be removed, and more
+
+See [CHANGELOG.md](CHANGELOG.md) for the full list.
+
+## What's new in 1.3
 
 - **Number shortcuts:** results are numbered, and typing the number opens that app (`w2` opens the 2nd result for `w`)
 - **Landscape layout:** clock, music and todo on one side, search and apps on the other, with room for a floating keyboard
@@ -120,8 +142,6 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 - Long press shows the app's package name and version
 - The RAM indicator is removed, and the default auto-launch delay is now 100ms
 - Fixed: clock after a timezone change, todo box keeping focus, now playing bar, first flashlight toggle, and three crashes
-
-See [CHANGELOG.md](CHANGELOG.md) for the full list.
 
 ## What's new in 1.2
 
@@ -159,7 +179,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the full list.
 | `PACKAGE_USAGE_STATS` | Screen time (optional, user-granted "usage access") |
 | `CALL_PHONE` | "Call contact" gesture calls directly (optional; without it the dialer opens) |
 | `BIND_NOTIFICATION_LISTENER_SERVICE` | Read currently playing music info (optional, user-enabled) |
-| `BIND_ACCESSIBILITY_SERVICE` | Lock screen on double-tap (optional, user-enabled) |
+| `BIND_ACCESSIBILITY_SERVICE` | Lock the screen with a gesture (optional, user-enabled) |
 
 ---
 

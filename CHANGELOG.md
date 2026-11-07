@@ -16,7 +16,6 @@
 - **One welcome prompt** instead of three in a row, with a tip, a settings button and - only if it isn't already - a button to set MinimalSF as the default launcher. The now playing bar stays in settings.
 - **Easier to read** - faint text and icons (tips, todo buttons, dialog hints, RAM) are brighter, at least 4.5:1 contrast.
 - **Dialogs follow the font size setting**, and long messages scroll instead of being cut off in landscape.
-- **Music bar** works with TalkBack (tap to play or pause, hold to open, actions for next and previous).
 - **Bottom search bar** - the best result now sits right above the search bar, closest to your thumb.
 - **Double tap and long press** work anywhere on empty space, not just over the app list.
 
