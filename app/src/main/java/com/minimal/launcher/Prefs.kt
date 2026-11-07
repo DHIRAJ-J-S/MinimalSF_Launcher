@@ -143,6 +143,15 @@ object Prefs {
         p(c).edit().putString(KEYWORDS_KEY, JSONObject(map as Map<*, *>).toString()).apply()
     }
 
+    /** Drops keywords whose app is gone, so an uninstalled app doesn't keep "owning" its keyword. */
+    fun pruneKeywords(c: Context, isGone: (String) -> Boolean) {
+        val map = getKeywords(c)
+        val keep = map.filterKeys { !isGone(it) }
+        if (keep.size == map.size) return
+        keywordsCache = keep
+        p(c).edit().putString(KEYWORDS_KEY, JSONObject(keep as Map<*, *>).toString()).apply()
+    }
+
     /** Package that already owns [keyword], if any (ignoring [exceptPkg]). */
     fun keywordOwner(c: Context, keyword: String, exceptPkg: String): String? =
         getKeywords(c).entries.firstOrNull { it.value == keyword.trim().lowercase() && it.key != exceptPkg }?.key

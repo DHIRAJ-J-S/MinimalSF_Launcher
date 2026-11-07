@@ -77,11 +77,27 @@ object AppRepository {
             main.post {
                 apps = list
                 isLoaded = true
+                if (list.isNotEmpty()) Prefs.pruneKeywords(app) { key -> isGone(app, key, list) }
                 loading = false
                 listeners.toList().forEach { it() }
                 if (pendingReload) { pendingReload = false; reload(app) }
             }
         }
+    }
+
+    /**
+     * True when the app behind a saved [key] is uninstalled. Other profiles' keys are kept: a work
+     * profile can be paused or locked, which hides its apps without removing them.
+     */
+    private fun isGone(ctx: Context, key: String, list: List<AppInfo>): Boolean {
+        if (list.any { it.key == key }) return false
+        val pkg = if ('/' in key) {
+            val serial = key.substringBefore('/').toLongOrNull() ?: return false
+            val mine = ctx.getSystemService(UserManager::class.java)?.getSerialNumberForUser(Process.myUserHandle())
+            if (serial != mine) return false
+            key.substringAfter('/').substringBefore('/')
+        } else key
+        return try { ctx.packageManager.getApplicationInfo(pkg, 0); false } catch (_: Exception) { true }
     }
 
     /** Every launcher icon in every profile: apps can have several, and work profile apps are listed too. */
