@@ -6,6 +6,4 @@
     <item name="tag_base_text_style" type="id" />
     <!-- MinimalDialog: text size in sp before the font size setting, so an open dialog can be resized -->
     <item name="tag_dialog_sp" type="id" />
-    <!-- LauncherActivity: where a music bar touch started, to drop the press highlight on a swipe -->
-    <item name="tag_touch_x" type="id" />
 </resources>

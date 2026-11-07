@@ -136,7 +136,7 @@
     <!-- Music bar -->
     <LinearLayout android:id="@+id/musicBar" android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="20dp"
-        android:paddingVertical="14dp" android:background="@drawable/ripple_music" android:visibility="gone"
+        android:paddingVertical="14dp" android:background="@color/search_bg" android:visibility="gone"
         android:clickable="true" android:focusable="true" android:contentDescription="now playing - tap to play or pause, hold to open">
         <!-- Drawn icon, not a ▶/⏸ character: some OEM fonts (e.g. Samsung) force ⏸ to colour emoji -->
         <ImageView android:id="@+id/musicIcon" android:layout_width="18dp" android:layout_height="18dp"

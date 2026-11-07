@@ -308,16 +308,8 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
                 return false
             }
         })
-        musicBar.setOnTouchListener { v, event ->
-            // The detector eats every touch, so the ripple is driven by hand
-            when (event.actionMasked) {
-                MotionEvent.ACTION_DOWN -> { v.background?.setHotspot(event.x, event.y); v.isPressed = true }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> v.isPressed = false
-                MotionEvent.ACTION_MOVE -> if (abs(event.x - (v.getTag(R.id.tag_touch_x) as? Float ?: event.x)) > dp(16f)) v.isPressed = false
-            }
-            if (event.actionMasked == MotionEvent.ACTION_DOWN) v.setTag(R.id.tag_touch_x, event.x)
-            musicGesture.onTouchEvent(event); true
-        }
+        // No press highlight on purpose: the play / pause icon changing is the feedback
+        musicBar.setOnTouchListener { _, event -> musicGesture.onTouchEvent(event); true }
         // TalkBack doesn't send touches: double tap is a click, and skip / open are in its actions menu
         musicBar.setOnClickListener { if (musicNeedsAccess) openNotificationAccess() else togglePlayPause() }
         musicBar.setOnLongClickListener { openMusicPlayer(); true }
