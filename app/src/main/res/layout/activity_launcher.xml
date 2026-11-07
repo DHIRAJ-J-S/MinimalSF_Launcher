@@ -26,6 +26,11 @@
             android:fontFamily="monospace" android:textStyle="bold" android:letterSpacing="-0.04"
             android:background="@drawable/ripple_borderless"
             android:clickable="true" android:focusable="true" android:text="00:00" />
+        <!-- Optional (settings > home screen > show ram); sits above the clock's top margin -->
+        <TextView android:id="@+id/ramText" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_gravity="end|top" android:paddingEnd="16dp" android:paddingTop="8dp"
+            android:textColor="#FF555555" android:textSize="11sp" android:fontFamily="monospace"
+            android:visibility="gone" />
     </FrameLayout>
 
     <TextView android:id="@+id/dateText" android:layout_width="match_parent" android:layout_height="wrap_content"

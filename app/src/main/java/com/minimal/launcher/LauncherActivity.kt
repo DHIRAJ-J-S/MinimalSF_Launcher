@@ -1,6 +1,7 @@
 package com.minimal.launcher
 
 import android.annotation.SuppressLint
+import android.app.ActivityManager
 import android.app.ActivityOptions
 import android.content.ComponentName
 import android.content.Intent
@@ -60,6 +61,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
     private lateinit var rootLayout: LinearLayout
     private lateinit var clockText: TextView
+    private lateinit var ramText: TextView
     private lateinit var dateText: TextView
     private lateinit var searchInput: EditText
     private lateinit var clearBtn: View
@@ -155,6 +157,11 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         }
     }
 
+    // A 2s refresh is plenty for a glance; only runs while the RAM text is shown
+    private val ramRunnable = object : Runnable {
+        override fun run() { updateRam(); handler.postDelayed(this, 2_000) }
+    }
+
     private lateinit var homeGestureDetector: GestureDetector
 
     @SuppressLint("ClickableViewAccessibility")
@@ -164,6 +171,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
         rootLayout = findViewById(R.id.rootLayout)
         clockText = findViewById(R.id.clockText)
+        ramText = findViewById(R.id.ramText)
         dateText = findViewById(R.id.dateText)
         searchTopSlot = findViewById(R.id.searchTopSlot)
         searchBottomSlot = findViewById(R.id.searchBottomSlot)
@@ -559,11 +567,14 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         if (uiDirty) applyUi()
 
         handler.removeCallbacks(clockRunnable); handler.post(clockRunnable)
+        handler.removeCallbacks(ramRunnable)
+        if (Prefs.showRam(this)) handler.post(ramRunnable)
     }
 
     override fun onPause() {
         super.onPause()
         handler.removeCallbacks(clockRunnable)
+        handler.removeCallbacks(ramRunnable)
         cancelAutoLaunch()
     }
 
@@ -792,7 +803,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
     /** With everything on the left hidden, search and apps take the whole width instead of half. */
     private fun updatePanes() {
         val info = infoPane ?: return
-        val hasContent = listOf(clockText, dateText, screenTimeText, musicBar, musicTipView, todoSection)
+        val hasContent = listOf(clockText, dateText, ramText, screenTimeText, musicBar, musicTipView, todoSection)
             .any { it.visibility == View.VISIBLE }
         val v = if (hasContent) View.VISIBLE else View.GONE
         info.visibility = v
@@ -1024,6 +1035,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
             appList.layoutManager = LinearLayoutManager(this)
         }
         adapter.setGrid(columns > 0)
+        adapter.setShowIcons(Prefs.showAppIcons(this))
     }
 
     /** Hides whatever the user turned off in settings, keeping the spacing right for what's left. */
@@ -1033,6 +1045,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         fun shown(on: Boolean) = if (on) View.VISIBLE else View.GONE
         clockText.visibility = shown(clock)
         dateText.visibility = shown(date)
+        ramText.visibility = shown(Prefs.showRam(this))
         // The date's bottom padding normally separates the header from the search bar
         val gap = dp(12f).toInt()
         headerGroup.setPadding(0, if (!clock && !date) gap else 0, 0, if (!date) gap else 0)
@@ -1041,6 +1054,14 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
     }
 
     // --- Clock ---
+
+    private fun updateRam() {
+        ramText.text = try {
+            val mi = ActivityManager.MemoryInfo()
+            (getSystemService(ACTIVITY_SERVICE) as ActivityManager).getMemoryInfo(mi)
+            "ram ${mi.availMem / (1024 * 1024)}/${mi.totalMem / (1024 * 1024)}mb"
+        } catch (_: Exception) { "ram ---mb" }
+    }
 
     private fun updateClock() {
         val use24 = Prefs.use24hClock(this)

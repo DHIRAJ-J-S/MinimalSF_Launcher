@@ -28,6 +28,7 @@ class AppAdapter(
     private var typeface: Typeface = Typeface.MONOSPACE
     private var sizeMultiplier: Float = 1f
     private var grid = false
+    private var showIcons = true
 
     val items: List<AppInfo> get() = apps
 
@@ -65,6 +66,13 @@ class AppAdapter(
         notifyDataSetChanged()
     }
 
+    /** Names only, for the list. Grid cells always keep their icon. */
+    fun setShowIcons(on: Boolean) {
+        if (on == showIcons) return
+        showIcons = on
+        notifyItemRangeChanged(0, apps.size)
+    }
+
     override fun getItemViewType(position: Int) = if (grid) VIEW_GRID else VIEW_ROW
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
@@ -75,6 +83,7 @@ class AppAdapter(
     override fun onBindViewHolder(holder: VH, position: Int) {
         val app = apps[position]
         holder.icon.setImageDrawable(app.icon)
+        holder.icon.visibility = if (grid || showIcons) View.VISIBLE else View.GONE
 
         holder.name.typeface = typeface
         holder.name.setTextSize(TypedValue.COMPLEX_UNIT_SP, (if (grid) 11f else 14f) * sizeMultiplier)

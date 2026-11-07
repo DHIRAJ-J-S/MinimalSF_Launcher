@@ -39,6 +39,10 @@ object Prefs {
     fun showDate(c: Context) = p(c).getBoolean("show_date", true)
     fun setShowDate(c: Context, v: Boolean) { p(c).edit().putBoolean("show_date", v).apply() }
 
+    // Off by default: free/total memory in the top corner, for those who like the look
+    fun showRam(c: Context) = p(c).getBoolean("show_ram", false)
+    fun setShowRam(c: Context, v: Boolean) { p(c).edit().putBoolean("show_ram", v).apply() }
+
     fun showTodo(c: Context) = p(c).getBoolean("show_todo", true)
     fun setShowTodo(c: Context, v: Boolean) { p(c).edit().putBoolean("show_todo", v).apply() }
 
@@ -61,6 +65,10 @@ object Prefs {
 
     fun allAppsGrid(c: Context) = p(c).getBoolean("all_apps_grid", false)
     fun setAllAppsGrid(c: Context, v: Boolean) { p(c).edit().putBoolean("all_apps_grid", v).apply() }
+
+    // List only: a grid of names without icons doesn't read well, so the grid always shows icons
+    fun showAppIcons(c: Context) = p(c).getBoolean("show_app_icons", true)
+    fun setShowAppIcons(c: Context, v: Boolean) { p(c).edit().putBoolean("show_app_icons", v).apply() }
 
     fun allAppsColumns(c: Context) = p(c).getInt("all_apps_grid_columns", 4)
     fun setAllAppsColumns(c: Context, v: Int) { p(c).edit().putInt("all_apps_grid_columns", v).apply() }

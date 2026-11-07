@@ -377,12 +377,14 @@ object MinimalDialog {
      * List or grid, with a columns slider that appears once grid is picked. Picking list closes the
      * dialog; with grid it stays open so the size can be set. Every change is passed on straight away.
      */
-    fun gridPicker(ctx: Context, title: String, isGrid: Boolean, columns: Int, min: Int, max: Int,
-                   onChange: (grid: Boolean, columns: Int) -> Unit) {
+    /** List, names-only list or grid; picking grid reveals a columns slider. */
+    fun gridPicker(ctx: Context, title: String, isGrid: Boolean, icons: Boolean, columns: Int, min: Int, max: Int,
+                   onChange: (grid: Boolean, icons: Boolean, columns: Int) -> Unit) {
         val dialog = newDialog(ctx)
         val root = frame(ctx)
         root.addView(title(ctx, title)); root.addView(divider(ctx))
         var grid = isGrid
+        var withIcons = icons || isGrid
         var cols = columns.coerceIn(min, max)
 
         val sizeLabel = TextView(ctx).apply {
@@ -402,7 +404,7 @@ object MinimalDialog {
                 contentDescription = "columns"
                 setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                     override fun onProgressChanged(sb: SeekBar?, value: Int, fromUser: Boolean) {
-                        cols = value + min; showSize(); onChange(true, cols)
+                        cols = value + min; showSize(); onChange(true, true, cols)
                     }
                     override fun onStartTrackingTouch(sb: SeekBar?) {}
                     override fun onStopTrackingTouch(sb: SeekBar?) {}
@@ -411,9 +413,10 @@ object MinimalDialog {
         }
 
         lateinit var listRow: LinearLayout
+        lateinit var namesRow: LinearLayout
         lateinit var gridRow: LinearLayout
         fun paint() {
-            for ((r, on) in listOf(listRow to !grid, gridRow to grid)) {
+            for ((r, on) in listOf(listRow to (!grid && withIcons), namesRow to (!grid && !withIcons), gridRow to grid)) {
                 (r.getChildAt(0) as android.widget.ImageView).apply {
                     setImageResource(if (on) R.drawable.ic_radio_on else R.drawable.ic_radio_off)
                     imageTintList = ColorStateList.valueOf(if (on) Color.WHITE else MUTED)
@@ -424,12 +427,15 @@ object MinimalDialog {
             showSize()
         }
         listRow = row(ctx, R.drawable.ic_radio_off, MUTED, "list", OPTION) {
-            grid = false; onChange(false, cols); dialog.dismiss()
+            grid = false; withIcons = true; onChange(false, true, cols); dialog.dismiss()
+        }
+        namesRow = row(ctx, R.drawable.ic_radio_off, MUTED, "names only (no icons)", OPTION) {
+            grid = false; withIcons = false; onChange(false, false, cols); dialog.dismiss()
         }
         gridRow = row(ctx, R.drawable.ic_radio_off, MUTED, "grid", OPTION) {
-            grid = true; onChange(true, cols); paint()
+            grid = true; withIcons = true; onChange(true, true, cols); paint()
         }
-        root.addView(list(ctx, listOf(listRow, gridRow)))
+        root.addView(list(ctx, listOf(listRow, namesRow, gridRow)))
         root.addView(sizeSection)
         root.addView(divider(ctx))
         root.addView(buttonRow(ctx, listOf("done" to { dialog.dismiss() })))

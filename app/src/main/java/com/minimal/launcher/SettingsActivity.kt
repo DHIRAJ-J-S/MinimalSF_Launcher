@@ -142,12 +142,18 @@ class SettingsActivity : AppCompatActivity() {
         pageRow(PAGE_HOME)
         // These two have one setting each, so they open a dialog rather than a page
         row("all apps view", {
-            if (Prefs.allAppsGrid(this)) "[grid · ${Prefs.allAppsColumns(this)} columns]" else "[list]"
+            when {
+                Prefs.allAppsGrid(this) -> "[grid · ${Prefs.allAppsColumns(this)} columns]"
+                !Prefs.showAppIcons(this) -> "[names only]"
+                else -> "[list]"
+            }
         }) {
             MinimalDialog.gridPicker(this, title = "all apps view", isGrid = Prefs.allAppsGrid(this),
-                columns = Prefs.allAppsColumns(this), min = Prefs.MIN_GRID_COLUMNS, max = Prefs.MAX_GRID_COLUMNS
-            ) { grid, columns ->
-                Prefs.setAllAppsGrid(this, grid); Prefs.setAllAppsColumns(this, columns); refresh()
+                icons = Prefs.showAppIcons(this), columns = Prefs.allAppsColumns(this),
+                min = Prefs.MIN_GRID_COLUMNS, max = Prefs.MAX_GRID_COLUMNS
+            ) { grid, icons, columns ->
+                Prefs.setAllAppsGrid(this, grid); Prefs.setShowAppIcons(this, icons)
+                Prefs.setAllAppsColumns(this, columns); refresh()
             }
         }
         row("font", {
@@ -199,6 +205,7 @@ class SettingsActivity : AppCompatActivity() {
             ) { which -> Prefs.setClockSize(this, sizes[which]); refresh() }
         }
         toggle("show date", { Prefs.showDate(this) }) { Prefs.setShowDate(this, it) }
+        toggle("show ram", { Prefs.showRam(this) }) { Prefs.setShowRam(this, it) }
         row("show screen time", {
             when {
                 !Prefs.showScreenTime(this) -> "[off]"
