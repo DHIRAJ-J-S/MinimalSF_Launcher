@@ -14,7 +14,7 @@ A lightweight, black & white Android home launcher built purely for speed. Type 
 [![Downloads](https://img.shields.io/github/downloads/DHIRAJ-J-S/MinimalSF_Launcher/total?label=downloads)](https://github.com/DHIRAJ-J-S/MinimalSF_Launcher/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 ![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)
-[![VirusTotal: v1.3.1, 0 detections](https://img.shields.io/badge/VirusTotal-v1.3.1%20%C2%B7%200%20detections-brightgreen?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/468948d1536ddfa744b284f9008558381e8d36e6d26e3cdbab1119fc92cc3b46/detection)
+[![VirusTotal: v1.3.2, 0 detections](https://img.shields.io/badge/VirusTotal-v1.3.2%20%C2%B7%200%20detections-brightgreen?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/a42a812424d6364b5d94c446e842c3bc7178105487f660c618bee83db72605c9/detection)
 
 ⭐ **Like MinimalSF? Star the repo** - it helps more people find it.
 
@@ -171,4 +171,4 @@ From the command line: `./gradlew assembleRelease`
 MIT License
 ```
 You’re free to use, tweak, and build on this project.  
-Have fun with it, break things, improve things 🙂  
+Have fun with it, break things, improve things 😁  
