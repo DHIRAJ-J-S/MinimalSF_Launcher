@@ -143,7 +143,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the full list.
 - 🚫 **Zero location** - no GPS or location access
 - 💾 All data stored locally on device in SharedPreferences
 - 🔓 Full source code available for audit
-- 🧪 Release APKs scanned on [VirusTotal](https://www.virustotal.com/gui/file/468948d1536ddfa744b284f9008558381e8d36e6d26e3cdbab1119fc92cc3b46/detection): 0 detections (v1.3.1)
+- 🧪 Release APKs scanned on [VirusTotal](https://www.virustotal.com/gui/file/a42a812424d6364b5d94c446e842c3bc7178105487f660c618bee83db72605c9/detection): 0 detections (v1.3.2)
 
 ---
 
