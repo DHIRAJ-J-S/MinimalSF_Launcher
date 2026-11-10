@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: MinimalSF Extended plugin
+    url: https://github.com/DHIRAJ-J-S/MinimalSF_Extended/issues
+    about: Issues with force stop, freeze, freeform, Shizuku/root or the extended menu go here
+  - name: Report a security problem
+    url: https://github.com/DHIRAJ-J-S/MinimalSF_Launcher/security/advisories/new
+    about: Please report security problems privately, not as a public issue

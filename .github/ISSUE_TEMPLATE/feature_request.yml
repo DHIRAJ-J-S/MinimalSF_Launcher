@@ -1,0 +1,27 @@
+name: Feature request
+description: Suggest an idea for MinimalSF
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        MinimalSF aims to stay small and distraction free, so not every idea will land in the launcher itself.
+        Extras like coloured icons or power-user actions may go into the optional [MinimalSF Extended](https://github.com/DHIRAJ-J-S/MinimalSF_Extended) plugin instead.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would you like, and why?
+      description: Describe the problem it solves or how you'd use it.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Anything you've tried instead?
+  - type: checkboxes
+    id: checked
+    attributes:
+      label: Before you post
+      options:
+        - label: I searched the existing issues, including closed ones
+          required: true

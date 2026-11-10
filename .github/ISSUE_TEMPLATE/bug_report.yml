@@ -1,0 +1,51 @@
+name: Bug report
+description: Something doesn't work as it should
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open settings
+        2. Tap ...
+        3. ...
+  - type: input
+    id: version
+    attributes:
+      label: MinimalSF version
+      description: Settings > about, or the version in your app store
+      placeholder: "1.3.2"
+    validations:
+      required: true
+  - type: dropdown
+    id: source
+    attributes:
+      label: Installed from
+      options: [GitHub, Obtainium, F-Droid, Built it myself]
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Phone, Android version and ROM
+      placeholder: "Pixel 7, Android 15, stock"
+    validations:
+      required: true
+  - type: dropdown
+    id: extended
+    attributes:
+      label: Is MinimalSF Extended installed?
+      options: ["No", "Yes"]
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or logs
+      description: Optional. Drag images here.
