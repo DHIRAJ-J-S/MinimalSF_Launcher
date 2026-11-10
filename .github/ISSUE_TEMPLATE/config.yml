@@ -1,5 +1,8 @@
 blank_issues_enabled: true
 contact_links:
+  - name: Questions and help
+    url: https://github.com/DHIRAJ-J-S/MinimalSF_Launcher/discussions/categories/q-a
+    about: Ask how to do something or get setup help in Discussions
   - name: MinimalSF Extended plugin
     url: https://github.com/DHIRAJ-J-S/MinimalSF_Extended/issues
     about: Issues with force stop, freeze, freeform, Shizuku/root or the extended menu go here
