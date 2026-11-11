@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MinimalSF · type it, it opens</title>
+<meta name="description" content="MinimalSF is a monochrome Android launcher under 1 MB. Type two letters and your app opens. Open source, no ads, no tracking, no internet permission.">
+<meta name="theme-color" content="#000000">
+<link rel="icon" type="image/png" href="assets/icon.png">
+<meta property="og:title" content="MinimalSF · type it, it opens">
+<meta property="og:description" content="A monochrome Android launcher under 1 MB. Type two letters and your app opens. Open source, no internet permission.">
+<meta property="og:image" content="https://dhiraj-j-s.github.io/MinimalSF_Launcher/assets/social.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preload" href="assets/fonts/droid-sans-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/outfit.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+<script src="main.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">skip to content</a>
+
+<header class="nav" id="top">
+  <a class="brand" href="#top" aria-label="MinimalSF home">
+    <img src="assets/icon.png" alt="" width="28" height="28">
+    <span>MinimalSF</span>
+  </a>
+  <nav aria-label="sections">
+    <a href="#search">search</a>
+    <a href="#features">features</a>
+    <a href="#privacy">privacy</a>
+    <a href="#extended">extended</a>
+  </nav>
+  <a class="nav-cta" href="#get">get it <span aria-hidden="true">↓</span></a>
+</header>
+
+<main id="main">
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-title">
+    <p class="wordmark"><img src="assets/icon.png" alt="" width="64" height="64"><span>MinimalSF</span></p>
+    <p class="eyebrow"><span class="dot" aria-hidden="true"></span>android launcher · v1.3.2 · open source</p>
+    <h1 class="display">
+      <span class="line">type two letters.</span>
+      <span class="line dim">it's already open<span class="caret" aria-hidden="true"></span></span>
+    </h1>
+  </div>
+  <div class="hero-copy">
+    <p class="lede">A black and white home screen built for one thing: getting you to your app before you've finished thinking about it. Under 1 MB. No ads, no trackers, not even the internet permission.</p>
+
+    <div class="tryit" id="tryit">
+      <div class="tryit-head">
+        <span>try it</span>
+        <span class="kbd-hint">just start typing · <kbd>wa</kbd> <kbd>c2</kbd> <kbd>maps</kbd></span>
+      </div>
+      <label class="search">
+        <span class="sr">type an app name</span>
+        <input id="q" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type to launch…" enterkeyhint="go">
+        <button class="clear" id="clear" type="button" aria-label="clear" hidden>×</button>
+      </label>
+      <ol class="results" id="results" aria-live="polite"></ol>
+      <div class="launch" id="launch" aria-hidden="true">
+        <div class="launch-icon" id="launchIcon"></div>
+        <p>opening <b id="launchName"></b></p>
+      </div>
+    </div>
+
+    <div class="hero-ctas">
+      <a class="btn primary" href="#get">download <span aria-hidden="true">↓</span></a>
+      <a class="btn" href="https://github.com/DHIRAJ-J-S/MinimalSF_Launcher">source code <span aria-hidden="true">↗</span></a>
+    </div>
+  </div>
+
+  <div class="hero-phone" aria-hidden="true">
+    <div class="phone">
+      <video src="assets/demo.mp4" poster="assets/demo-poster.webp" autoplay muted loop playsinline preload="metadata"></video>
+    </div>
+    <p class="phone-note">real recording, real phone</p>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker" aria-label="at a glance">
+  <div class="ticker-track">
+    <span><b data-count="813">813</b> KB</span><i></i>
+    <span><b>0</b> trackers</span><i></i>
+    <span>no internet permission</span><i></i>
+    <span>MIT licensed</span><i></i>
+    <span>Android 8+</span><i></i>
+    <span>reproducible build</span><i></i>
+    <span>on F-Droid</span><i></i>
+    <span aria-hidden="true"><b>813</b> KB</span><i></i>
+    <span aria-hidden="true"><b>0</b> trackers</span><i></i>
+    <span aria-hidden="true">no internet permission</span><i></i>
+    <span aria-hidden="true">MIT licensed</span><i></i>
+    <span aria-hidden="true">Android 8+</span><i></i>
+    <span aria-hidden="true">reproducible build</span><i></i>
+    <span aria-hidden="true">on F-Droid</span><i></i>
+  </div>
+</div>
+
+<!-- SEARCH -->
+<section class="section" id="search">
+  <header class="sec-head">
+    <p class="idx">01</p>
+    <h2>Three letters is usually enough.</h2>
+    <p class="sec-sub">Press home and the keyboard is already up. Results narrow as you type, and the moment only one app is left it opens on its own.</p>
+  </header>
+
+  <div class="rank">
+    <div class="rank-steps">
+      <article class="step">
+        <span class="step-n">1</span>
+        <h3>name starts with it</h3>
+        <p><code><u>ca</u>lculator</code> before <code>pi<u>ca</u>sso</code>. The obvious match wins.</p>
+      </article>
+      <article class="step">
+        <span class="step-n">2</span>
+        <h3>your keywords</h3>
+        <p>Give any app a keyword. <code>wa</code> → WhatsApp, <code>yt</code> → YouTube. Optionally the keyword replaces the name entirely.</p>
+      </article>
+      <article class="step">
+        <span class="step-n">3</span>
+        <h3>start of a word</h3>
+        <p><code>store</code> finds Play <u>Store</u>. Multi-word names just work.</p>
+      </article>
+      <article class="step">
+        <span class="step-n">4</span>
+        <h3>anywhere</h3>
+        <p>Still nothing? Any app containing the letters, matched letters lit up in white.</p>
+      </article>
+    </div>
+    <div class="rank-aside">
+      <div class="bigkey"><span>c</span><span>2</span></div>
+      <h3>numbered results</h3>
+      <p>Every result has a number. Type it after your search and that one opens: <code>c2</code> is the second app for <code>c</code>. No reaching for the screen.</p>
+      <ul class="facts">
+        <li><span>auto-launch delay</span><span>adjustable, 100 ms default</span></li>
+        <li><span>enter / go</span><span>opens the top result</span></li>
+        <li><span>search bar</span><span>top or bottom</span></li>
+        <li><span>work &amp; dual apps</span><span>included, labelled</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- GALLERY -->
+<section class="gallery" aria-label="screenshots">
+  <div class="rail" id="rail" tabindex="0">
+    <figure><img src="assets/shots/01_home.webp" alt="Home screen with clock, search box and todo list" loading="lazy" width="540" height="1200"><figcaption>home</figcaption></figure>
+    <figure><img src="assets/shots/02_search.webp" alt="Search results with numbered badges" loading="lazy" width="540" height="1200"><figcaption>search</figcaption></figure>
+    <figure><img src="assets/shots/03_app_menu.webp" alt="Long press menu with shortcuts and app info" loading="lazy" width="540" height="1200"><figcaption>long press</figcaption></figure>
+    <figure><img src="assets/shots/04_all_apps_grid.webp" alt="All apps as a grid" loading="lazy" width="540" height="1200"><figcaption>all apps · grid</figcaption></figure>
+    <figure><img src="assets/shots/07_all_apps_view.webp" alt="All apps view options" loading="lazy" width="540" height="1200"><figcaption>list, names, grid</figcaption></figure>
+    <figure><img src="assets/shots/06_gestures.webp" alt="Gesture settings" loading="lazy" width="540" height="1200"><figcaption>gestures</figcaption></figure>
+    <figure><img src="assets/shots/08_fonts.webp" alt="Font picker" loading="lazy" width="540" height="1200"><figcaption>fonts</figcaption></figure>
+    <figure><img src="assets/shots/05_settings.webp" alt="Settings" loading="lazy" width="540" height="1200"><figcaption>settings</figcaption></figure>
+  </div>
+  <div class="rail-ctrl">
+    <button type="button" data-dir="-1" aria-label="previous screenshots">←</button>
+    <div class="rail-bar"><span id="railBar"></span></div>
+    <button type="button" data-dir="1" aria-label="next screenshots">→</button>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <header class="sec-head">
+    <p class="idx">02</p>
+    <h2>Small, not empty.</h2>
+    <p class="sec-sub">Everything is optional. Turn off what you don't use and the home screen is a clock and a search box.</p>
+  </header>
+
+  <div class="spec">
+    <article class="spec-row">
+      <h3>gestures</h3>
+      <div>
+        <p>Double tap, long press and four swipes on empty space. Lock the screen, pull down notifications, toggle the flashlight, open an app, call someone, run an app shortcut or jump straight into a specific screen of an app.</p>
+        <div class="gestures" id="gestures">
+          <div class="pad" aria-hidden="true"><span class="trace" id="trace"></span></div>
+          <div class="g-list" role="list">
+            <button type="button" role="listitem" data-g="double">double tap <em>lock screen</em></button>
+            <button type="button" role="listitem" data-g="down">swipe down <em>notifications</em></button>
+            <button type="button" role="listitem" data-g="up">swipe up <em>all apps</em></button>
+            <button type="button" role="listitem" data-g="left">swipe left <em>an app</em></button>
+            <button type="button" role="listitem" data-g="right">swipe right <em>call mom</em></button>
+            <button type="button" role="listitem" data-g="long">long press <em>flashlight</em></button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="spec-row">
+      <h3>now playing</h3>
+      <div>
+        <div class="np" aria-hidden="true">
+          <span class="np-ico">❚❚</span><span class="np-t"><b>Runaway</b> · AURORA</span>
+          <span class="np-eq"><i></i><i></i><i></i><i></i></span>
+        </div>
+        <p>A thin bar with whatever's playing, from any music app. Tap to pause, swipe for next or previous, hold to open the player.</p>
+      </div>
+    </article>
+
+    <article class="spec-row">
+      <h3>todo</h3>
+      <div>
+        <ul class="todo" id="todo">
+          <li><button type="button" class="t-done" aria-pressed="false">buy groceries</button><button type="button" class="t-imp" aria-pressed="false" aria-label="mark buy groceries important">!</button></li>
+          <li class="imp"><button type="button" class="t-done" aria-pressed="false">call mom</button><button type="button" class="t-imp" aria-pressed="true" aria-label="mark call mom important">!</button></li>
+          <li><button type="button" class="t-done" aria-pressed="false">ship the release</button><button type="button" class="t-imp" aria-pressed="false" aria-label="mark ship the release important">!</button></li>
+        </ul>
+        <p>A short list right on the home screen, so you remember why you picked up the phone. Mark tasks important, undo a removal, long press to edit.</p>
+      </div>
+    </article>
+
+    <article class="spec-row">
+      <h3>screen time</h3>
+      <div><p><code>screen time 2h 14m</code> sits quietly under the date. Tap it for today's top apps. Read on the phone, never sent anywhere.</p></div>
+    </article>
+
+    <article class="spec-row">
+      <h3>all apps</h3>
+      <div><p>A list, a list of names with no icons, or a grid of 2 to 7 columns. Optional A–Z strip to jump around. Hidden apps stay here, dimmed, one deliberate step away.</p></div>
+    </article>
+
+    <article class="spec-row">
+      <h3>make it yours</h3>
+      <div>
+        <p>Mono, clean, your phone's font, a free Google Font or your own file, with a bold switch. Hide the clock, date, screen time, music bar or todo. 12 or 24 hour. Themed icon on Android 13+.</p>
+        <div class="fonts" id="fonts" aria-hidden="true">
+          <span class="f-mono">11:42 pm</span><span class="f-clean">11:42 pm</span><span class="f-bold">11:42 pm</span>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- PRIVACY -->
+<section class="section privacy" id="privacy">
+  <header class="sec-head">
+    <p class="idx">03</p>
+    <h2>It can't phone home.<br><span class="dim">It doesn't have the permission.</span></h2>
+  </header>
+
+  <div class="perm">
+    <div class="perm-row no">
+      <code>android.permission.INTERNET</code>
+      <span class="tag">not requested</span>
+      <p>No network access at all. Nothing to send your data with, even by accident.</p>
+    </div>
+    <div class="perm-row">
+      <code>accessibility service</code>
+      <span class="tag opt">optional</span>
+      <p>Only to lock the screen from a gesture. Asked for when you set that up.</p>
+    </div>
+    <div class="perm-row">
+      <code>notification access</code>
+      <span class="tag opt">optional</span>
+      <p>Only to show the song in the now playing bar.</p>
+    </div>
+    <div class="perm-row">
+      <code>PACKAGE_USAGE_STATS</code>
+      <span class="tag opt">optional</span>
+      <p>Only for today's screen time, read on the phone.</p>
+    </div>
+    <div class="perm-row">
+      <code>CALL_PHONE</code>
+      <span class="tag opt">optional</span>
+      <p>Only if you set a gesture to call a contact.</p>
+    </div>
+  </div>
+
+  <ul class="pledges">
+    <li><b>0</b><span>ads</span></li>
+    <li><b>0</b><span>analytics</span></li>
+    <li><b>0</b><span>trackers</span></li>
+    <li><b>0</b><span>non-free libraries</span></li>
+  </ul>
+  <p class="aside">This page doesn't track you either: no cookies, no analytics, fonts served from here.</p>
+</section>
+
+<!-- EXTENDED -->
+<section class="section extended" id="extended">
+  <div class="ext-card">
+    <div>
+      <p class="idx">04 · optional</p>
+      <h2>Want more? Add it on the side.</h2>
+      <p>MinimalSF Extended is a tiny separate plugin, so the launcher itself stays small. Force stop, freeze, clear data, clear cache and open in freeform, straight from the long press menu (Shizuku or root). Plus extras that don't need either: coloured icons, a hidden search bar, and full control over what the long press menu shows.</p>
+      <a class="btn" href="https://github.com/DHIRAJ-J-S/MinimalSF_Extended">MinimalSF Extended <span aria-hidden="true">↗</span></a>
+    </div>
+    <ul class="ext-menu" aria-hidden="true">
+      <li><span class="ei">ⓘ</span>app info</li>
+      <li><span class="ei">▭</span>open in freeform</li>
+      <li><span class="ei">◉</span>force stop</li>
+      <li><span class="ei">✱</span>freeze</li>
+      <li class="dimrow"><span class="ei">⊞</span>extended…</li>
+    </ul>
+  </div>
+</section>
+
+<!-- GET -->
+<section class="section get" id="get">
+  <header class="sec-head">
+    <p class="idx">05</p>
+    <h2>Get it.</h2>
+    <p class="sec-sub">Free, forever. Pick where you like your updates from.</p>
+  </header>
+
+  <div class="dl">
+    <a class="dl-card main" href="https://f-droid.org/packages/io.github.dhiraj_j_s.minimalsf/">
+      <span class="dl-k">recommended</span>
+      <span class="dl-t">F-Droid</span>
+      <span class="dl-d">Built from source by F-Droid, signed with the same key as GitHub.</span>
+      <span class="dl-go" aria-hidden="true">↗</span>
+    </a>
+    <a class="dl-card" href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/DHIRAJ-J-S/MinimalSF_Launcher">
+      <span class="dl-k">auto updates</span>
+      <span class="dl-t">Obtainium</span>
+      <span class="dl-d">Updates straight from GitHub releases.</span>
+      <span class="dl-go" aria-hidden="true">↗</span>
+    </a>
+    <a class="dl-card" href="https://github.com/DHIRAJ-J-S/MinimalSF_Launcher/releases/latest">
+      <span class="dl-k">direct</span>
+      <span class="dl-t">GitHub</span>
+      <span class="dl-d">The APK from the latest release.</span>
+      <span class="dl-go" aria-hidden="true">↗</span>
+    </a>
+  </div>
+
+  <div class="verify">
+    <p>signing certificate · SHA-256</p>
+    <button type="button" class="hash" id="hash" title="copy">7a0811bbdde638db9419629c1310966781ad509b7c5dac79c9f517ab04d36a90</button>
+    <span class="copied" id="copied" aria-live="polite"></span>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section faq">
+  <header class="sec-head"><p class="idx">06</p><h2>Questions.</h2></header>
+  <details><summary>Does it work with work profiles and dual apps?</summary><p>Yes. They show up in search and all apps, labelled <code>· work</code> and <code>· dual</code>.</p></details>
+  <details><summary>Can I still browse my apps?</summary><p>Of course. Tap "all apps" for a list, a names-only list or a grid, with an optional A–Z strip.</p></details>
+  <details><summary>What if two apps start with the same letters?</summary><p>Nothing opens until one is left. Add a letter, type the result's number (<code>w2</code>), or press enter for the top one.</p></details>
+  <details><summary>Will it drain my battery?</summary><p>No. There's nothing running in the background, no sync, no network. It's a home screen.</p></details>
+  <details><summary>Why is it under 1 MB?</summary><p>No ads SDK, no analytics, no heavy UI libraries. Just the launcher.</p></details>
+  <details><summary>How do I report a bug or ask for a feature?</summary><p>Open an issue on <a href="https://github.com/DHIRAJ-J-S/MinimalSF_Launcher/issues">GitHub</a>, or ask in <a href="https://github.com/DHIRAJ-J-S/MinimalSF_Launcher/discussions">Discussions</a>.</p></details>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="foot-big" aria-hidden="true">MinimalSF<span class="caret"></span></div>
+  <div class="foot-row">
+    <p>made by <a href="https://github.com/DHIRAJ-J-S">THE.404GUY</a> · MIT license</p>
+    <p><a href="https://github.com/DHIRAJ-J-S/MinimalSF_Launcher">source</a> · <a href="https://github.com/DHIRAJ-J-S/MinimalSF_Launcher/blob/main/CHANGELOG.md">changelog</a> · <a href="#top">top ↑</a></p>
+  </div>
+</footer>
+</body>
+</html>
