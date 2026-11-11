@@ -5,7 +5,7 @@
 ### New
 - **Plugin update notice** - settings shows "[plugin update available]" next to the extended menu when the installed MinimalSF Extended is older than the newest one MinimalSF knows of, and the extended menu gets an "update now" button that opens the releases page. MinimalSF still has no internet: each release carries the plugin version that was current when it came out.
 - With a plugin too old for the extended menu (1.0), opening it explains that and offers the update, instead of jumping straight into the plugin.
-- **Actions directly in the long press menu** (MinimalSF Extended 1.2+) - settings > extended menu > long press menu > "actions directly in this menu" puts force stop, freeze and the other plugin actions next to app info, one tap away, instead of behind "extended…" (#3).
+- **Actions in the main long press menu** (MinimalSF Extended 1.2+) - settings > extended menu > long press menu > "actions in the main menu": pick which plugin actions (force stop, freeform…) sit next to app info, one tap away. The rest stay under "extended…", which disappears when none are left (#3).
 
 ## v1.3.2
 

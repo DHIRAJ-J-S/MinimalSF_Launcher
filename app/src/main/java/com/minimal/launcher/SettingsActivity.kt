@@ -406,7 +406,9 @@ class SettingsActivity : AppCompatActivity() {
                         else Toast.makeText(this, "couldn't save - is MinimalSF Extended still installed?", Toast.LENGTH_SHORT).show()
                     }
                 }
-                Extended.PAGE -> MinimalDialog.MenuRow(s.label, drawable = s.icon) { showExtendedMenu(s) }
+                Extended.PAGE -> EXTENDED_ICONS[s.id].let { own ->
+                    MinimalDialog.MenuRow(s.label, icon = own, drawable = if (own == null) s.icon else null) { showExtendedMenu(s) }
+                }
                 else -> MinimalDialog.MenuRow(s.label, drawable = s.icon) { openExtended() }
             }
         }
@@ -427,10 +429,11 @@ class SettingsActivity : AppCompatActivity() {
 
     companion object {
         private const val REPO_URL = "https://github.com/DHIRAJ-J-S/MinimalSF_Launcher"
-        // Icons for MinimalSF's own long press entries in the extended menu, the same as in that menu
+        // Icons for MinimalSF's own long press entries in the extended menu, the same as in that menu,
+        // and for the "actions in the main menu" page
         private val EXTENDED_ICONS = mapOf("menu_shortcuts" to R.drawable.ic_shortcut, "menu_app_info" to R.drawable.ic_info,
             "menu_uninstall" to R.drawable.ic_uninstall, "menu_keyword" to R.drawable.ic_keyword, "menu_hide" to R.drawable.ic_eye_off,
-            "actions_inline" to R.drawable.ic_extended)
+            "main_menu" to R.drawable.ic_extended)
         private const val EXTRA_PAGE = "page"
         // Each page's title, and its row on the main menu
         private const val PAGE_SEARCH = "search & keyboard"

@@ -1009,16 +1009,20 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         // Each entry can be turned off in settings > extended menu > long press menu (MinimalSF Extended)
         val shortcuts = if (!ext.shows("menu_shortcuts")) emptyList()
             else AppShortcuts.forPackage(this, app.packageName, app.user).take(4)
-        // With "actions directly in this menu" on, the plugin's actions replace "extended…"
-        val inline = ext.inlineActions && ext.anyAction && Extended.available(this)
-        val extActions = if (inline) Extended.actions(this) else emptyList()
+        // Actions picked for the main menu (settings > extended menu > long press menu) sit next to app
+        // info; the rest stay behind "extended…". Only then is the plugin asked for its actions here.
+        val split = ext.mainActions.isNotEmpty() && ext.anyAction && Extended.available(this)
+        val all = if (split) Extended.actions(this) else emptyList()
+        val extActions = all.filter { it.id in ext.mainActions }
+        val rest = all.filter { it.id !in ext.mainActions }
         val menu = listOfNotNull(
             if (!ext.shows("menu_app_info")) null else Entry("app info", R.drawable.ic_info) { keepAllAppsOpen = showingAllApps; try { getSystemService(LauncherApps::class.java)?.startAppDetailsActivity(app.component, app.user, null, null) } catch (_: Exception) {} },
             if (!app.canUninstall || !ext.shows("menu_uninstall")) null else Entry("uninstall", R.drawable.ic_uninstall) { keepAllAppsOpen = showingAllApps; try { startActivity(Intent(Intent.ACTION_DELETE, Uri.parse("package:${app.packageName}")).putExtra(Intent.EXTRA_USER, app.user)) } catch (_: Exception) {} },
             if (!ext.shows("menu_keyword")) null else Entry("set keyword", R.drawable.ic_keyword, trailing = currentKeyword.ifEmpty { null }) { promptKeyword(app, currentKeyword) },
-            // Only with the optional MinimalSF Extended plugin installed, and some of its actions turned on
-            if (inline || !Extended.available(this) || !ext.anyAction) null else Entry("extended…", R.drawable.ic_extended) { showExtended(app) },
         ) + extActions.map { a -> Entry(a.label, R.drawable.ic_extended, drawable = a.icon) { runExtended(app, a) } } + listOfNotNull(
+            // Only with the optional MinimalSF Extended plugin installed, and some of its actions turned on
+            if (!Extended.available(this) || !ext.anyAction || (split && rest.isEmpty())) null
+            else Entry("extended…", R.drawable.ic_extended) { showExtended(app, if (split) rest else null) },
             if (!ext.shows("menu_hide")) null else Entry(if (isHidden) "show in search" else "hide from search", if (isHidden) R.drawable.ic_eye else R.drawable.ic_eye_off) {
                 Prefs.setAppHidden(this, app.key, !isHidden)
                 if (showingAllApps) { adapter.update(AppRepository.apps, "", Prefs.getHiddenApps(this)); updateScrubber() }
@@ -1050,8 +1054,8 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
      * The plugin decides what's in this menu (names, icons, confirm prompts), so new actions arrive with
      * a plugin update; MinimalSF only shows the list and passes the chosen action back.
      */
-    private fun showExtended(app: AppInfo) {
-        val actions = Extended.actions(this)
+    private fun showExtended(app: AppInfo, only: List<Extended.Action>? = null) {
+        val actions = only ?: Extended.actions(this)
         if (actions.isEmpty()) { Toast.makeText(this, "MinimalSF Extended has no actions to offer", Toast.LENGTH_SHORT).show(); return }
         MinimalDialog.options(this, title = app.label, subtitle = "MinimalSF Extended",
             items = actions.map { it.label }.toTypedArray(), iconDrawables = actions.map { it.icon }) { picked ->

@@ -100,7 +100,7 @@ object Extended {
 
     /** What the plugin's toggles change in MinimalSF. Without the plugin, everything is as it is out of the box. */
     class Flags(val hideSearch: Boolean, val colourIcons: Boolean, val autoLaunch: Boolean,
-                private val hiddenMenu: Set<String>, val anyAction: Boolean, val inlineActions: Boolean = false) {
+                private val hiddenMenu: Set<String>, val anyAction: Boolean, val mainActions: Set<String> = emptySet()) {
         /** Whether MinimalSF's own long press entry [id] (e.g. "menu_app_info") is shown. */
         fun shows(id: String) = id !in hiddenMenu
     }
@@ -118,8 +118,8 @@ object Extended {
             hiddenMenu = all.filter { (k, v) -> k.startsWith("menu_") && !v }.keys,
             // Before the menu was ever opened nothing is copied yet: assume the actions are on
             anyAction = actions.isEmpty() || actions.values.any { it },
-            // The actions next to app info instead of behind "extended…" (plugin 1.2+)
-            inlineActions = all["actions_inline"] ?: false)
+            // Actions shown next to app info instead of behind "extended…" (plugin 1.2+)
+            mainActions = all.filter { (k, v) -> k.startsWith("main_") && v }.keys.map { it.removePrefix("main_") }.toSet())
     }
 
     /**
