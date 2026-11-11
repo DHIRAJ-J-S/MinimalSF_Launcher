@@ -1009,35 +1009,39 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         // Each entry can be turned off in settings > extended menu > long press menu (MinimalSF Extended)
         val shortcuts = if (!ext.shows("menu_shortcuts")) emptyList()
             else AppShortcuts.forPackage(this, app.packageName, app.user).take(4)
+        // With "actions directly in this menu" on, the plugin's actions replace "extended…"
+        val inline = ext.inlineActions && ext.anyAction && Extended.available(this)
+        val extActions = if (inline) Extended.actions(this) else emptyList()
         val menu = listOfNotNull(
-            if (!ext.shows("menu_app_info")) null else Triple("app info", R.drawable.ic_info) { keepAllAppsOpen = showingAllApps; try { getSystemService(LauncherApps::class.java)?.startAppDetailsActivity(app.component, app.user, null, null) } catch (_: Exception) {}; Unit },
-            if (!app.canUninstall || !ext.shows("menu_uninstall")) null else Triple("uninstall", R.drawable.ic_uninstall) { keepAllAppsOpen = showingAllApps; try { startActivity(Intent(Intent.ACTION_DELETE, Uri.parse("package:${app.packageName}")).putExtra(Intent.EXTRA_USER, app.user)) } catch (_: Exception) {}; Unit },
-            if (!ext.shows("menu_keyword")) null else Triple("set keyword", R.drawable.ic_keyword) { promptKeyword(app, currentKeyword) },
+            if (!ext.shows("menu_app_info")) null else Entry("app info", R.drawable.ic_info) { keepAllAppsOpen = showingAllApps; try { getSystemService(LauncherApps::class.java)?.startAppDetailsActivity(app.component, app.user, null, null) } catch (_: Exception) {} },
+            if (!app.canUninstall || !ext.shows("menu_uninstall")) null else Entry("uninstall", R.drawable.ic_uninstall) { keepAllAppsOpen = showingAllApps; try { startActivity(Intent(Intent.ACTION_DELETE, Uri.parse("package:${app.packageName}")).putExtra(Intent.EXTRA_USER, app.user)) } catch (_: Exception) {} },
+            if (!ext.shows("menu_keyword")) null else Entry("set keyword", R.drawable.ic_keyword, trailing = currentKeyword.ifEmpty { null }) { promptKeyword(app, currentKeyword) },
             // Only with the optional MinimalSF Extended plugin installed, and some of its actions turned on
-            if (!Extended.available(this) || !ext.anyAction) null else Triple("extended…", R.drawable.ic_extended) { showExtended(app) },
-            if (!ext.shows("menu_hide")) null else Triple(if (isHidden) "show in search" else "hide from search", if (isHidden) R.drawable.ic_eye else R.drawable.ic_eye_off) {
+            if (inline || !Extended.available(this) || !ext.anyAction) null else Entry("extended…", R.drawable.ic_extended) { showExtended(app) },
+        ) + extActions.map { a -> Entry(a.label, R.drawable.ic_extended, drawable = a.icon) { runExtended(app, a) } } + listOfNotNull(
+            if (!ext.shows("menu_hide")) null else Entry(if (isHidden) "show in search" else "hide from search", if (isHidden) R.drawable.ic_eye else R.drawable.ic_eye_off) {
                 Prefs.setAppHidden(this, app.key, !isHidden)
                 if (showingAllApps) { adapter.update(AppRepository.apps, "", Prefs.getHiddenApps(this)); updateScrubber() }
                 else filterApps(searchInput.text.toString(), allowAutoLaunch = false)
             }
         )
-        val items = shortcuts.map { AppShortcuts.label(it) } + menu.map { it.first }
-        val icons = IntArray(shortcuts.size) { R.drawable.ic_shortcut } + menu.map { it.second }.toIntArray()
-        val trailing = arrayOfNulls<String>(shortcuts.size) +
-            menu.map { if (it.first == "set keyword") currentKeyword.ifEmpty { null } else null }.toTypedArray()
+        val items = shortcuts.map { AppShortcuts.label(it) } + menu.map { it.label }
+        val icons = IntArray(shortcuts.size) { R.drawable.ic_shortcut } + menu.map { it.icon }.toIntArray()
+        val drawables = List(shortcuts.size) { null } + menu.map { it.drawable }
+        val trailing = arrayOfNulls<String>(shortcuts.size) + menu.map { it.trailing }.toTypedArray()
         // Usage stats only cover this profile
         val usage = if (screenTimeActive() && !app.otherProfile) ScreenTime.today[app.packageName]?.let { "${ScreenTime.format(it)} today" } else null
         val version = try { packageManager.getPackageInfo(app.packageName, 0).versionName } catch (_: Exception) { null }
         val details = listOfNotNull(app.packageName, version?.let { "version $it" }, usage).joinToString("\n")
 
         MinimalDialog.options(this, title = app.label, items = items.toTypedArray(), icons = icons,
-            subtitle = details, trailing = trailing) { picked ->
+            subtitle = details, trailing = trailing, iconDrawables = drawables) { picked ->
             if (picked < shortcuts.size) {
                 val s = shortcuts[picked]
                 if (!AppShortcuts.start(this, s.`package`, s.id, user = app.user)) Toast.makeText(this, "shortcut unavailable", Toast.LENGTH_SHORT).show()
                 return@options
             }
-            menu[picked - shortcuts.size].third()
+            menu[picked - shortcuts.size].run()
         }
     }
 
@@ -1051,15 +1055,23 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         if (actions.isEmpty()) { Toast.makeText(this, "MinimalSF Extended has no actions to offer", Toast.LENGTH_SHORT).show(); return }
         MinimalDialog.options(this, title = app.label, subtitle = "MinimalSF Extended",
             items = actions.map { it.label }.toTypedArray(), iconDrawables = actions.map { it.icon }) { picked ->
-            val action = actions[picked]
-            val run = { if (!Extended.run(this, action.id, app)) Toast.makeText(this, "MinimalSF Extended isn't available", Toast.LENGTH_SHORT).show() }
-            val confirm = action.confirm
-            if (confirm == null) run()
-            else MinimalDialog.confirm(this, title = confirm.title.replace("{app}", app.label),
-                message = confirm.message.replace("{app}", app.label),
-                positiveText = confirm.button, negativeText = "cancel", onPositive = run)
+            runExtended(app, actions[picked])
         }
     }
+
+    /** Runs one of the plugin's actions on [app], asking first when the plugin says to. */
+    private fun runExtended(app: AppInfo, action: Extended.Action) {
+        val run = { if (!Extended.run(this, action.id, app)) Toast.makeText(this, "MinimalSF Extended isn't available", Toast.LENGTH_SHORT).show() }
+        val confirm = action.confirm
+        if (confirm == null) run()
+        else MinimalDialog.confirm(this, title = confirm.title.replace("{app}", app.label),
+            message = confirm.message.replace("{app}", app.label),
+            positiveText = confirm.button, negativeText = "cancel", onPositive = run)
+    }
+
+    /** One long press menu entry. [drawable] (an icon from the plugin) wins over [icon]. */
+    private class Entry(val label: String, val icon: Int, val drawable: android.graphics.drawable.Drawable? = null,
+                        val trailing: String? = null, val run: () -> Unit)
 
     private fun promptKeyword(app: AppInfo, current: String) {
         MinimalDialog.textInput(this,

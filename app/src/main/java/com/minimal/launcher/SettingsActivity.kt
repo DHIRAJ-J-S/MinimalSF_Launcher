@@ -429,7 +429,8 @@ class SettingsActivity : AppCompatActivity() {
         private const val REPO_URL = "https://github.com/DHIRAJ-J-S/MinimalSF_Launcher"
         // Icons for MinimalSF's own long press entries in the extended menu, the same as in that menu
         private val EXTENDED_ICONS = mapOf("menu_shortcuts" to R.drawable.ic_shortcut, "menu_app_info" to R.drawable.ic_info,
-            "menu_uninstall" to R.drawable.ic_uninstall, "menu_keyword" to R.drawable.ic_keyword, "menu_hide" to R.drawable.ic_eye_off)
+            "menu_uninstall" to R.drawable.ic_uninstall, "menu_keyword" to R.drawable.ic_keyword, "menu_hide" to R.drawable.ic_eye_off,
+            "actions_inline" to R.drawable.ic_extended)
         private const val EXTRA_PAGE = "page"
         // Each page's title, and its row on the main menu
         private const val PAGE_SEARCH = "search & keyboard"
