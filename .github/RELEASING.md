@@ -6,7 +6,8 @@ Ordinary commits never release anything. A commit on `main` releases only when i
 
 1. In `app/build.gradle`, set `versionName` to the new version and raise `versionCode`.
 2. Add `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` (500 characters at most). This is what F-Droid shows.
-3. Commit with the version first and your release notes in the body, then push:
+3. In `Extended.kt`, check `LATEST_VERSION_CODE` is the newest MinimalSF Extended `versionCode`. MinimalSF has no internet, so this is how it tells people their plugin is out of date.
+4. Commit with the version first and your release notes in the body, then push:
 
 ```
 v1.4: Short title of the release

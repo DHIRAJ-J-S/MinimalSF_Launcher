@@ -169,7 +169,7 @@ class SettingsActivity : AppCompatActivity() {
         }) { showFontMenu() }
         row("gestures", { "→" }) { startActivity(Intent(this, GesturesActivity::class.java)) }
         // The optional plugin: its menu when it's installed, otherwise what it adds and where to get it
-        val extendedRow = row("want more features?", { "→" }) {
+        val extendedRow = row("want more features?", { if (Extended.updateAvailable(this)) "[plugin update available]" else "→" }) {
             if (Extended.available(this)) { showExtendedMenu(); return@row }
             MinimalDialog.confirm(this, title = "MinimalSF Extended",
                 message = "install the MinimalSF Extended plugin to add these to the long press menu " +
@@ -179,10 +179,7 @@ class SettingsActivity : AppCompatActivity() {
                     "hide the search bar, auto-launch on / off and what the long press menu shows.",
                 // ↗: opens a website
                 negativeText = "close", positiveText = "get it ↗",
-                onPositive = {
-                    try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(EXTENDED_URL))) }
-                    catch (_: Exception) { Toast.makeText(this, "no browser found", Toast.LENGTH_SHORT).show() }
-                })
+                onPositive = { openReleases() })
         }
         updaters += {
             extendedRow.findViewById<TextView>(R.id.rowLabel).text =
@@ -387,8 +384,17 @@ class SettingsActivity : AppCompatActivity() {
      */
     private fun showExtendedMenu(page: Extended.Setting? = null) {
         val all = Extended.settings(this)
-        // A plugin older than 1.1 has no menu: just open it, as before
-        if (all.isEmpty()) { openExtended(); return }
+        val update = Extended.updateAvailable(this)
+        if (all.isEmpty()) {
+            // A plugin older than 1.1 has no menu: say so and offer the update, or just open it
+            if (!update) { openExtended(); return }
+            MinimalDialog.confirm(this, title = "extended menu",
+                message = "this version of MinimalSF Extended doesn't have the extended menu yet. " +
+                    "update it to choose what the long press menu shows, colour icons and more.",
+                negativeText = "open plugin", onNegative = { openExtended() },
+                positiveText = "update now ↗", onPositive = { openReleases() })
+            return
+        }
         val rows = all.filter { it.parent == (page?.id ?: "") }.map { s ->
             when (s.kind) {
                 Extended.TOGGLE -> {
@@ -405,16 +411,22 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
         MinimalDialog.toggleMenu(this, title = page?.label ?: "extended menu",
-            subtitle = if (page == null) "from MinimalSF Extended" else null, rows = rows)
+            subtitle = if (page == null) "from MinimalSF Extended" else null, rows = rows,
+            // MinimalSF has no internet: it knows the plugin version that was out when it was released
+            button = if (update) MinimalDialog.TitleButton("update now ↗") { openReleases() } else null)
     }
 
     private fun openExtended() {
         packageManager.getLaunchIntentForPackage(Extended.PACKAGE)?.let { startActivity(it) }
     }
 
+    private fun openReleases() {
+        try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(Extended.RELEASES_URL))) }
+        catch (_: Exception) { Toast.makeText(this, "no browser found", Toast.LENGTH_SHORT).show() }
+    }
+
     companion object {
         private const val REPO_URL = "https://github.com/DHIRAJ-J-S/MinimalSF_Launcher"
-        private const val EXTENDED_URL = "https://github.com/DHIRAJ-J-S/MinimalSF_Extended/releases/latest"
         // Icons for MinimalSF's own long press entries in the extended menu, the same as in that menu
         private val EXTENDED_ICONS = mapOf("menu_shortcuts" to R.drawable.ic_shortcut, "menu_app_info" to R.drawable.ic_info,
             "menu_uninstall" to R.drawable.ic_uninstall, "menu_keyword" to R.drawable.ic_keyword, "menu_hide" to R.drawable.ic_eye_off)

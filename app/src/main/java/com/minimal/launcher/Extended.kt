@@ -121,6 +121,20 @@ object Extended {
     }
 
     /**
+     * The newest plugin version (its versionCode) when this MinimalSF was released. MinimalSF has no
+     * internet, so this is how it knows of updates: each MinimalSF release carries the plugin version
+     * of that day. Bump it whenever a plugin release comes out (see .github/RELEASING.md).
+     */
+    const val LATEST_VERSION_CODE = 2L // 1.1
+    const val RELEASES_URL = "https://github.com/DHIRAJ-J-S/MinimalSF_Extended/releases/latest"
+
+    /** The installed plugin is older than [LATEST_VERSION_CODE]. Checked on the phone, no internet. */
+    fun updateAvailable(c: Context): Boolean = available(c) && try {
+        androidx.core.content.pm.PackageInfoCompat.getLongVersionCode(
+            c.packageManager.getPackageInfo(PACKAGE, 0)) < LATEST_VERSION_CODE
+    } catch (_: Exception) { false }
+
+    /**
      * Installed and signed with our key. The key check matters: an app could take the plugin's package
      * name on a phone without the real plugin; without it, it would get to see which app you long
      * pressed and fill this menu. With a different key it's simply ignored.

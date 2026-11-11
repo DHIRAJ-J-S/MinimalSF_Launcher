@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### New
+- **Plugin update notice** - settings shows "[plugin update available]" next to the extended menu when the installed MinimalSF Extended is older than the newest one MinimalSF knows of, and the extended menu gets an "update now" button that opens the releases page. MinimalSF still has no internet: each release carries the plugin version that was current when it came out.
+- With a plugin too old for the extended menu (1.0), opening it explains that and offers the update, instead of jumping straight into the plugin.
+
 ## v1.3.2
 
 ### New

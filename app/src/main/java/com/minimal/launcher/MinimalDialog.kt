@@ -117,11 +117,24 @@ object MinimalDialog {
     class MenuRow(val label: String, val icon: Int? = null, val drawable: android.graphics.drawable.Drawable? = null,
                   val isOn: (() -> Boolean)? = null, val onClick: () -> Unit)
 
-    /** A menu of toggles and links, like a settings page in a box (settings > extended menu). */
-    fun toggleMenu(ctx: Context, title: String, subtitle: String? = null, rows: List<MenuRow>) {
+    /** A small button on the right of a dialog's title; a label ending in ↗ opens a website. */
+    class TitleButton(val label: String, val onClick: () -> Unit)
+
+    /**
+     * A menu of toggles and links, like a settings page in a box (settings > extended menu).
+     * [button] goes on the right of the title, e.g. "update now ↗" when the plugin is out of date.
+     */
+    fun toggleMenu(ctx: Context, title: String, subtitle: String? = null, rows: List<MenuRow>, button: TitleButton? = null) {
         val dialog = newDialog(ctx)
         val root = frame(ctx)
-        root.addView(title(ctx, title, subtitle)); root.addView(divider(ctx))
+        root.addView(if (button == null) title(ctx, title, subtitle) else LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            addView(title(ctx, title, subtitle).apply {
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            })
+            addView(titleButton(ctx, button) { dialog.dismiss() })
+        })
+        root.addView(divider(ctx))
         root.addView(list(ctx, rows.map { r ->
             val isOn = r.isOn
             lateinit var view: LinearLayout
@@ -442,6 +455,31 @@ object MinimalDialog {
             paint()
         }
         addView(chip)
+    }
+
+    /** A [TitleButton], drawn like the title toggle when on: white text, white outline. */
+    private fun titleButton(ctx: Context, b: TitleButton, dismiss: () -> Unit) = LinearLayout(ctx).apply {
+        orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
+        setPadding(dp(ctx, 12), dp(ctx, 5), dp(ctx, 10), dp(ctx, 5))
+        layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            .apply { marginEnd = dp(ctx, 16) }
+        val external = b.label.endsWith("↗")
+        val text = b.label.removeSuffix("↗").trimEnd()
+        addView(TextView(ctx).apply {
+            this.text = text; font(ctx, 12f); setTextColor(Color.WHITE)
+            typeface = Typeface.create(tf(ctx), Typeface.BOLD)
+        })
+        if (external) addView(android.widget.ImageView(ctx).apply {
+            setImageResource(R.drawable.ic_external)
+            imageTintList = ColorStateList.valueOf(Color.WHITE)
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            layoutParams = LinearLayout.LayoutParams(dp(ctx, 12), dp(ctx, 12)).apply { marginStart = dp(ctx, 5) }
+        })
+        contentDescription = if (external) "$text, opens a website" else text
+        isClickable = true; isFocusable = true
+        background = RippleDrawable(ColorStateList.valueOf(PRESS),
+            GradientDrawable().apply { setColor(BG); setStroke(dp(ctx, 1), Color.WHITE) }, null)
+        setOnClickListener { dismiss(); b.onClick() }
     }
 
     /** Chips in the same style as the title toggle: the chosen one white with a white outline. */
