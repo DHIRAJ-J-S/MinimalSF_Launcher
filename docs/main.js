@@ -64,7 +64,7 @@
     if (!v) {
       // empty: faint placeholder rows instead of a blank box
       list.innerHTML = '<li class="hint">your apps show up here as you type</li>' +
-        [62, 44, 70, 38, 55].map((w, i) => `<li class="skel" aria-hidden="true"><span class="ic"></span><span class="bar" style="width:${w}%"></span><span style="flex:1"></span><span class="n"></span></li>`).join("");
+        [62, 44, 70].map((w, i) => `<li class="skel" aria-hidden="true"><span class="ic"></span><span class="bar" style="width:${w}%"></span><span style="flex:1"></span><span class="n"></span></li>`).join("");
       list._r = null; return;
     }
 
@@ -95,7 +95,7 @@
 
   function draw(r, len) {
     if (!r.length) { list.innerHTML = '<li class="empty">no match. try "wa", "c2" or "maps"</li>'; return; }
-    list.innerHTML = r.slice(0, 6).map((x, i) => `
+    list.innerHTML = r.slice(0, 4).map((x, i) => `
       <li data-i="${i}" class="${i === 0 ? "top" : ""}">
         <span class="ic" aria-hidden="true">${esc(x.a.name[0])}</span>
         <span class="nm">${hl(x.a.name, x.at, len)}</span>
@@ -251,9 +251,13 @@
     setTimeout(() => (copied.textContent = ""), 1800);
   });
 
-  // ---------- pause the hero video when it's off screen ----------
-  const vid = $(".phone video");
-  if (vid && "IntersectionObserver" in window) {
-    new IntersectionObserver(([e]) => { e.isIntersecting && !reduced ? vid.play().catch(() => {}) : vid.pause(); }).observe(vid);
+  // ---------- videos play only while visible (and never when hidden by the layout) ----------
+  const vids = $$("video[data-autoplay]");
+  if ("IntersectionObserver" in window) {
+    const vio = new IntersectionObserver(es => es.forEach(e => {
+      const v = e.target;
+      if (e.isIntersecting && !reduced) { v.preload = "auto"; v.play().catch(() => {}); } else v.pause();
+    }), { threshold: .25 });
+    vids.forEach(v => vio.observe(v));
   }
 })();

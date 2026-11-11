@@ -39,8 +39,10 @@
 <!-- HERO -->
 <section class="hero">
   <div class="hero-title">
-    <p class="wordmark"><img src="assets/icon.png" alt="" width="64" height="64"><span>MinimalSF</span></p>
-    <p class="eyebrow"><span class="dot" aria-hidden="true"></span>android launcher · v1.3.2 · open source</p>
+    <div class="brandrow">
+      <p class="wordmark"><img src="assets/icon.png" alt="" width="64" height="64"><span>MinimalSF</span></p>
+      <p class="eyebrow"><span class="dot" aria-hidden="true"></span>android launcher · v1.3.2 · open source</p>
+    </div>
     <h1 class="display">
       <span class="line">type two letters.</span>
       <span class="line dim">it's already open<span class="caret" aria-hidden="true"></span></span>
@@ -74,7 +76,7 @@
 
   <div class="hero-phone" aria-hidden="true">
     <div class="phone">
-      <video src="assets/demo.mp4" poster="assets/demo-poster.webp" autoplay muted loop playsinline preload="metadata"></video>
+      <video src="assets/demo.mp4" poster="assets/demo-poster.webp" muted loop playsinline preload="metadata" data-autoplay></video>
     </div>
     <p class="phone-note">real recording, real phone</p>
   </div>
@@ -148,6 +150,7 @@
 <!-- GALLERY -->
 <section class="gallery" aria-label="screenshots">
   <div class="rail" id="rail" tabindex="0">
+    <figure class="vid"><video src="assets/demo.mp4" poster="assets/demo-poster.webp" muted loop playsinline preload="none" data-autoplay aria-label="Screen recording of MinimalSF"></video><figcaption>real recording</figcaption></figure>
     <figure><img src="assets/shots/01_home.webp" alt="Home screen with clock, search box and todo list" loading="lazy" width="540" height="1200"><figcaption>home</figcaption></figure>
     <figure><img src="assets/shots/02_search.webp" alt="Search results with numbered badges" loading="lazy" width="540" height="1200"><figcaption>search</figcaption></figure>
     <figure><img src="assets/shots/03_app_menu.webp" alt="Long press menu with shortcuts and app info" loading="lazy" width="540" height="1200"><figcaption>long press</figcaption></figure>
