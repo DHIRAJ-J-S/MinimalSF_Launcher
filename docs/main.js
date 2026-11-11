@@ -61,7 +61,12 @@
     let v = q.value.trim();
     clearBtn.hidden = !v;
     document.body.classList.toggle("egg", v === "404");
-    if (!v) { list.innerHTML = '<li class="empty idle">your apps show up here as you type</li>'; list._r = null; return; }
+    if (!v) {
+      // empty: faint placeholder rows instead of a blank box
+      list.innerHTML = '<li class="hint">your apps show up here as you type</li>' +
+        [62, 44, 70, 38, 55].map((w, i) => `<li class="skel" aria-hidden="true"><span class="ic"></span><span class="bar" style="width:${w}%"></span><span style="flex:1"></span><span class="n"></span></li>`).join("");
+      list._r = null; return;
+    }
 
     // Easter egg, same as the app: 404 is the one thing that gets a colour (the 404 ms launch delay is blue)
     if (v === "404") {
