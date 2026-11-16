@@ -111,7 +111,13 @@ https://github.com/user-attachments/assets/63c2fac5-67a9-4997-858d-60da1021822d
 
 ---
 
-## 🆕 What's new in 1.3.2
+## 🆕 What's new in 1.3.3
+
+- **Wallpaper:** your phone's wallpaper behind the home screen, dimmed so text stays readable (on by default, turn off in settings → home screen) ([#13](https://github.com/DHIRAJ-J-S/MinimalSF_Launcher/issues/13))
+- **Shortcuts in search:** saved shortcuts show up below apps and can have a keyword; apps' built-in shortcuts too with MinimalSF Extended ([#2](https://github.com/DHIRAJ-J-S/MinimalSF_Launcher/issues/2))
+- **Hide status bar**, a gesture to **open MinimalSF settings**, and a now playing bar that shows **only while music plays**
+
+## What was new in 1.3.2
 
 - **[MinimalSF Extended](https://github.com/DHIRAJ-J-S/MinimalSF_Extended) support:** an optional plugin for open in freeform, force stop, clear cache / data and freeze, through Shizuku or root
 - **Extended menu** (with the plugin): pick what the long press menu shows, coloured icons, hide the empty search bar, turn off auto-launch for a single match
