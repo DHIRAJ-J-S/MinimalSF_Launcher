@@ -18,7 +18,7 @@ https://github.com/user-attachments/assets/63c2fac5-67a9-4997-858d-60da1021822d
 [![Downloads](https://img.shields.io/github/downloads/DHIRAJ-J-S/MinimalSF_Launcher/total?label=downloads)](https://github.com/DHIRAJ-J-S/MinimalSF_Launcher/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 ![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)
-[![VirusTotal: v1.3.2, 0 detections](https://img.shields.io/badge/VirusTotal-v1.3.2%20%C2%B7%200%20detections-brightgreen?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/a42a812424d6364b5d94c446e842c3bc7178105487f660c618bee83db72605c9/detection)
+[![VirusTotal: v1.3.3, 0 detections](https://img.shields.io/badge/VirusTotal-v1.3.3%20%C2%B7%200%20detections-brightgreen?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/e0f4a157321edaf5ecf18c64c0007eab92e67e1eddd80a5e8b3a596ac83cf0f7/detection)
 
 ⭐ **Like MinimalSF? Star the repo** - it helps more people find it.
 
@@ -153,7 +153,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the full list.
 - 🚫 **Zero location** - no GPS or location access
 - 💾 All data stored locally on device in SharedPreferences
 - 🔓 Full source code available for audit
-- 🧪 Release APKs scanned on [VirusTotal](https://www.virustotal.com/gui/file/a42a812424d6364b5d94c446e842c3bc7178105487f660c618bee83db72605c9/detection): 0 detections (v1.3.2)
+- 🧪 Release APKs scanned on [VirusTotal](https://www.virustotal.com/gui/file/e0f4a157321edaf5ecf18c64c0007eab92e67e1eddd80a5e8b3a596ac83cf0f7/detection): 0 detections (v1.3.3)
 
 ---
 
