@@ -106,7 +106,7 @@ class GesturesActivity : AppCompatActivity() {
         if (Prefs.pinnedShortcuts(this).isNotEmpty()) add("saved shortcuts…", R.drawable.ic_shortcut) { pickPinned(g) }
         add("app screen…", R.drawable.ic_activity) { pickApp(AppRepository.mainApps()) { pickActivity(g, it) } }
         listOf(GestureActions.FLASHLIGHT, GestureActions.CAMERA, GestureActions.PLAY_PAUSE, GestureActions.NEXT_TRACK,
-            GestureActions.NOTIFICATIONS, GestureActions.QUICK_SETTINGS, GestureActions.ALL_APPS).forEach { simple(it) }
+            GestureActions.NOTIFICATIONS, GestureActions.QUICK_SETTINGS, GestureActions.ALL_APPS, GestureActions.SETTINGS).forEach { simple(it) }
 
         MinimalDialog.options(this, title = g.title, subtitle = "now: " + GestureActions.label(this, Prefs.gesture(this, g)).lowercase(),
             items = choices.map { it.first }.toTypedArray(), icons = icons.toIntArray()) { choices[it].second() }

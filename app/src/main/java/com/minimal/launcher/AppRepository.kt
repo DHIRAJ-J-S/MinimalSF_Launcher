@@ -91,6 +91,8 @@ object AppRepository {
      */
     private fun isGone(ctx: Context, key: String, list: List<AppInfo>): Boolean {
         if (list.any { it.key == key }) return false
+        // A saved shortcut's keyword goes with the shortcut
+        if (SearchShortcuts.isKey(key)) return SearchShortcuts.savedEntry(ctx, key) == null
         val pkg = if ('/' in key) {
             val serial = key.substringBefore('/').toLongOrNull() ?: return false
             val mine = ctx.getSystemService(UserManager::class.java)?.getSerialNumberForUser(Process.myUserHandle())
@@ -147,7 +149,8 @@ object AppRepository {
     fun mainApps(): List<AppInfo> = apps.filter { it.key == it.packageName }
 
     fun labelFor(ctx: Context, key: String): String =
-        apps.firstOrNull { it.key == key }?.label
+        (if (SearchShortcuts.isKey(key)) SearchShortcuts.label(ctx, key) else null)
+            ?: apps.firstOrNull { it.key == key }?.label
             ?: try { ctx.packageManager.getApplicationLabel(ctx.packageManager.getApplicationInfo(key, 0)).toString() }
             catch (_: Exception) { key }
 }

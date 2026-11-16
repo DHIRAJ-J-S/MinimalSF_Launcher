@@ -114,6 +114,15 @@ class SettingsActivity : AppCompatActivity() {
     private fun toggle(label: String, get: () -> Boolean, set: (Boolean) -> Unit) =
         row(label, { if (get()) "[on]" else "[off]" }) { set(!get()); refresh() }
 
+    /** Hides [row] and its divider while [cond] is false, updating as settings change. */
+    private fun shownWhen(row: View, cond: () -> Boolean) {
+        val divider = rows.getChildAt(rows.indexOfChild(row) + 1)
+        updaters += {
+            val vis = if (cond()) View.VISIBLE else View.GONE
+            row.visibility = vis; divider?.visibility = vis
+        }
+    }
+
     /** A row that opens one of the pages below. */
     private fun pageRow(page: String) = row(page, { "→" }) {
         startActivity(Intent(this, SettingsActivity::class.java).putExtra(EXTRA_PAGE, page))
@@ -207,6 +216,16 @@ class SettingsActivity : AppCompatActivity() {
             Prefs.setSearchFromStart(this, !Prefs.searchFromStart(this)); refresh()
         }
         toggle("keyword replaces app name", { Prefs.keywordReplacesName(this) }) { Prefs.setKeywordReplacesName(this, it) }
+        // Shortcuts in search: saved ones always, apps' built-in ones with MinimalSF Extended
+        row("saved shortcuts", { Prefs.pinnedShortcuts(this).size.let { if (it == 0) "[none]" else "[$it]" } }) { showSavedShortcuts() }
+        val modes = arrayOf("same", "app", "shortcut", "never")
+        val modeNames = arrayOf("same as any match", "prefer the app", "prefer the shortcut", "never open a shortcut")
+        row("app and shortcut both match", { "[${modeNames[modes.indexOf(Prefs.shortcutAutoLaunch(this)).coerceAtLeast(0)]}]" }) {
+            MinimalDialog.singleChoice(this, title = "auto-launch with shortcuts", items = modeNames,
+                checkedIndex = modes.indexOf(Prefs.shortcutAutoLaunch(this)).coerceAtLeast(0)) {
+                Prefs.setShortcutAutoLaunch(this, modes[it]); refresh()
+            }
+        }
         toggle("open keyboard on home", { Prefs.autoKeyboard(this) }) { Prefs.setAutoKeyboard(this, it) }
         row("floating keyboard side (landscape)", { if (Prefs.floatingKeyboardLeft(this)) "[left]" else "[right]" }) {
             Prefs.setFloatingKeyboardLeft(this, !Prefs.floatingKeyboardLeft(this)); refresh()
@@ -225,6 +244,16 @@ class SettingsActivity : AppCompatActivity() {
         }
         toggle("show date", { Prefs.showDate(this) }) { Prefs.setShowDate(this, it) }
         toggle("show ram", { Prefs.showRam(this) }) { Prefs.setShowRam(this, it) }
+        toggle("hide status bar", { Prefs.hideStatusBar(this) }) { Prefs.setHideStatusBar(this, it) }
+        toggle("show wallpaper", { Prefs.showWallpaper(this) }) { Prefs.setShowWallpaper(this, it) }
+        val dim = row("wallpaper dim", { "[${Prefs.wallpaperDim(this)}%]" }) {
+            MinimalDialog.stepSlider(this, title = "wallpaper dim", steps = longArrayOf(30, 40, 50, 60, 70, 80, 90),
+                currentValue = Prefs.wallpaperDim(this), unit = "%",
+                onSelect = { v -> Prefs.setWallpaperDim(this, v); refresh() })
+        }
+        val middle = toggle("lighter in the middle", { Prefs.wallpaperGradient(this) }) { Prefs.setWallpaperGradient(this, it) }
+        shownWhen(dim) { Prefs.showWallpaper(this) }
+        shownWhen(middle) { Prefs.showWallpaper(this) }
         row("show screen time", {
             when {
                 !Prefs.showScreenTime(this) -> "[off]"
@@ -246,17 +275,23 @@ class SettingsActivity : AppCompatActivity() {
             when {
                 !Prefs.showMusic(this) -> "[off]"
                 !MusicNotificationListener.isEnabled(this) -> "[on · needs access]"
-                else -> "[on]"
+                Prefs.musicOnlyWhenPlaying(this) -> "[while playing]"
+                else -> "[always]"
             }
         }) {
-            val enabling = !Prefs.showMusic(this)
-            Prefs.setShowMusic(this, enabling); refresh()
-            if (enabling && !MusicNotificationListener.isEnabled(this)) {
-                MinimalDialog.confirm(this, title = "notification access needed",
-                    message = "enable notification access for MinimalSF to read now playing info.\n\nno data is tracked.",
-                    positiveText = "open settings", negativeText = "skip",
-                    onPositive = { SpecialAccess.open(this, Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS) }
-                )
+            val modes = arrayOf("off", "always", "only while music plays")
+            val current = when { !Prefs.showMusic(this) -> 0; Prefs.musicOnlyWhenPlaying(this) -> 2; else -> 1 }
+            MinimalDialog.singleChoice(this, title = "now playing bar", items = modes, checkedIndex = current) { pick ->
+                val enabling = pick != 0 && !Prefs.showMusic(this)
+                Prefs.setShowMusic(this, pick != 0)
+                Prefs.setMusicOnlyWhenPlaying(this, pick == 2); refresh()
+                if (enabling && !MusicNotificationListener.isEnabled(this)) {
+                    MinimalDialog.confirm(this, title = "notification access needed",
+                        message = "enable notification access for MinimalSF to read now playing info.\n\nno data is tracked.",
+                        positiveText = "open settings", negativeText = "skip",
+                        onPositive = { SpecialAccess.open(this, Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS) }
+                    )
+                }
             }
         }
         toggle("show todo", { Prefs.showTodo(this) }) { Prefs.setShowTodo(this, it) }
@@ -279,6 +314,35 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     /** Hiding the button must leave a way back in, so settings then appears in the app list. */
+    /** Saved shortcuts ("add to home screen" from other apps): give one a keyword, or remove it. */
+    private fun showSavedShortcuts() {
+        val pinned = Prefs.pinnedShortcuts(this)
+        if (pinned.isEmpty()) {
+            MinimalDialog.confirm(this, title = "saved shortcuts",
+                message = "none yet.\n\nuse \"add to home screen\" in another app (chrome, maps, activity launcher…) to save one. saved shortcuts show up in search.",
+                positiveText = "ok", onPositive = {})
+            return
+        }
+        val keywords = Prefs.getKeywords(this)
+        fun key(e: String) = e.split('|').let { SearchShortcuts.key(it[0], it.getOrElse(1) { "" }) }
+        MinimalDialog.options(this, title = "saved shortcuts", subtitle = "shown in search below apps",
+            items = pinned.map { it.substringAfterLast('|') }.toTypedArray(),
+            icons = IntArray(pinned.size) { R.drawable.ic_shortcut },
+            trailing = pinned.map { keywords[key(it)] ?: AppRepository.labelFor(this, it.substringBefore('|')).lowercase() }.toTypedArray()
+        ) { i ->
+            val entry = pinned[i]
+            val name = entry.substringAfterLast('|')
+            MinimalDialog.options(this, title = name, subtitle = AppRepository.labelFor(this, entry.substringBefore('|')).lowercase(),
+                items = arrayOf("set keyword", "remove"), icons = intArrayOf(R.drawable.ic_keyword, R.drawable.ic_close),
+                trailing = arrayOf(keywords[key(entry)], null)) { pick ->
+                if (pick == 0) KeywordPrompt.show(this, key(entry), name) { refresh() }
+                else MinimalDialog.confirm(this, title = "remove shortcut", message = "remove \"$name\" from saved shortcuts?",
+                    positiveText = "remove", negativeText = "cancel",
+                    onPositive = { Prefs.removePinnedShortcut(this, entry); refresh() })
+            }
+        }
+    }
+
     private fun toggleSettingsButton() {
         fun apply(show: Boolean) {
             Prefs.setShowSettingsButton(this, show)

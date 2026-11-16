@@ -1,0 +1,5 @@
+- Show your wallpaper behind the home screen, dimmed so text stays readable (on by default, turn off in settings → home screen)
+- Saved shortcuts in search, with keywords
+- Hide the status bar
+- Gesture to open MinimalSF settings
+- Now playing bar: show only while music plays

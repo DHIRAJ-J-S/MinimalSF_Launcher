@@ -100,7 +100,8 @@ object Extended {
 
     /** What the plugin's toggles change in MinimalSF. Without the plugin, everything is as it is out of the box. */
     class Flags(val hideSearch: Boolean, val colourIcons: Boolean, val autoLaunch: Boolean,
-                private val hiddenMenu: Set<String>, val anyAction: Boolean, val mainActions: Set<String> = emptySet()) {
+                private val hiddenMenu: Set<String>, val anyAction: Boolean, val mainActions: Set<String> = emptySet(),
+                val allShortcuts: Boolean = false) {
         /** Whether MinimalSF's own long press entry [id] (e.g. "menu_app_info") is shown. */
         fun shows(id: String) = id !in hiddenMenu
     }
@@ -119,7 +120,9 @@ object Extended {
             // Before the menu was ever opened nothing is copied yet: assume the actions are on
             anyAction = actions.isEmpty() || actions.values.any { it },
             // Actions shown next to app info instead of behind "extended…" (plugin 1.2+)
-            mainActions = all.filter { (k, v) -> k.startsWith("main_") && v }.keys.map { it.removePrefix("main_") }.toSet())
+            mainActions = all.filter { (k, v) -> k.startsWith("main_") && v }.keys.map { it.removePrefix("main_") }.toSet(),
+            // Every app's built-in shortcuts in search results, not just saved ones (plugin 1.3+)
+            allShortcuts = all["all_shortcuts"] ?: false)
     }
 
     /**
@@ -127,7 +130,7 @@ object Extended {
      * internet, so this is how it knows of updates: each MinimalSF release carries the plugin version
      * of that day. Bump it whenever a plugin release comes out (see .github/RELEASING.md).
      */
-    const val LATEST_VERSION_CODE = 3L // 1.2
+    const val LATEST_VERSION_CODE = 4L // 1.3
     const val RELEASES_URL = "https://github.com/DHIRAJ-J-S/MinimalSF_Extended/releases/latest"
 
     /** The installed plugin is older than [LATEST_VERSION_CODE]. Checked on the phone, no internet. */

@@ -6,4 +6,8 @@
     <item name="tag_base_text_style" type="id" />
     <!-- MinimalDialog: text size in sp before the font size setting, so an open dialog can be resized -->
     <item name="tag_dialog_sp" type="id" />
+    <!-- Wallpaper mode: a view's own text / hint / icon colours, so lifting the greys can be undone -->
+    <item name="tag_base_text_color" type="id" />
+    <item name="tag_base_hint_color" type="id" />
+    <item name="tag_base_tint" type="id" />
 </resources>

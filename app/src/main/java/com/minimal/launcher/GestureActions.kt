@@ -41,6 +41,7 @@ object GestureActions {
     const val CAMERA = "camera"
     const val PLAY_PAUSE = "media_play_pause"
     const val NEXT_TRACK = "media_next"
+    const val SETTINGS = "minimalsf_settings"
 
     /** Things only the home screen can do. */
     interface Host {
@@ -68,6 +69,7 @@ object GestureActions {
         code == CAMERA -> "camera"
         code == PLAY_PAUSE -> "play / pause"
         code == NEXT_TRACK -> "next track"
+        code == SETTINGS -> "minimalsf settings"
         code.startsWith("call:") -> "call ${rest(code).substringAfter('|')}"
         code.startsWith("shortcut:") -> rest(code).split('|').let { "${AppRepository.labelFor(ctx, it[0])} · ${it.getOrElse(2) { "shortcut" }}" }
         code.startsWith("activity:") -> rest(code).let {
@@ -87,6 +89,7 @@ object GestureActions {
         code == CAMERA -> R.drawable.ic_camera
         code == PLAY_PAUSE -> R.drawable.ic_play
         code == NEXT_TRACK -> R.drawable.ic_next
+        code == SETTINGS -> R.drawable.ic_settings
         code.startsWith("call:") -> R.drawable.ic_call
         code.startsWith("shortcut:") -> R.drawable.ic_shortcut
         code.startsWith("activity:") -> R.drawable.ic_activity
@@ -105,6 +108,7 @@ object GestureActions {
             code == CAMERA -> start(activity, Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA))
             code == PLAY_PAUSE -> mediaKey(activity, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
             code == NEXT_TRACK -> mediaKey(activity, KeyEvent.KEYCODE_MEDIA_NEXT)
+            code == SETTINGS -> start(activity, Intent(activity, SettingsActivity::class.java))
             code.startsWith("call:") -> callNumber(activity, rest(code).substringBefore('|'))
             code.startsWith("shortcut:") -> rest(code).split('|').let { p ->
                 if (!AppShortcuts.start(activity, p[0], p.getOrElse(1) { "" }, source))

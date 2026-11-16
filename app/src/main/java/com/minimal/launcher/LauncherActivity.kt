@@ -46,6 +46,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -130,6 +131,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         override fun onMetadataChanged(metadata: MediaMetadata?) = displayMeta(metadata)
         override fun onPlaybackStateChanged(state: PlaybackState?) {
             updatePlayIcon(state)
+            onMusicStateChanged()
             if (state?.state == PlaybackState.STATE_PLAYING) showMusicTip()
         }
         override fun onSessionDestroyed() = bindController(null)
@@ -338,12 +340,14 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
     override fun onDestroy() {
         Prefs.unregisterListener(this, prefsListener)
+        watchWallpaperColours(false)
         AppRepository.removeListener(appsListener)
         handler.removeCallbacksAndMessages(null)
         super.onDestroy()
     }
 
     private fun onAppsChanged() {
+        refreshBuiltInShortcuts()
         // Refresh whatever is on screen. Only auto-launch if the user is actively on the home screen
         // (e.g. typed before the first load finished), not because a package changed in the background.
         if (showingAllApps) { adapter.update(AppRepository.apps, "", Prefs.getHiddenApps(this)); updateScrubber() }
@@ -356,6 +360,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
     private fun setupInsets() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        rootLayout.viewTreeObserver.addOnGlobalLayoutListener { syncDimToKeyboard() }
         ViewCompat.setOnApplyWindowInsetsListener(rootLayout) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
             navBottom = bars.bottom
@@ -373,6 +378,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
             if (!imeAnimating) {
                 v.setPadding(v.paddingLeft, v.paddingTop, v.paddingRight, max(bars.bottom, imeBottom))
             }
+            syncDimToKeyboard()
             if (docked != dockedIme) { dockedIme = docked; updateCompact() }
             WindowInsetsCompat.CONSUMED
         }
@@ -383,8 +389,10 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
                 }
                 override fun onProgress(insets: WindowInsetsCompat, running: MutableList<WindowInsetsAnimationCompat>): WindowInsetsCompat {
                     val bottom = max(navBottom, insets.getInsets(WindowInsetsCompat.Type.ime()).bottom)
-                    if (rootLayout.paddingBottom != bottom)
+                    if (rootLayout.paddingBottom != bottom) {
                         rootLayout.setPadding(rootLayout.paddingLeft, rootLayout.paddingTop, rootLayout.paddingRight, bottom)
+                        syncDimToKeyboard()
+                    }
                     return insets
                 }
                 override fun onEnd(animation: WindowInsetsAnimationCompat) {
@@ -582,6 +590,13 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         }
         autoLaunchIcon.colorFilter = if (ext.colourIcons) null else AppAdapter.GRAYSCALE
         if (old.hideSearch != ext.hideSearch) updateSearchVisibility()
+        refreshBuiltInShortcuts()
+    }
+
+    /** Apps' built-in shortcuts in search (MinimalSF Extended toggle), re-read in the background. */
+    private fun refreshBuiltInShortcuts() = SearchShortcuts.refreshBuiltIn(this, ext.allShortcuts) {
+        if (!isDestroyed && !showingAllApps && !searchInput.text.isNullOrEmpty())
+            filterApps(searchInput.text.toString(), allowAutoLaunch = false)
     }
 
     /**
@@ -597,6 +612,8 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         applySearchPosition()
         applyHomeVisibility()
         applyFont()
+        applyWallpaper()
+        applyStatusBar()
         updateMusicBarVisibility()
         applyAppListLayout()
         updateHomeTip()
@@ -605,6 +622,178 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         if (showingAllApps) { adapter.update(AppRepository.apps, "", Prefs.getHiddenApps(this)); updateScrubber() }
         // The floating keyboard side may have changed
         ViewCompat.requestApplyInsets(rootLayout)
+    }
+
+    /** settings > home screen > hide status bar. A swipe from the top edge still shows it for a moment. */
+    private fun applyStatusBar() {
+        val c = WindowCompat.getInsetsController(window, window.decorView)
+        if (Prefs.hideStatusBar(this)) {
+            c.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            c.hide(WindowInsetsCompat.Type.statusBars())
+        } else c.show(WindowInsetsCompat.Type.statusBars())
+    }
+
+    // --- Wallpaper (settings > home screen > show wallpaper) ---
+
+    private var wallpaperOn = false
+    private var wallpaperListener: Any? = null
+
+    /**
+     * Shows the phone's wallpaper behind the home screen, under a black layer so white text stays readable.
+     * Nothing here reads the image (that would need a storage permission): Android's summary of its main
+     * colours is enough to tell a light wallpaper, which always gets at least [Prefs.LIGHT_MIN_DIM].
+     */
+    private fun applyWallpaper() {
+        val on = Prefs.showWallpaper(this)
+        wallpaperOn = on
+        if (on) {
+            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SHOW_WALLPAPER)
+            window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
+            window.navigationBarColor = Color.TRANSPARENT
+        } else {
+            window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SHOW_WALLPAPER)
+            window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Color.BLACK))
+            window.navigationBarColor = Color.BLACK
+        }
+        val solid = if (on) Color.TRANSPARENT else Color.BLACK
+        todoSection.setBackgroundColor(solid)
+        navGroup.setBackgroundColor(solid)
+        val bar = if (on) Color.argb(0x99, 0, 0, 0) else getColor(R.color.search_bg)
+        musicBar.setBackgroundColor(bar)
+        musicTipView.setBackgroundColor(bar)
+        (searchInput.background?.mutate() as? android.graphics.drawable.GradientDrawable)?.setColor(bar)
+
+        AppAdapter.textShadow = on
+        shadowAll(rootLayout)
+        @Suppress("NotifyDataSetChanged") adapter.notifyDataSetChanged()
+        @Suppress("NotifyDataSetChanged") todoAdapter.notifyDataSetChanged()
+
+        watchWallpaperColours(on)
+        updateWallpaperDim()
+    }
+
+    private fun shadowAll(v: View) {
+        if (v is RecyclerView) return
+        if (v is TextView) AppAdapter.wallpaperStyle(v)
+        if (v is ImageView) {
+            val base = (v.getTag(R.id.tag_base_tint) as? ColorStateList) ?: v.imageTintList?.also { v.setTag(R.id.tag_base_tint, it) }
+            if (base != null) v.imageTintList = if (AppAdapter.textShadow) ColorStateList.valueOf(AppAdapter.lift(base.defaultColor)) else base
+        }
+        if (v is ViewGroup) for (i in 0 until v.childCount) shadowAll(v.getChildAt(i))
+    }
+
+    /** The wallpaper's main colours, re-checked when the user changes their wallpaper. */
+    private var wallpaperLight = false
+
+    private fun watchWallpaperColours(on: Boolean) {
+        if (android.os.Build.VERSION.SDK_INT < 27) return
+        val wm = android.app.WallpaperManager.getInstance(this)
+        (wallpaperListener as? android.app.WallpaperManager.OnColorsChangedListener)?.let { wm.removeOnColorsChangedListener(it) }
+        wallpaperListener = null
+        if (!on) return
+        wallpaperLight = isLight(wm.getWallpaperColors(android.app.WallpaperManager.FLAG_SYSTEM))
+        val l = android.app.WallpaperManager.OnColorsChangedListener { colors, which ->
+            if (which and android.app.WallpaperManager.FLAG_SYSTEM != 0) {
+                wallpaperLight = isLight(colors); updateWallpaperDim()
+            }
+        }
+        wm.addOnColorsChangedListener(l, handler)
+        wallpaperListener = l
+    }
+
+    @android.annotation.TargetApi(27)
+    private fun isLight(c: android.app.WallpaperColors?): Boolean {
+        c ?: return false
+        if (android.os.Build.VERSION.SDK_INT >= 31 &&
+            c.colorHints and android.app.WallpaperColors.HINT_SUPPORTS_DARK_TEXT != 0) return true
+        // Any bright main colour counts: a half-white picture can still average out as "dark"
+        return listOfNotNull(c.primaryColor, c.secondaryColor, c.tertiaryColor).any { it.luminance() > 0.4f }
+    }
+
+    /** Full dim while searching or in all apps; with the gradient on, lighter in the empty middle of home. */
+    private fun updateWallpaperDim() {
+        if (!wallpaperOn) { rootLayout.setBackgroundColor(Color.BLACK); return }
+        var dim = Prefs.wallpaperDim(this)
+        if (wallpaperLight) dim = max(dim, Prefs.LIGHT_MIN_DIM)
+        val full = Color.argb((dim * 255 / 100).toInt(), 0, 0, 0)
+        val idle = !showingAllApps && searchInput.text.isNullOrEmpty()
+        rootLayout.background = if (Prefs.wallpaperGradient(this) && idle) {
+            // Header (clock, date) and footer (search, music, todo, buttons) keep the full dim
+            val fullA = dim * 255 / 100f
+            KeyboardAwareDim(fullA, fullA * 0.35f).also { syncDim(it) }
+        } else android.graphics.drawable.ColorDrawable(full)
+    }
+
+    /** Keeps the dim's bands in place: the top one on the clock, the bottom one just above the keyboard. */
+    private fun syncDimToKeyboard() { (rootLayout.background as? KeyboardAwareDim)?.let { syncDim(it) } }
+
+    private fun syncDim(d: KeyboardAwareDim) {
+        // Full dim down to the middle of the lowest thing at the top (clock, date, screen time, or the search
+        // bar when it's at the top), then the fade. Follows clock size and whatever is turned off; with
+        // nothing at the top it's the top edge
+        val rootTop = IntArray(2).also { rootLayout.getLocationInWindow(it) }[1]
+        val top = listOf(clockText, dateText, screenTimeText, searchTopSlot)
+            .filter { it.isShown && it.height > 0 }
+            .maxOfOrNull { IntArray(2).also { p -> it.getLocationInWindow(p) }[1] - rootTop + it.height / 2 }
+            ?: rootLayout.paddingTop
+        // The bottom band starts at the top of the first control at the bottom (search bar, music, todo,
+        // buttons). Those sit on the bottom padding, so while the keyboard slides they move exactly with it:
+        // the band is placed from the padding every frame, using their height measured when it isn't moving.
+        val visible = rootLayout.height - rootLayout.paddingBottom
+        if (!imeAnimating) {
+            val rootY = IntArray(2).also { rootLayout.getLocationInWindow(it) }[1]
+            val bottomStart = listOf(searchBottomSlot, musicBar, todoSection, navGroup)
+                .filter { it.isShown && it.height > 0 }
+                .minOfOrNull { IntArray(2).also { p -> it.getLocationInWindow(p) }[1] - rootY }
+            bottomControlsHeight = if (bottomStart == null) 0 else visible - bottomStart
+        }
+        d.set(top, visible - bottomControlsHeight, visible)
+    }
+    private var bottomControlsHeight = 0
+
+    /**
+     * The "lighter in the middle" dim: full dim above [topPx] (the middle of the clock) and below [bottomPx]
+     * (the top of the bottom controls), fading in between. Both follow the layout, so they move with the
+     * clock size and the keyboard. Behind the keyboard it's full dim.
+     */
+    private class KeyboardAwareDim(private val fullA: Float, private val midA: Float) : android.graphics.drawable.Drawable() {
+        private val paint = android.graphics.Paint()
+        private var topPx = 0
+        private var bottomPx = 0
+        private var visibleBottom = 0
+
+        fun set(top: Int, bottomStart: Int, visible: Int) {
+            if (top == topPx && bottomStart == bottomPx && visible == visibleBottom) return
+            topPx = top; bottomPx = bottomStart; visibleBottom = visible; paint.shader = null; invalidateSelf()
+        }
+
+        private fun shader(): android.graphics.Shader {
+            val b = bounds
+            val h = (if (visibleBottom > 0) visibleBottom else b.height()).toFloat().coerceAtLeast(1f)
+            val top = (topPx / h).coerceIn(0f, 1f)
+            val bottom = (bottomPx / h).coerceIn(top, 1f); val ramp = 0.12f
+            val stops = IntArray(81) { i ->
+                val y = i / 80f
+                val t = when {
+                    y <= top || y >= bottom -> 1f
+                    y < top + ramp -> 1 - (y - top) / ramp
+                    y > bottom - ramp -> 1 - (bottom - y) / ramp
+                    else -> 0f
+                }.coerceIn(0f, 1f)
+                android.graphics.Color.argb((midA + (fullA - midA) * t).toInt(), 0, 0, 0)
+            }
+            return android.graphics.LinearGradient(0f, b.top.toFloat(), 0f, b.top + h, stops, null, android.graphics.Shader.TileMode.CLAMP)
+        }
+
+        override fun draw(canvas: android.graphics.Canvas) {
+            if (paint.shader == null) paint.shader = shader()
+            canvas.drawRect(bounds, paint)
+        }
+        override fun onBoundsChange(bounds: android.graphics.Rect) { paint.shader = null }
+        override fun setAlpha(alpha: Int) {}
+        override fun setColorFilter(colorFilter: android.graphics.ColorFilter?) {}
+        @Deprecated("Deprecated in Java")
+        override fun getOpacity() = android.graphics.PixelFormat.TRANSLUCENT
     }
 
     private fun applySearchPosition() {
@@ -806,7 +995,9 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
             try { getSystemService(MediaSessionManager::class.java)?.removeOnActiveSessionsChangedListener(l) } catch (_: Exception) {}
         }
         sessionsListener = null
+        musicStopping = true
         bindController(null)
+        musicStopping = false
     }
 
     private fun pickController(ctrls: List<MediaController>?): MediaController? =
@@ -818,6 +1009,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
             activeController = c
             c?.registerCallback(mediaCallback, handler)
         }
+        onMusicStateChanged()
         if (c == null) { musicTitle.text = "no music playing"; musicIconView.setImageResource(R.drawable.ic_music); return }
         displayMeta(c.metadata)
         updatePlayIcon(c.playbackState)
@@ -834,6 +1026,32 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
     private fun updatePlayIcon(s: PlaybackState?) {
         // Drawn icons, not ▶/⏸ characters: Samsung's font forces ⏸ to a colour emoji
         musicIconView.setImageResource(if (s?.state == PlaybackState.STATE_PLAYING) R.drawable.ic_pause else R.drawable.ic_play)
+    }
+
+    /** Playing, or about to (buffering): "only when music is playing" keeps the bar for both. */
+    private fun isPlaying() = activeController?.playbackState?.state.let {
+        it == PlaybackState.STATE_PLAYING || it == PlaybackState.STATE_BUFFERING
+    }
+
+    /**
+     * "only while music plays": after a pause the bar stays for [MUSIC_PAUSE_GRACE_MS], so the music can be
+     * resumed from it, then hides. Called on every playback change.
+     */
+    private var wasPlaying = false
+    private var pausedAt = 0L
+    private var musicStopping = false
+    private val musicHideRunnable = Runnable { updateCompact() }
+    private fun onMusicStateChanged() {
+        // Leaving home unbinds the player; that isn't a pause
+        if (musicStopping) return
+        val playing = isPlaying()
+        if (wasPlaying && !playing) pausedAt = android.os.SystemClock.elapsedRealtime()
+        wasPlaying = playing
+        if (!Prefs.musicOnlyWhenPlaying(this)) return
+        handler.removeCallbacks(musicHideRunnable)
+        val left = MUSIC_PAUSE_GRACE_MS - (android.os.SystemClock.elapsedRealtime() - pausedAt)
+        if (!playing && pausedAt > 0 && left > 0) handler.postDelayed(musicHideRunnable, left)
+        updateCompact()
     }
 
     private fun togglePlayPause() {
@@ -867,7 +1085,9 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         val todo = if ((compact && !editingTodo) || !Prefs.showTodo(this)) View.GONE else View.VISIBLE
         if (todoSection.visibility != todo) { todoSection.visibility = todo; todoDivider.visibility = todo }
         val music = if (landscape) !editingTodo else !compact
-        musicBar.visibility = if (Prefs.showMusic(this) && music) View.VISIBLE else View.GONE
+        val playingOk = !Prefs.musicOnlyWhenPlaying(this) || isPlaying() ||
+            (pausedAt > 0 && android.os.SystemClock.elapsedRealtime() - pausedAt < MUSIC_PAUSE_GRACE_MS)
+        musicBar.visibility = if (Prefs.showMusic(this) && music && playingOk) View.VISIBLE else View.GONE
         if (compact || !Prefs.showMusic(this)) musicTipView.visibility = View.GONE
         // Beside a docked keyboard the results only have room for a row or two without these buttons
         navGroup.visibility = if (landscape && dockedIme && searchInput.text.isNotBlank()) View.GONE else View.VISIBLE
@@ -982,6 +1202,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         override fun onBindViewHolder(holder: VH, position: Int) {
             val item = todos[position]
             holder.todoText.typeface = typeface
+            AppAdapter.shadow(holder.todoText)
             holder.todoText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f * mult)
             holder.todoText.text = item.text
             holder.checkBox.setImageResource(if (item.done) R.drawable.ic_check_on else R.drawable.ic_check_off)
@@ -991,7 +1212,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
                          else holder.todoText.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
             holder.todoText.paintFlags = strike
             holder.todoText.alpha = if (item.done) 0.3f else 1f
-            holder.todoText.setTextColor(if (item.important && !item.done) RED else GREY)
+            holder.todoText.setTextColor(if (item.important && !item.done) RED else AppAdapter.lift(GREY))
             holder.checkBox.imageTintList = ColorStateList.valueOf(if (item.important && !item.done) RED else GREY)
             holder.importantBtn.imageTintList = ColorStateList.valueOf(if (item.important) RED else FAINT)
             holder.removeBtn.imageTintList = ColorStateList.valueOf(FAINT)
@@ -1002,6 +1223,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
     private fun showAppOptions(app: AppInfo) {
         cancelAutoLaunch()
+        if (app.isShortcut) { showShortcutOptions(app); return }
         val isHidden = app.key in Prefs.getHiddenApps(this)
         val currentKeyword = Prefs.getKeywords(this)[app.key] ?: ""
 
@@ -1018,7 +1240,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         val menu = listOfNotNull(
             if (!ext.shows("menu_app_info")) null else Entry("app info", R.drawable.ic_info) { keepAllAppsOpen = showingAllApps; try { getSystemService(LauncherApps::class.java)?.startAppDetailsActivity(app.component, app.user, null, null) } catch (_: Exception) {} },
             if (!app.canUninstall || !ext.shows("menu_uninstall")) null else Entry("uninstall", R.drawable.ic_uninstall) { keepAllAppsOpen = showingAllApps; try { startActivity(Intent(Intent.ACTION_DELETE, Uri.parse("package:${app.packageName}")).putExtra(Intent.EXTRA_USER, app.user)) } catch (_: Exception) {} },
-            if (!ext.shows("menu_keyword")) null else Entry("set keyword", R.drawable.ic_keyword, trailing = currentKeyword.ifEmpty { null }) { promptKeyword(app, currentKeyword) },
+            if (!ext.shows("menu_keyword")) null else Entry("set keyword", R.drawable.ic_keyword, trailing = currentKeyword.ifEmpty { null }) { KeywordPrompt.show(this, app.key, app.label) },
         ) + extActions.map { a -> Entry(a.label, R.drawable.ic_extended, drawable = a.icon) { runExtended(app, a) } } + listOfNotNull(
             // Only with the optional MinimalSF Extended plugin installed, and some of its actions turned on
             if (!Extended.available(this) || !ext.anyAction || (split && rest.isEmpty())) null
@@ -1049,6 +1271,31 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         }
     }
 
+    /** Long press on a shortcut in the results: a keyword and removal for saved ones, app info for all. */
+    private fun showShortcutOptions(sc: AppInfo) {
+        val saved = SearchShortcuts.savedEntry(this, sc.key)
+        val keyword = Prefs.getKeywords(this)[sc.key] ?: ""
+        val refilter = { filterApps(searchInput.text.toString(), allowAutoLaunch = false) }
+        val menu = listOfNotNull(
+            if (saved == null) null else Entry("set keyword", R.drawable.ic_keyword, trailing = keyword.ifEmpty { null }) {
+                KeywordPrompt.show(this, sc.key, sc.matchLabel, refilter)
+            },
+            AppRepository.apps.firstOrNull { it.key == sc.packageName }?.let { app ->
+                Entry("app info", R.drawable.ic_info) { try { getSystemService(LauncherApps::class.java)?.startAppDetailsActivity(app.component, app.user, null, null) } catch (_: Exception) {} }
+            },
+            if (saved == null) null else Entry("remove saved shortcut", R.drawable.ic_close) {
+                MinimalDialog.confirm(this, title = "remove shortcut", message = "remove \"${sc.matchLabel}\" from saved shortcuts?",
+                    positiveText = "remove", negativeText = "cancel",
+                    onPositive = { Prefs.removePinnedShortcut(this, saved); refilter() })
+            },
+        )
+        MinimalDialog.options(this, title = sc.matchLabel,
+            subtitle = if (saved != null) "saved shortcut · ${AppRepository.labelFor(this, sc.packageName).lowercase()}"
+                       else "app shortcut · ${AppRepository.labelFor(this, sc.packageName).lowercase()}",
+            items = menu.map { it.label }.toTypedArray(), icons = menu.map { it.icon }.toIntArray(),
+            trailing = menu.map { it.trailing }.toTypedArray()) { menu[it].run() }
+    }
+
     /** MinimalSF Extended's actions (force stop, clear, freeze, freeform), run by the plugin through Shizuku. */
     /**
      * The plugin decides what's in this menu (names, icons, confirm prompts), so new actions arrive with
@@ -1076,28 +1323,6 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
     /** One long press menu entry. [drawable] (an icon from the plugin) wins over [icon]. */
     private class Entry(val label: String, val icon: Int, val drawable: android.graphics.drawable.Drawable? = null,
                         val trailing: String? = null, val run: () -> Unit)
-
-    private fun promptKeyword(app: AppInfo, current: String) {
-        MinimalDialog.textInput(this,
-            title = "keyword for ${app.label}",
-            hint = "e.g. wa for whatsapp (empty = remove)",
-            prefill = current,
-            onSubmit = { keyword ->
-                val owner = if (keyword.isEmpty()) null else Prefs.keywordOwner(this, keyword, app.key)
-                if (owner != null) {
-                    MinimalDialog.confirm(this, title = "keyword in use",
-                        message = "\"${keyword.lowercase()}\" is already used by ${AppRepository.labelFor(this, owner)}.\n\nmove it to ${app.label}?",
-                        positiveText = "move", negativeText = "cancel",
-                        onPositive = {
-                            Prefs.setKeyword(this, owner, "")
-                            Prefs.setKeyword(this, app.key, keyword)
-                        })
-                } else {
-                    Prefs.setKeyword(this, app.key, keyword)
-                }
-            }
-        )
-    }
 
     // --- Clock ---
 
@@ -1278,13 +1503,31 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         }
     }
 
+    /** Apps first, then shortcuts (saved, and built-in ones with MinimalSF Extended), each ranked on its own. */
     private fun searchApps(q: String, hidden: Set<String>, keywords: Map<String, String>): List<AppInfo> {
+        val (apps, shortcuts) = searchSplit(q, hidden, keywords)
+        return apps + shortcuts
+    }
+
+    private fun searchSplit(q: String, hidden: Set<String>, keywords: Map<String, String>): Pair<List<AppInfo>, List<AppInfo>> {
         val fromStart = Prefs.searchFromStart(this)
         val keywordOnly = Prefs.keywordReplacesName(this)
-        return AppRepository.apps.mapNotNull { app ->
+        fun ranked(list: List<AppInfo>) = list.mapNotNull { app ->
             if (app.key in hidden) null
             else rank(app, q, keywords[app.key], fromStart, keywordOnly)?.let { app to it }
         }.sortedBy { it.second }.map { it.first }
+        return ranked(AppRepository.apps) to ranked(SearchShortcuts.all(this, ext.allShortcuts, hidden))
+    }
+
+    /**
+     * What opens on its own for these matches (settings > search > when an app and a shortcut match).
+     * Null shows the list.
+     */
+    private fun autoLaunchTarget(apps: List<AppInfo>, shortcuts: List<AppInfo>): AppInfo? = when (Prefs.shortcutAutoLaunch(this)) {
+        "app" -> apps.singleOrNull() ?: if (apps.isEmpty()) shortcuts.singleOrNull() else null
+        "shortcut" -> shortcuts.singleOrNull() ?: if (shortcuts.isEmpty()) apps.singleOrNull() else null
+        "never" -> if (shortcuts.isEmpty()) apps.singleOrNull() else null
+        else -> (apps + shortcuts).singleOrNull()
     }
 
     /** The icon of a visible result row, for the launch animation. */
@@ -1298,6 +1541,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         updateSearchVisibility()
 
         if (q.isNotEmpty() && showingAllApps) setAllAppsMode(false)
+        updateWallpaperDim()
         if (q.isEmpty()) {
             bestMatch = null
             if (showingAllApps) { adapter.update(AppRepository.apps, "", Prefs.getHiddenApps(this)); updateScrubber() }
@@ -1309,11 +1553,13 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         val hidden = Prefs.getHiddenApps(this)
         val keywords = Prefs.getKeywords(this)
 
-        // Exact keyword wins outright
+        // Exact keyword wins outright (an app's, or a saved shortcut's)
         val keywordMatch = apps.firstOrNull { it.key !in hidden && keywords[it.key] == q }
+            ?: SearchShortcuts.saved(this).firstOrNull { it.key !in hidden && it.packageName !in hidden && keywords[it.key] == q }
         if (keywordMatch != null) { showAutoLaunch(keywordMatch, allowAutoLaunch); return }
 
-        val matches = searchApps(q, hidden, keywords)
+        val (appMatches, shortcutMatches) = searchSplit(q, hidden, keywords)
+        val matches = appMatches + shortcutMatches
 
         // "w2" opens the 2nd result for "w". Only when "w2" itself matches nothing, so an app with a
         // number in its name ("fifa 23") can still be typed out.
@@ -1330,14 +1576,11 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
             }
         }
 
-        when (matches.size) {
-            0 -> { bestMatch = null; showResults(Results.NO_MATCH) }
-            // With auto-launch turned off (MinimalSF Extended) a single match is a normal row: tap or Enter opens it
-            1 -> if (ext.autoLaunch) showAutoLaunch(matches[0], allowAutoLaunch) else {
-                bestMatch = matches[0]
-                adapter.update(matches, q, hidden)
-                showResults(Results.LIST)
-            }
+        // With auto-launch turned off (MinimalSF Extended) a single match is a normal row: tap or Enter opens it
+        val auto = if (ext.autoLaunch) autoLaunchTarget(appMatches, shortcutMatches) else null
+        when {
+            matches.isEmpty() -> { bestMatch = null; showResults(Results.NO_MATCH) }
+            auto != null -> showAutoLaunch(auto, allowAutoLaunch)
             else -> {
                 bestMatch = matches[0]
                 adapter.update(matches, q, hidden)
@@ -1383,6 +1626,17 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         // Our own entry in the list, shown when the settings button is hidden
         if (app.packageName == packageName) { startActivity(Intent(this, SettingsActivity::class.java)); return }
         keepAllAppsOpen = false
+        app.shortcutId?.let { id ->
+            launchCooldown = true
+            if (!AppShortcuts.start(this, app.packageName, id, source?.takeIf { it.isShown && it.width > 0 })) {
+                launchCooldown = false
+                val msg = if (AppShortcuts.available(this)) "shortcut no longer available" else "set MinimalSF as your home app to open shortcuts"
+                Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+                return
+            }
+            handler.postDelayed({ launchCooldown = false }, 600)
+            return
+        }
         // Reveal the app from the icon that was tapped
         val opts = source?.takeIf { it.isShown && it.width > 0 }?.let {
             ActivityOptions.makeClipRevealAnimation(it, 0, 0, it.width, it.height).toBundle()
@@ -1435,6 +1689,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
     private fun setAllAppsMode(on: Boolean) {
         showingAllApps = on
+        updateWallpaperDim()
         if (!on) scrubber.visibility = View.GONE
         updateCompact()
         applyNavButtons()
@@ -1470,6 +1725,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         private val GREY = Color.parseColor("#888888")
         private val FAINT = Color.parseColor("#808080")
         private const val KEYBOARD_MIN_DOCKED_DP = 100f
+        private const val MUSIC_PAUSE_GRACE_MS = 10 * 60_000L
         private const val FLOATING_KEYBOARD_DP = 345f
     }
 }

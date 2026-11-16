@@ -87,6 +87,7 @@ class AppAdapter(
         holder.icon.visibility = if (grid || showIcons) View.VISIBLE else View.GONE
 
         holder.name.typeface = typeface
+        wallpaperStyle(holder.name) // not the badge: black on a white chip
         holder.name.setTextSize(TypedValue.COMPLEX_UNIT_SP, (if (grid) 11f else 14f) * sizeMultiplier)
 
         val name = app.label
@@ -139,5 +140,34 @@ class AppAdapter(
         val GRAYSCALE = ColorMatrixColorFilter(ColorMatrix().apply { setSaturation(0f) })
         /** Icons in colour instead of black and white (MinimalSF Extended's "coloured app icons"). */
         var colourIcons = false
+        /** Soft dark edge on text, while the wallpaper shows behind the list. */
+        var textShadow = false
+        fun shadow(t: TextView) {
+            if (textShadow) t.setShadowLayer(t.resources.displayMetrics.density * 3f + 0.01f, 0f, 0f, Color.argb(230, 0, 0, 0))
+            else t.setShadowLayer(0f, 0f, 0f, 0)
+        }
+
+        /** Greys move toward white over the wallpaper: grey on a dimmed photo has far less contrast than on black. */
+        fun lift(c: Int): Int {
+            if (!textShadow) return c
+            val r = Color.red(c); val g = Color.green(c); val b = Color.blue(c)
+            if (maxOf(r, g, b) - minOf(r, g, b) > 12 || r > 250) return c
+            val v = (r + (255 - r) * 0.6f).toInt()
+            return Color.argb(Color.alpha(c), v, v, v)
+        }
+
+        /** Shadow plus lifted greys, for a view whose colours come from its XML. */
+        fun wallpaperStyle(t: TextView) {
+            shadow(t)
+            val base = (t.getTag(R.id.tag_base_text_color) as? android.content.res.ColorStateList)
+                ?: t.textColors.also { t.setTag(R.id.tag_base_text_color, it) }
+            val hint = (t.getTag(R.id.tag_base_hint_color) as? android.content.res.ColorStateList)
+                ?: t.hintTextColors.also { t.setTag(R.id.tag_base_hint_color, it) }
+            if (textShadow) {
+                t.setTextColor(lift(base.defaultColor)); t.setHintTextColor(lift(hint.defaultColor))
+            } else {
+                t.setTextColor(base); t.setHintTextColor(hint)
+            }
+        }
     }
 }

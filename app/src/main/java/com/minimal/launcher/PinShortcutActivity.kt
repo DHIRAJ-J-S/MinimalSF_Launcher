@@ -26,7 +26,7 @@ class PinShortcutActivity : AppCompatActivity() {
         val label = AppShortcuts.label(info)
         val appLabel = AppRepository.labelFor(this, info.`package`)
         MinimalDialog.confirm(this, title = "save shortcut",
-            message = "\"$label\" from $appLabel\n\nyou can put it on a gesture in settings → gestures.",
+            message = "\"$label\" from $appLabel\n\nit shows up in search, and you can put it on a gesture in settings → gestures.",
             positiveText = "save", negativeText = "cancel",
             onPositive = {
                 if (request.isValid && request.accept()) {

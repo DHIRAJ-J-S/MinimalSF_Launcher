@@ -16,6 +16,9 @@ object Prefs {
 
     fun showMusic(c: Context) = p(c).getBoolean("show_music", false)
     fun setShowMusic(c: Context, v: Boolean) { p(c).edit().putBoolean("show_music", v).apply() }
+    /** With the bar on: hide it while nothing is playing (paused or stopped). */
+    fun musicOnlyWhenPlaying(c: Context) = p(c).getBoolean("music_only_playing", false)
+    fun setMusicOnlyWhenPlaying(c: Context, v: Boolean) { p(c).edit().putBoolean("music_only_playing", v).apply() }
 
     fun autoDelay(c: Context) = p(c).getLong("auto_delay", 100L)
     fun setAutoDelay(c: Context, v: Long) { p(c).edit().putLong("auto_delay", v).apply() }
@@ -40,6 +43,24 @@ object Prefs {
     // Off by default: used/total memory in the top corner, for those who like the look
     fun showRam(c: Context) = p(c).getBoolean("show_ram", false)
     fun setShowRam(c: Context, v: Boolean) { p(c).edit().putBoolean("show_ram", v).apply() }
+
+    /** Hides the status bar on the home screen; a swipe from the top edge shows it for a moment. */
+    fun hideStatusBar(c: Context) = p(c).getBoolean("hide_status_bar", false)
+    fun setHideStatusBar(c: Context, v: Boolean) { p(c).edit().putBoolean("hide_status_bar", v).apply() }
+
+    // --- Wallpaper behind the home screen (on by default; settings → home screen turns it off) ---
+    fun showWallpaper(c: Context) = p(c).getBoolean("show_wallpaper", true)
+    fun setShowWallpaper(c: Context, v: Boolean) { p(c).edit().putBoolean("show_wallpaper", v).apply() }
+
+    /** How dark the layer over the wallpaper is, in percent. Light wallpapers get at least LIGHT_MIN_DIM. */
+    const val MIN_DIM = 30L
+    const val LIGHT_MIN_DIM = 75L
+    fun wallpaperDim(c: Context) = p(c).getLong("wallpaper_dim", 60L).coerceIn(MIN_DIM, 90L)
+    fun setWallpaperDim(c: Context, v: Long) { p(c).edit().putLong("wallpaper_dim", v).apply() }
+
+    /** Dim less in the empty middle of the home screen, keeping the full dim behind the text. */
+    fun wallpaperGradient(c: Context) = p(c).getBoolean("wallpaper_gradient", true)
+    fun setWallpaperGradient(c: Context, v: Boolean) { p(c).edit().putBoolean("wallpaper_gradient", v).apply() }
 
     fun showTodo(c: Context) = p(c).getBoolean("show_todo", true)
     fun setShowTodo(c: Context, v: Boolean) { p(c).edit().putBoolean("show_todo", v).apply() }
@@ -110,7 +131,18 @@ object Prefs {
 
     fun removePinnedShortcut(c: Context, entry: String) {
         p(c).edit().putString(PINNED_KEY, pinnedShortcuts(c).filterNot { it == entry }.joinToString("\n")).apply()
+        // Its keyword goes with it
+        val parts = entry.split('|')
+        if (parts.size >= 2) setKeyword(c, SearchShortcuts.key(parts[0], parts[1]), "")
     }
+
+    /**
+     * What auto-launches when apps and saved shortcuts both match: "same" (only when exactly one thing
+     * matches, the default), "app" (a single matching app wins), "shortcut" (a single matching shortcut
+     * wins) or "never" (shortcuts never auto-launch; a lone app still does).
+     */
+    fun shortcutAutoLaunch(c: Context): String = p(c).getString("shortcut_auto_launch", "same") ?: "same"
+    fun setShortcutAutoLaunch(c: Context, v: String) { p(c).edit().putString("shortcut_auto_launch", v).apply() }
 
     fun homeTipShown(c: Context) = p(c).getBoolean("home_tip_shown", false)
     fun setHomeTipShown(c: Context) { p(c).edit().putBoolean("home_tip_shown", true).apply() }

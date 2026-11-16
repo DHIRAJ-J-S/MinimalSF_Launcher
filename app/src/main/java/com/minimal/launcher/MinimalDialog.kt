@@ -232,7 +232,7 @@ object MinimalDialog {
     /**
      * Step slider dialog for auto-launch delay.
      */
-    fun stepSlider(ctx: Context, title: String, steps: LongArray, currentValue: Long, onSelect: (Long) -> Unit) {
+    fun stepSlider(ctx: Context, title: String, steps: LongArray, currentValue: Long, unit: String = "ms", onSelect: (Long) -> Unit) {
         val dialog = newDialog(ctx)
         val root = frame(ctx)
         root.addView(title(ctx, title)); root.addView(divider(ctx))
@@ -245,8 +245,8 @@ object MinimalDialog {
             setPadding(dp(ctx, 20), dp(ctx, 20), dp(ctx, 20), dp(ctx, 8))
         }
         fun showValue(v: Long) {
-            valueText.text = "${v}ms"
-            valueText.setTextColor(if (v == 404L) ACCENT else Color.WHITE)
+            valueText.text = "$v$unit"
+            valueText.setTextColor(if (v == 404L && unit == "ms") ACCENT else Color.WHITE)
         }
         showValue(steps[currentIdx])
         root.addView(valueText)

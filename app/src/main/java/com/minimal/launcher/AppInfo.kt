@@ -14,8 +14,13 @@ data class AppInfo(
     // for an app's main icon, so settings saved before apps could have several icons still match.
     val key: String,
     val otherProfile: Boolean,
-    val canUninstall: Boolean
+    val canUninstall: Boolean,
+    // Set for an app shortcut shown in search ("new chat · whatsapp"): its id, and the part of the label
+    // that search matches on (the shortcut's own name, not the app's)
+    val shortcutId: String? = null,
+    val matchLabel: String = label
 ) {
     // Pre-lowercased once so search doesn't allocate per keystroke
-    val labelLower: String = label.lowercase()
+    val labelLower: String = matchLabel.lowercase()
+    val isShortcut get() = shortcutId != null
 }
