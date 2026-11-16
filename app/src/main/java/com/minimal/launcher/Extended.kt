@@ -130,7 +130,7 @@ object Extended {
      * internet, so this is how it knows of updates: each MinimalSF release carries the plugin version
      * of that day. Bump it whenever a plugin release comes out (see .github/RELEASING.md).
      */
-    const val LATEST_VERSION_CODE = 4L // 1.3
+    const val LATEST_VERSION_CODE = 4L // 1.2
     const val RELEASES_URL = "https://github.com/DHIRAJ-J-S/MinimalSF_Extended/releases/latest"
 
     /** The installed plugin is older than [LATEST_VERSION_CODE]. Checked on the phone, no internet. */
