@@ -1,0 +1,6 @@
+- Light theme: dark, light or follow the phone (settings > look)
+- Coloured icons, hide empty search bar and auto-launch on/off are now built in, no plugin needed
+- Long press menu page: pick what it shows
+- Tidier settings pages
+- am/pm case option, Digital Wellbeing button in screen time, closable home tip
+- Ready for translations

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Light theme (settings > look > theme). Greys keep at least 4.5:1 on white where they carry text. -->
+<resources>
+    <color name="grey_mid">#FF737373</color>
+    <color name="grey_text">#FF444444</color>
+    <color name="grey_dim">#FF6B6B6B</color>
+    <color name="grey_faint">#FF707070</color>
+    <color name="grey_border">#FFE2E2E2</color>
+    <color name="search_bg">#FFF3F3F3</color>
+    <color name="fg">#FF000000</color>
+    <color name="bg">#FFFFFFFF</color>
+    <color name="fg_20">#33000000</color>
+    <color name="fg_13">#22000000</color>
+    <color name="fg_33">#55000000</color>
+    <color name="grey_444">#FFAAAAAA</color>
+    <color name="grey_333">#FFCCCCCC</color>
+    <bool name="light_bars">true</bool>
+</resources>

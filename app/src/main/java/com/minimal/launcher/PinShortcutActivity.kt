@@ -13,25 +13,27 @@ import androidx.appcompat.app.AppCompatActivity
 class PinShortcutActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Theme.init(this)
         super.onCreate(savedInstanceState)
+        Theme.update(this)
         val la = getSystemService(LauncherApps::class.java)
         val request = try { la?.getPinItemRequest(intent) } catch (_: Exception) { null }
         val info = request?.shortcutInfo
         if (request == null || !request.isValid || request.requestType != LauncherApps.PinItemRequest.REQUEST_TYPE_SHORTCUT || info == null) {
             // Widgets aren't supported (no widget area on the home screen)
-            Toast.makeText(this, "MinimalSF can't add that to the home screen", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, str(R.string.minimalsf_can_t_add_that), Toast.LENGTH_SHORT).show()
             finish(); return
         }
 
         val label = AppShortcuts.label(info)
         val appLabel = AppRepository.labelFor(this, info.`package`)
-        MinimalDialog.confirm(this, title = "save shortcut",
-            message = "\"$label\" from $appLabel\n\nit shows up in search, and you can put it on a gesture in settings → gestures.",
-            positiveText = "save", negativeText = "cancel",
+        MinimalDialog.confirm(this, title = str(R.string.save_shortcut),
+            message = str(R.string.from_n_nit_shows_up, label, appLabel),
+            positiveText = str(R.string.save), negativeText = str(R.string.cancel),
             onPositive = {
                 if (request.isValid && request.accept()) {
                     Prefs.addPinnedShortcut(this, "${info.`package`}|${info.id}|$label")
-                    Toast.makeText(this, "shortcut saved", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, str(R.string.shortcut_saved), Toast.LENGTH_SHORT).show()
                 }
             },
             onDismiss = { finish() }

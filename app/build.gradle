@@ -11,8 +11,8 @@ android {
         applicationId "io.github.dhiraj_j_s.minimalsf"
         minSdk 26
         targetSdk 36
-        versionCode 9
-        versionName "1.3.3"
+        versionCode 10
+        versionName "1.3.4"
     }
 
     // F-Droid: don't embed the Google-encrypted dependency metadata block in the APK

@@ -27,11 +27,9 @@ object SpecialAccess {
     /** [action] is the Settings action to open, e.g. Settings.ACTION_ACCESSIBILITY_SETTINGS. */
     fun open(ctx: Context, action: String) {
         if (!maybeBlocked(ctx)) { start(ctx, Intent(action)); return }
-        MinimalDialog.confirm(ctx, title = "android may block this",
-            message = "android can restrict this for apps installed outside an app store.\n\n" +
-                "if it says \"app was denied access\": close that message, open app info here, tap ⋮ at the top, " +
-                "then \"allow restricted settings\". then come back and try again.",
-            positiveText = "open settings", negativeText = "app info",
+        MinimalDialog.confirm(ctx, title = str(R.string.android_may_block_this),
+            message = str(R.string.android_can_restrict_this_for),
+            positiveText = str(R.string.open_settings), negativeText = str(R.string.app_info),
             onPositive = { start(ctx, Intent(action)) },
             onNegative = {
                 start(ctx, Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${ctx.packageName}")))

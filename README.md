@@ -111,7 +111,15 @@ https://github.com/user-attachments/assets/63c2fac5-67a9-4997-858d-60da1021822d
 
 ---
 
-## 🆕 What's new in 1.3.3
+## 🆕 What's new in 1.3.4
+
+- **Light theme:** dark (default), light, or follow the phone, in settings → look ([#14](https://github.com/DHIRAJ-J-S/MinimalSF_Launcher/issues/14))
+- **Built in, no plugin needed:** coloured app icons, hiding the empty search bar and auto-launch on / off, plus a **long press menu** page to pick what it shows
+- **Tidier settings:** look, home screen, search & keyboard and all apps pages
+- **am / pm** in lower or upper case, a **Digital Wellbeing** button in the screen time list, and the home tip can be closed
+- Ready for translations
+
+## What was new in 1.3.3
 
 - **Wallpaper:** your phone's wallpaper behind the home screen, dimmed so text stays readable (on by default, turn off in settings → home screen) ([#13](https://github.com/DHIRAJ-J-S/MinimalSF_Launcher/issues/13))
 - **Shortcuts in search:** saved shortcuts show up below apps and can have a keyword; apps' built-in shortcuts too with MinimalSF Extended ([#2](https://github.com/DHIRAJ-J-S/MinimalSF_Launcher/issues/2))

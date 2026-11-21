@@ -139,6 +139,9 @@ object ScreenTime {
         val candidates = listOf(
             Intent().setComponent(ComponentName("com.google.android.apps.wellbeing",
                 "com.google.android.apps.wellbeing.settings.TopLevelSettingsActivity")),
+            // Samsung: its launcher entry is often disabled (no app icon), this one opens the dashboard
+            Intent().setComponent(ComponentName("com.samsung.android.forest",
+                "com.samsung.android.forest.home.DefaultActivity")),
             Intent().setComponent(ComponentName("com.samsung.android.forest",
                 "com.samsung.android.forest.launcher.LauncherActivity")),
         ) + listOfNotNull(

@@ -29,15 +29,16 @@ import androidx.recyclerview.widget.RecyclerView
  */
 object MinimalDialog {
 
-    private val BORDER = Color.parseColor("#FF444444")
-    private val BG = Color.parseColor("#FF000000")
-    private val TEXT = Color.parseColor("#FFCCCCCC")
-    private val TITLE = Color.WHITE
-    private val OPTION = Color.parseColor("#FFDDDDDD")
-    private val MUTED = Color.parseColor("#FF808080")
-    private val PRESS = Color.parseColor("#33FFFFFF")
-    private val DIVIDER = Color.parseColor("#FF222222")
-    private val INPUT_BG = Color.parseColor("#FF0D0D0D")
+    // Dark / light theme (Theme.light); MUTED is 4.5:1 or more on either background
+    private val BORDER get() = if (Theme.light) Color.parseColor("#FFBBBBBB") else Color.parseColor("#FF444444")
+    private val BG get() = Theme.bg
+    private val TEXT get() = if (Theme.light) Color.parseColor("#FF333333") else Color.parseColor("#FFCCCCCC")
+    private val TITLE get() = Theme.fg
+    private val OPTION get() = if (Theme.light) Color.parseColor("#FF222222") else Color.parseColor("#FFDDDDDD")
+    private val MUTED get() = if (Theme.light) Color.parseColor("#FF707070") else Color.parseColor("#FF808080")
+    private val PRESS get() = if (Theme.light) Color.parseColor("#22000000") else Color.parseColor("#33FFFFFF")
+    private val DIVIDER get() = if (Theme.light) Color.parseColor("#FFE2E2E2") else Color.parseColor("#FF222222")
+    private val INPUT_BG get() = if (Theme.light) Color.parseColor("#FFF3F3F3") else Color.parseColor("#FF0D0D0D")
     private val ACCENT = Color.parseColor("#FF4488FF")
 
     private fun dp(ctx: Context, v: Int): Int =
@@ -99,10 +100,20 @@ object MinimalDialog {
      */
     fun options(ctx: Context, title: String? = null, items: Array<String>, icons: IntArray? = null,
                 subtitle: String? = null, trailing: Array<String?>? = null,
-                iconDrawables: List<android.graphics.drawable.Drawable?>? = null, onSelect: (Int) -> Unit) {
+                iconDrawables: List<android.graphics.drawable.Drawable?>? = null, button: TitleButton? = null,
+                onSelect: (Int) -> Unit) {
         val dialog = newDialog(ctx)
         val root = frame(ctx)
-        if (title != null) { root.addView(title(ctx, title, subtitle)); root.addView(divider(ctx)) }
+        if (title != null) {
+            root.addView(if (button == null) title(ctx, title, subtitle) else LinearLayout(ctx).apply {
+                orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+                addView(title(ctx, title, subtitle).apply {
+                    layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                })
+                addView(titleButton(ctx, button) { dialog.dismiss() })
+            })
+            root.addView(divider(ctx))
+        }
         root.addView(list(ctx, items.mapIndexed { i, label ->
             row(ctx, icons?.getOrNull(i), OPTION, label, OPTION, trailing?.getOrNull(i),
                 iconDrawables?.getOrNull(i)) { dialog.dismiss(); onSelect(i) }
@@ -115,7 +126,8 @@ object MinimalDialog {
      * [on] / [off] in place, the dialog stays open. Without, it's a link (→) that closes the dialog first.
      */
     class MenuRow(val label: String, val icon: Int? = null, val drawable: android.graphics.drawable.Drawable? = null,
-                  val isOn: (() -> Boolean)? = null, val onClick: () -> Unit)
+                  val isOn: (() -> Boolean)? = null, val inMain: (() -> Boolean)? = null, val onMain: (() -> Unit)? = null,
+                  val onClick: () -> Unit)
 
     /** A small button on the right of a dialog's title; a label ending in ↗ opens a website. */
     class TitleButton(val label: String, val onClick: () -> Unit)
@@ -142,11 +154,13 @@ object MinimalDialog {
                 if (isOn == null) return
                 val on = isOn()
                 (view.getChildAt(view.childCount - 1) as TextView).apply {
-                    text = if (on) "[on]" else "[off]"
-                    setTextColor(if (on) Color.WHITE else MUTED)
+                    text = if (on) str(R.string.on) else str(R.string.off)
+                    setTextColor(if (on) Theme.fg else MUTED)
                 }
                 view.contentDescription = "${r.label}, ${if (on) "on" else "off"}"
             }
+            val inMain = r.inMain
+            if (isOn != null && inMain != null) return@map twoToggleRow(ctx, r, isOn, inMain)
             view = row(ctx, r.icon, OPTION, r.label, OPTION, if (isOn == null) "→" else "", r.drawable) {
                 if (isOn == null) { dialog.dismiss(); r.onClick() } else { r.onClick(); paint() }
             }
@@ -172,7 +186,7 @@ object MinimalDialog {
         root.addView(list(ctx, items.mapIndexed { i, label ->
             val checked = i == checkedIndex
             row(ctx, if (checked) R.drawable.ic_radio_on else R.drawable.ic_radio_off,
-                if (checked) Color.WHITE else MUTED, label, if (checked) Color.WHITE else OPTION) { dialog.dismiss(); onSelect(i) }
+                if (checked) Theme.fg else MUTED, label, if (checked) Theme.fg else OPTION) { dialog.dismiss(); onSelect(i) }
         }))
         show(dialog, root, 290)
     }
@@ -204,6 +218,36 @@ object MinimalDialog {
             setFadingEdgeLength(dp(ctx, 40))
             addView(col)
         }
+    }
+
+    /**
+     * "name   [on]  [main]": the first bracket turns the entry on or off, the second puts it in the main
+     * long press menu or under "extended…". The second is dimmed while the entry is off.
+     */
+    private fun twoToggleRow(ctx: Context, r: MenuRow, isOn: () -> Boolean, inMain: () -> Boolean): View {
+        val v = row(ctx, r.icon, OPTION, r.label, OPTION, null, r.drawable) {}
+        v.isClickable = false; v.background = null
+        fun bracket() = TextView(ctx).apply {
+            font(ctx, 12f); setPadding(dp(ctx, 10), dp(ctx, 8), dp(ctx, 6), dp(ctx, 8))
+        }
+        val onView = bracket(); val mainView = bracket()
+        fun paint() {
+            val on = isOn(); val main = inMain()
+            onView.text = if (on) str(R.string.on) else str(R.string.off); onView.setTextColor(if (on) Theme.fg else MUTED)
+            mainView.text = if (main) str(R.string.main) else str(R.string.ext_short)
+            mainView.setTextColor(if (on && main) Theme.fg else MUTED); mainView.alpha = if (on) 1f else 0.5f
+            onView.contentDescription = "${r.label}, ${if (on) "on" else "off"}"
+            mainView.contentDescription = "${r.label}, ${if (main) "in the main menu" else "under extended"}"
+        }
+        // Same width for [main] and [ext], so [on] never moves
+        mainView.minWidth = (mainView.paint.measureText(maxOf(str(R.string.main), str(R.string.ext_short), compareBy { it.length })) +
+            mainView.paddingLeft + mainView.paddingRight).toInt() + 1
+        mainView.gravity = Gravity.START
+        pressable(onView) { r.onClick(); paint() }
+        pressable(mainView) { if (isOn()) { r.onMain?.invoke(); paint() } }
+        (v as LinearLayout).addView(onView); v.addView(mainView)
+        paint()
+        return v
     }
 
     private fun row(ctx: Context, icon: Int?, iconTint: Int, label: String, labelColor: Int,
@@ -246,7 +290,7 @@ object MinimalDialog {
         }
         fun showValue(v: Long) {
             valueText.text = "$v$unit"
-            valueText.setTextColor(if (v == 404L && unit == "ms") ACCENT else Color.WHITE)
+            valueText.setTextColor(if (v == 404L && unit == "ms") ACCENT else Theme.fg)
         }
         showValue(steps[currentIdx])
         root.addView(valueText)
@@ -267,9 +311,9 @@ object MinimalDialog {
         val seekBar = SeekBar(ctx).apply {
             max = steps.size - 1; progress = currentIdx
             setPadding(dp(ctx, 24), dp(ctx, 8), dp(ctx, 24), dp(ctx, 16))
-            progressTintList = ColorStateList.valueOf(Color.WHITE)
+            progressTintList = ColorStateList.valueOf(Theme.fg)
             progressBackgroundTintList = ColorStateList.valueOf(MUTED)
-            thumbTintList = ColorStateList.valueOf(Color.WHITE)
+            thumbTintList = ColorStateList.valueOf(Theme.fg)
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) = showValue(steps[progress])
                 override fun onStartTrackingTouch(sb: SeekBar?) {}
@@ -308,8 +352,8 @@ object MinimalDialog {
         // Long app lists get a filter box: type part of a name
         if (apps.size > 10) {
             val search = EditText(ctx).apply {
-                hint = "search"; setHintTextColor(MUTED)
-                setTextColor(Color.WHITE); font(ctx, 13f)
+                hint = str(R.string.search); setHintTextColor(MUTED)
+                setTextColor(Theme.fg); font(ctx, 13f)
                 background = GradientDrawable().apply { setColor(INPUT_BG); setStroke(dp(ctx, 1), DIVIDER) }
                 setPadding(dp(ctx, 12), dp(ctx, 8), dp(ctx, 12), dp(ctx, 8))
                 inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
@@ -351,7 +395,7 @@ object MinimalDialog {
         val input = EditText(ctx).apply {
             setHint(hint); setHintTextColor(MUTED)
             setText(prefill); setSelection(prefill.length)
-            setTextColor(Color.WHITE); font(ctx, 14f)
+            setTextColor(Theme.fg); font(ctx, 14f)
             background = GradientDrawable().apply { setColor(INPUT_BG); setStroke(dp(ctx, 1), DIVIDER) }
             setPadding(dp(ctx, 14), dp(ctx, 12), dp(ctx, 14), dp(ctx, 12))
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
@@ -442,9 +486,9 @@ object MinimalDialog {
         fun paint() {
             val on = toggle.isOn()
             chip.typeface = Typeface.create(tf(ctx), Typeface.BOLD)
-            chip.setTextColor(if (on) Color.WHITE else MUTED)
+            chip.setTextColor(if (on) Theme.fg else MUTED)
             chip.background = RippleDrawable(ColorStateList.valueOf(PRESS),
-                GradientDrawable().apply { setColor(BG); setStroke(dp(ctx, 1), if (on) Color.WHITE else DIVIDER) }, null)
+                GradientDrawable().apply { setColor(BG); setStroke(dp(ctx, 1), if (on) Theme.fg else DIVIDER) }, null)
             chip.contentDescription = "${toggle.label} ${if (on) "on" else "off"}"
         }
         paint()
@@ -466,19 +510,19 @@ object MinimalDialog {
         val external = b.label.endsWith("↗")
         val text = b.label.removeSuffix("↗").trimEnd()
         addView(TextView(ctx).apply {
-            this.text = text; font(ctx, 12f); setTextColor(Color.WHITE)
+            this.text = text; font(ctx, 12f); setTextColor(Theme.fg)
             typeface = Typeface.create(tf(ctx), Typeface.BOLD)
         })
         if (external) addView(android.widget.ImageView(ctx).apply {
             setImageResource(R.drawable.ic_external)
-            imageTintList = ColorStateList.valueOf(Color.WHITE)
+            imageTintList = ColorStateList.valueOf(Theme.fg)
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
             layoutParams = LinearLayout.LayoutParams(dp(ctx, 12), dp(ctx, 12)).apply { marginStart = dp(ctx, 5) }
         })
-        contentDescription = if (external) "$text, opens a website" else text
+        contentDescription = if (external) str(R.string.opens_a_website, text) else text
         isClickable = true; isFocusable = true
         background = RippleDrawable(ColorStateList.valueOf(PRESS),
-            GradientDrawable().apply { setColor(BG); setStroke(dp(ctx, 1), Color.WHITE) }, null)
+            GradientDrawable().apply { setColor(BG); setStroke(dp(ctx, 1), Theme.fg) }, null)
         setOnClickListener { dismiss(); b.onClick() }
     }
 
@@ -504,9 +548,9 @@ object MinimalDialog {
             chips.forEachIndexed { i, chip ->
                 val on = i == selected
                 chip.typeface = tf(ctx)
-                chip.setTextColor(if (on) Color.WHITE else MUTED)
+                chip.setTextColor(if (on) Theme.fg else MUTED)
                 chip.background = RippleDrawable(ColorStateList.valueOf(PRESS),
-                    GradientDrawable().apply { setColor(BG); setStroke(dp(ctx, 1), if (on) Color.WHITE else DIVIDER) }, null)
+                    GradientDrawable().apply { setColor(BG); setStroke(dp(ctx, 1), if (on) Theme.fg else DIVIDER) }, null)
                 chip.contentDescription = "${seg.label} ${seg.options[i]}${if (on) ", selected" else ""}"
             }
         }
@@ -535,16 +579,16 @@ object MinimalDialog {
             setTextColor(MUTED); font(ctx, 12f)
             setPadding(dp(ctx, 20), dp(ctx, 14), dp(ctx, 20), dp(ctx, 4))
         }
-        fun showSize() { sizeLabel.text = "columns · $cols" }
+        fun showSize() { sizeLabel.text = str(R.string.columns, cols) }
         val sizeSection = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
             addView(sizeLabel)
             addView(SeekBar(ctx).apply {
                 this.max = max - min; progress = cols - min
                 setPadding(dp(ctx, 24), dp(ctx, 8), dp(ctx, 24), dp(ctx, 16))
-                progressTintList = ColorStateList.valueOf(Color.WHITE)
+                progressTintList = ColorStateList.valueOf(Theme.fg)
                 progressBackgroundTintList = ColorStateList.valueOf(MUTED)
-                thumbTintList = ColorStateList.valueOf(Color.WHITE)
+                thumbTintList = ColorStateList.valueOf(Theme.fg)
                 contentDescription = "columns"
                 setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                     override fun onProgressChanged(sb: SeekBar?, value: Int, fromUser: Boolean) {
@@ -563,9 +607,9 @@ object MinimalDialog {
             for ((r, on) in listOf(listRow to (!grid && withIcons), namesRow to (!grid && !withIcons), gridRow to grid)) {
                 (r.getChildAt(0) as android.widget.ImageView).apply {
                     setImageResource(if (on) R.drawable.ic_radio_on else R.drawable.ic_radio_off)
-                    imageTintList = ColorStateList.valueOf(if (on) Color.WHITE else MUTED)
+                    imageTintList = ColorStateList.valueOf(if (on) Theme.fg else MUTED)
                 }
-                (r.getChildAt(1) as TextView).setTextColor(if (on) Color.WHITE else OPTION)
+                (r.getChildAt(1) as TextView).setTextColor(if (on) Theme.fg else OPTION)
             }
             sizeSection.visibility = if (grid) View.VISIBLE else View.GONE
             showSize()
@@ -625,7 +669,7 @@ object MinimalDialog {
 
     private fun pressable(v: View, onClick: () -> Unit) {
         v.isClickable = true; v.isFocusable = true
-        v.background = RippleDrawable(ColorStateList.valueOf(PRESS), null, ColorDrawable(Color.WHITE))
+        v.background = RippleDrawable(ColorStateList.valueOf(PRESS), null, ColorDrawable(Theme.fg))
         v.setOnClickListener { onClick() }
     }
 }

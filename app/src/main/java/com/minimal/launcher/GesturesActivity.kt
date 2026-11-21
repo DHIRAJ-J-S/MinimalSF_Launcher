@@ -31,12 +31,12 @@ class GesturesActivity : AppCompatActivity() {
                 if (c.moveToFirst()) c.getString(0) to (c.getString(1) ?: c.getString(0)) else null
             }
         } catch (_: Exception) { null }
-        if (picked == null) { Toast.makeText(this, "couldn't read that contact", Toast.LENGTH_SHORT).show(); return@registerForActivityResult }
+        if (picked == null) { Toast.makeText(this, str(R.string.couldn_t_read_that_contact), Toast.LENGTH_SHORT).show(); return@registerForActivityResult }
         save(g, GestureActions.call(picked.first, picked.second.lowercase()))
         if (checkSelfPermission(Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-            MinimalDialog.confirm(this, title = "call directly?",
-                message = "allow phone calls so the gesture calls straight away.\n\nwithout it, the dialer opens with the number filled in.",
-                positiveText = "allow", negativeText = "use dialer",
+            MinimalDialog.confirm(this, title = str(R.string.call_directly),
+                message = str(R.string.allow_phone_calls_so_the),
+                positiveText = str(R.string.allow), negativeText = str(R.string.use_dialer),
                 onPositive = { callPermission.launch(Manifest.permission.CALL_PHONE) })
         }
     }
@@ -44,7 +44,9 @@ class GesturesActivity : AppCompatActivity() {
     private val callPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Theme.init(this)
         super.onCreate(savedInstanceState)
+        Theme.update(this)
         setContentView(R.layout.activity_gestures)
         root = findViewById(R.id.gesturesRoot)
         findViewById<TextView>(R.id.backBtn).setOnClickListener { finish() }
@@ -68,6 +70,7 @@ class GesturesActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        Theme.update(this)
         refresh()
     }
 
@@ -75,7 +78,7 @@ class GesturesActivity : AppCompatActivity() {
         stateViews.forEach { (g, tv) ->
             val code = Prefs.gesture(this, g)
             tv.text = when {
-                code == GestureActions.LOCK && !LockAccessibilityService.isEnabled(this) -> "[lock · needs access]"
+                code == GestureActions.LOCK && !LockAccessibilityService.isEnabled(this) -> str(R.string.lock_needs_access)
                 else -> "[${GestureActions.label(this, code).lowercase()}]"
             }
         }
@@ -96,19 +99,19 @@ class GesturesActivity : AppCompatActivity() {
         fun simple(code: String) = add(GestureActions.label(this, code), GestureActions.icon(code)) { save(g, code) }
 
         simple("")
-        add("lock screen", R.drawable.ic_lock) {
+        add(str(R.string.lock_screen), R.drawable.ic_lock) {
             save(g, GestureActions.LOCK)
             if (LockAccessibilityService.isSupported && !LockAccessibilityService.isEnabled(this)) promptAccessibility()
         }
-        add("open app…", R.drawable.ic_app) { pickApp(AppRepository.apps) { save(g, GestureActions.app(it.key)) } }
-        add("call contact…", R.drawable.ic_call) { pendingGesture = g; pickContact() }
-        add("app shortcut…", R.drawable.ic_shortcut) { pickAppShortcut(g) }
-        if (Prefs.pinnedShortcuts(this).isNotEmpty()) add("saved shortcuts…", R.drawable.ic_shortcut) { pickPinned(g) }
-        add("app screen…", R.drawable.ic_activity) { pickApp(AppRepository.mainApps()) { pickActivity(g, it) } }
+        add(str(R.string.open_app), R.drawable.ic_app) { pickApp(AppRepository.apps) { save(g, GestureActions.app(it.key)) } }
+        add(str(R.string.call_contact), R.drawable.ic_call) { pendingGesture = g; pickContact() }
+        add(str(R.string.app_shortcut), R.drawable.ic_shortcut) { pickAppShortcut(g) }
+        if (Prefs.pinnedShortcuts(this).isNotEmpty()) add(str(R.string.saved_shortcuts), R.drawable.ic_shortcut) { pickPinned(g) }
+        add(str(R.string.app_screen), R.drawable.ic_activity) { pickApp(AppRepository.mainApps()) { pickActivity(g, it) } }
         listOf(GestureActions.FLASHLIGHT, GestureActions.CAMERA, GestureActions.PLAY_PAUSE, GestureActions.NEXT_TRACK,
             GestureActions.NOTIFICATIONS, GestureActions.QUICK_SETTINGS, GestureActions.ALL_APPS, GestureActions.SETTINGS).forEach { simple(it) }
 
-        MinimalDialog.options(this, title = g.title, subtitle = "now: " + GestureActions.label(this, Prefs.gesture(this, g)).lowercase(),
+        MinimalDialog.options(this, title = g.title, subtitle = str(R.string.now) + GestureActions.label(this, Prefs.gesture(this, g)).lowercase(),
             items = choices.map { it.first }.toTypedArray(), icons = icons.toIntArray()) { choices[it].second() }
     }
 
@@ -117,22 +120,22 @@ class GesturesActivity : AppCompatActivity() {
 
     private fun pickContact() {
         try { contactPicker.launch(Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI)) }
-        catch (_: Exception) { Toast.makeText(this, "no contacts app found", Toast.LENGTH_SHORT).show() }
+        catch (_: Exception) { Toast.makeText(this, str(R.string.no_contacts_app_found), Toast.LENGTH_SHORT).show() }
     }
 
     private fun pickAppShortcut(g: Prefs.Gesture) {
         if (!AppShortcuts.available(this)) {
-            MinimalDialog.confirm(this, title = "app shortcuts",
-                message = "android only lets the default launcher use app shortcuts.\n\nset MinimalSF as your default launcher first.",
-                positiveText = "open settings", negativeText = "cancel",
+            MinimalDialog.confirm(this, title = str(R.string.app_shortcuts),
+                message = str(R.string.android_only_lets_the_default),
+                positiveText = str(R.string.open_settings), negativeText = str(R.string.cancel),
                 onPositive = { try { startActivity(Intent(Settings.ACTION_HOME_SETTINGS)) } catch (_: Exception) {} })
             return
         }
         // Shortcut gestures are saved without a profile, so only personal apps are offered
         pickApp(AppRepository.mainApps()) { app ->
             val shortcuts = AppShortcuts.forPackage(this, app.packageName)
-            if (shortcuts.isEmpty()) { Toast.makeText(this, "${app.label} has no shortcuts", Toast.LENGTH_SHORT).show(); return@pickApp }
-            MinimalDialog.options(this, title = app.label, subtitle = "app shortcuts",
+            if (shortcuts.isEmpty()) { Toast.makeText(this, str(R.string.has_no_shortcuts, app.label), Toast.LENGTH_SHORT).show(); return@pickApp }
+            MinimalDialog.options(this, title = app.label, subtitle = str(R.string.app_shortcuts),
                 items = shortcuts.map { AppShortcuts.label(it) }.toTypedArray(),
                 icons = IntArray(shortcuts.size) { R.drawable.ic_shortcut }) { i ->
                 val s = shortcuts[i]
@@ -143,7 +146,7 @@ class GesturesActivity : AppCompatActivity() {
 
     private fun pickPinned(g: Prefs.Gesture) {
         val pinned = Prefs.pinnedShortcuts(this)
-        MinimalDialog.options(this, title = "saved shortcuts", subtitle = "added from other apps",
+        MinimalDialog.options(this, title = str(R.string.saved_shortcuts_2), subtitle = str(R.string.added_from_other_apps),
             items = (pinned.map { it.substringAfterLast('|') } + "remove a saved shortcut…").toTypedArray(),
             icons = IntArray(pinned.size) { R.drawable.ic_shortcut } + R.drawable.ic_close,
             trailing = (pinned.map { AppRepository.labelFor(this, it.substringBefore('|')).lowercase() as String? } + null).toTypedArray()
@@ -156,17 +159,17 @@ class GesturesActivity : AppCompatActivity() {
 
     private fun removePinned() {
         val pinned = Prefs.pinnedShortcuts(this)
-        MinimalDialog.options(this, title = "remove saved shortcut", subtitle = "gestures already using it keep working",
+        MinimalDialog.options(this, title = str(R.string.remove_saved_shortcut), subtitle = str(R.string.gestures_already_using_it_keep),
             items = pinned.map { it.substringAfterLast('|') }.toTypedArray(),
             icons = IntArray(pinned.size) { R.drawable.ic_close },
             trailing = pinned.map { AppRepository.labelFor(this, it.substringBefore('|')).lowercase() as String? }.toTypedArray()
         ) { i ->
             val name = pinned[i].substringAfterLast('|')
-            MinimalDialog.confirm(this, title = "remove shortcut", message = "remove \"$name\" from saved shortcuts?",
-                positiveText = "remove", negativeText = "cancel",
+            MinimalDialog.confirm(this, title = str(R.string.remove_shortcut), message = str(R.string.remove_from_saved_shortcuts, name),
+                positiveText = str(R.string.remove), negativeText = str(R.string.cancel),
                 onPositive = {
                     Prefs.removePinnedShortcut(this, pinned[i])
-                    Toast.makeText(this, "removed $name", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, str(R.string.removed, name), Toast.LENGTH_SHORT).show()
                     refresh()
                 })
         }
@@ -179,7 +182,7 @@ class GesturesActivity : AppCompatActivity() {
             packageManager.getPackageInfo(app.packageName, PackageManager.GET_ACTIVITIES).activities
                 ?.filter { it.exported && it.enabled } ?: emptyList()
         } catch (_: Exception) { emptyList() }
-        if (activities.isEmpty()) { Toast.makeText(this, "${app.label} has no screens to open", Toast.LENGTH_SHORT).show(); return }
+        if (activities.isEmpty()) { Toast.makeText(this, str(R.string.has_no_screens_to_open, app.label), Toast.LENGTH_SHORT).show(); return }
 
         val entries = activities.map { ai ->
             val short = ai.name.substringAfterLast('.')
@@ -187,7 +190,7 @@ class GesturesActivity : AppCompatActivity() {
             Triple(label.lowercase(), short, ComponentName(ai.packageName, ai.name))
         }.distinctBy { it.third }.sortedBy { it.first }
 
-        MinimalDialog.options(this, title = app.label, subtitle = "${entries.size} screens · some may need extra data and fail to open",
+        MinimalDialog.options(this, title = app.label, subtitle = str(R.string.screens_some_may_need_extra, entries.size),
             items = entries.map { it.first }.toTypedArray(),
             icons = IntArray(entries.size) { R.drawable.ic_activity },
             trailing = entries.map { if (it.first == it.second.lowercase()) null else it.second }.toTypedArray()
@@ -195,9 +198,9 @@ class GesturesActivity : AppCompatActivity() {
     }
 
     private fun promptAccessibility() {
-        MinimalDialog.confirm(this, title = "enable screen lock",
-            message = "to lock the screen with a gesture, MinimalSF needs accessibility permission.\n\nonly the lock action is used - no data is read or collected.",
-            positiveText = "open settings", negativeText = "later",
+        MinimalDialog.confirm(this, title = str(R.string.enable_screen_lock),
+            message = str(R.string.to_lock_the_screen_with),
+            positiveText = str(R.string.open_settings), negativeText = str(R.string.later),
             onPositive = { SpecialAccess.open(this, Settings.ACTION_ACCESSIBILITY_SETTINGS) })
     }
 }

@@ -177,7 +177,9 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
+        Theme.init(this)
         super.onCreate(savedInstanceState)
+        Theme.update(this)
         setContentView(R.layout.activity_launcher)
 
         rootLayout = findViewById(R.id.rootLayout)
@@ -489,7 +491,9 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         homeTipView.text = listOf(Prefs.Gesture.SWIPE_DOWN to "pull down", Prefs.Gesture.DOUBLE_TAP to "double tap")
             .mapNotNull { (g, verb) ->
                 Prefs.gesture(this, g).takeIf { it.isNotEmpty() }?.let { "$verb: ${GestureActions.label(this, it).lowercase()}" }
-            }.joinToString("\n\n")
+            }.joinToString("\n\n").let { if (it.isEmpty()) it else it + "\n\n" + str(R.string.close_tip) }
+        // Tapping the tip closes it for good, like using one of the gestures does
+        homeTipView.setOnClickListener { dismissHomeTip() }
         homeTipView.visibility = if (homeTipWanted(results)) View.VISIBLE else View.GONE
     }
 
@@ -554,23 +558,23 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         try {
             packageManager.getLaunchIntentForPackage(key)?.let {
                 it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); startActivity(it)
-            } ?: Toast.makeText(this, "app not found - check gesture settings", Toast.LENGTH_SHORT).show()
+            } ?: Toast.makeText(this, str(R.string.app_not_found_check_gesture), Toast.LENGTH_SHORT).show()
         } catch (_: Exception) {}
     }
 
     override fun lockScreen() {
         if (!LockAccessibilityService.isSupported) {
-            MinimalDialog.confirm(this, title = "screen lock unavailable",
-                message = "locking the screen needs android 9 or newer.\n\nyou can set ${lastGesture.title} to do something else in settings → gestures.",
-                positiveText = "ok", onPositive = {})
+            MinimalDialog.confirm(this, title = str(R.string.screen_lock_unavailable),
+                message = str(R.string.locking_the_screen_needs_android, lastGesture.title),
+                positiveText = str(R.string.ok), onPositive = {})
             return
         }
         if (LockAccessibilityService.instance?.lock() == true) return
         MinimalDialog.confirm(this,
-            title = "enable screen lock",
-            message = "to lock the screen with ${lastGesture.title}, MinimalSF needs accessibility permission.\n\nonly the lock action is used - no data is read or collected.",
-            positiveText = "open settings",
-            negativeText = "cancel",
+            title = str(R.string.enable_screen_lock),
+            message = str(R.string.to_lock_the_screen_with_2, lastGesture.title),
+            positiveText = str(R.string.open_settings),
+            negativeText = str(R.string.cancel),
             onPositive = { SpecialAccess.open(this, Settings.ACTION_ACCESSIBILITY_SETTINGS) }
         )
     }
@@ -582,14 +586,14 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
      * the plugin itself isn't woken. Also catches the plugin being uninstalled, which puts back the defaults.
      */
     private fun applyExtended() {
-        val old = ext
         ext = Extended.flags(this)
-        if (ext.colourIcons != AppAdapter.colourIcons) {
-            AppAdapter.colourIcons = ext.colourIcons
+        val colour = Prefs.colourIcons(this)
+        if (colour != AppAdapter.colourIcons) {
+            AppAdapter.colourIcons = colour
             @Suppress("NotifyDataSetChanged") adapter.notifyDataSetChanged()
         }
-        autoLaunchIcon.colorFilter = if (ext.colourIcons) null else AppAdapter.GRAYSCALE
-        if (old.hideSearch != ext.hideSearch) updateSearchVisibility()
+        autoLaunchIcon.colorFilter = if (colour) null else AppAdapter.GRAYSCALE
+        updateSearchVisibility()
         refreshBuiltInShortcuts()
     }
 
@@ -604,7 +608,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
      * typing still goes into it and tapping where it is still opens the keyboard.
      */
     private fun updateSearchVisibility() {
-        searchInput.alpha = if (ext.hideSearch && searchInput.text.isNullOrEmpty()) 0f else 1f
+        searchInput.alpha = if (Prefs.hideEmptySearch(this) && searchInput.text.isNullOrEmpty()) 0f else 1f
     }
 
     private fun applyUi() {
@@ -652,13 +656,13 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
             window.navigationBarColor = Color.TRANSPARENT
         } else {
             window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SHOW_WALLPAPER)
-            window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Color.BLACK))
-            window.navigationBarColor = Color.BLACK
+            window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Theme.bg))
+            window.navigationBarColor = Theme.bg
         }
-        val solid = if (on) Color.TRANSPARENT else Color.BLACK
+        val solid = if (on) Color.TRANSPARENT else Theme.bg
         todoSection.setBackgroundColor(solid)
         navGroup.setBackgroundColor(solid)
-        val bar = if (on) Color.argb(0x99, 0, 0, 0) else getColor(R.color.search_bg)
+        val bar = if (on) Color.argb(0x99, Color.red(Theme.bg), Color.red(Theme.bg), Color.red(Theme.bg)) else getColor(R.color.search_bg)
         musicBar.setBackgroundColor(bar)
         musicTipView.setBackgroundColor(bar)
         (searchInput.background?.mutate() as? android.graphics.drawable.GradientDrawable)?.setColor(bar)
@@ -712,15 +716,18 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
     /** Full dim while searching or in all apps; with the gradient on, lighter in the empty middle of home. */
     private fun updateWallpaperDim() {
-        if (!wallpaperOn) { rootLayout.setBackgroundColor(Color.BLACK); return }
+        if (!wallpaperOn) { rootLayout.setBackgroundColor(Theme.bg); return }
         var dim = Prefs.wallpaperDim(this)
-        if (wallpaperLight) dim = max(dim, Prefs.LIGHT_MIN_DIM)
-        val full = Color.argb((dim * 255 / 100).toInt(), 0, 0, 0)
+        // Dark theme: white text, so a light wallpaper needs a stronger black layer. Light theme: a white layer,
+        // kept lighter so the picture isn't washed out; the text gets a white glow instead
+        if (Theme.light) dim = dim * 55 / 100
+        else if (wallpaperLight) dim = max(dim, Prefs.LIGHT_MIN_DIM)
+        val full = Color.argb((dim * 255 / 100).toInt(), Color.red(Theme.bg), Color.red(Theme.bg), Color.red(Theme.bg))
         val idle = !showingAllApps && searchInput.text.isNullOrEmpty()
         rootLayout.background = if (Prefs.wallpaperGradient(this) && idle) {
             // Header (clock, date) and footer (search, music, todo, buttons) keep the full dim
             val fullA = dim * 255 / 100f
-            KeyboardAwareDim(fullA, fullA * 0.35f).also { syncDim(it) }
+            KeyboardAwareDim(fullA, fullA * if (Theme.light) 0.2f else 0.35f).also { syncDim(it) }
         } else android.graphics.drawable.ColorDrawable(full)
     }
 
@@ -757,6 +764,8 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
      * clock size and the keyboard. Behind the keyboard it's full dim.
      */
     private class KeyboardAwareDim(private val fullA: Float, private val midA: Float) : android.graphics.drawable.Drawable() {
+        // Black over the wallpaper in the dark theme, white in the light one
+        private val shade = Color.red(Theme.bg)
         private val paint = android.graphics.Paint()
         private var topPx = 0
         private var bottomPx = 0
@@ -780,7 +789,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
                     y > bottom - ramp -> 1 - (bottom - y) / ramp
                     else -> 0f
                 }.coerceIn(0f, 1f)
-                android.graphics.Color.argb((midA + (fullA - midA) * t).toInt(), 0, 0, 0)
+                android.graphics.Color.argb((midA + (fullA - midA) * t).toInt(), shade, shade, shade)
             }
             return android.graphics.LinearGradient(0f, b.top.toFloat(), 0f, b.top + h, stops, null, android.graphics.Shader.TileMode.CLAMP)
         }
@@ -830,7 +839,11 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
     override fun onResume() {
         super.onResume()
-        if (uiDirty) applyUi()
+        // Light / dark is per screen (the home screen can stay dark over a dark wallpaper while settings
+        // are light): take this screen's back, and redraw the parts drawn in code if it differs
+        val wasLight = Theme.light
+        Theme.update(this)
+        if (uiDirty || wasLight != Theme.light) applyUi()
         applyExtended()
 
         handler.removeCallbacks(clockRunnable); handler.post(clockRunnable)
@@ -886,19 +899,17 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
     private fun showFirstLaunchSetup() {
         val isDefault = isDefaultLauncher()
         val openSettings = { startActivity(Intent(this, SettingsActivity::class.java)) }
-        val message = "type to launch any app - one match opens on its own.\n\n" +
-            "tip: long press an app to give it a keyword, like \"wa\" for whatsapp.\n\n" +
-            "fonts, gestures, the now playing bar and more are in settings." +
-            (if (isDefault) "" else "\n\nset MinimalSF as your default launcher so it opens when you press home.")
+        val message = str(R.string.type_to_launch_any_app) +
+            (if (isDefault) "" else str(R.string.n_nset_minimalsf_as_your))
         if (isDefault) {
-            MinimalDialog.confirm(this, title = "welcome to MinimalSF", message = message,
-                negativeText = "later", onNegative = {},
-                positiveText = "settings", onPositive = { openSettings() })
+            MinimalDialog.confirm(this, title = str(R.string.welcome_to_minimalsf), message = message,
+                negativeText = str(R.string.later), onNegative = {},
+                positiveText = str(R.string.settings_2), onPositive = { openSettings() })
         } else {
-            MinimalDialog.confirm(this, title = "welcome to MinimalSF", message = message,
-                negativeText = "later", onNegative = {},
-                neutralText = "settings", onNeutral = { openSettings() },
-                positiveText = "set default",
+            MinimalDialog.confirm(this, title = str(R.string.welcome_to_minimalsf), message = message,
+                negativeText = str(R.string.later), onNegative = {},
+                neutralText = str(R.string.settings_2), onNeutral = { openSettings() },
+                positiveText = str(R.string.set_default),
                 onPositive = { try { startActivity(Intent(Settings.ACTION_HOME_SETTINGS)) } catch (_: Exception) {} })
         }
     }
@@ -966,8 +977,8 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
     private fun expandStatusBar(method: String) {
         try { Class.forName("android.app.StatusBarManager").getMethod(method).invoke(getSystemService("statusbar")) }
         catch (_: Exception) {
-            val what = if (method == "expandSettingsPanel") "quick settings" else "notifications"
-            Toast.makeText(this, "can't open $what on this phone - try another gesture action", Toast.LENGTH_SHORT).show()
+            val what = if (method == "expandSettingsPanel") str(R.string.quick_settings) else str(R.string.notifications)
+            Toast.makeText(this, str(R.string.can_t_open_on_this, what), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -986,7 +997,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         } catch (_: SecurityException) {
             musicNeedsAccess = true
             bindController(null)
-            musicTitle.text = "tap to allow music access"
+            musicTitle.text = str(R.string.tap_to_allow_music_access)
         }
     }
 
@@ -1010,14 +1021,14 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
             c?.registerCallback(mediaCallback, handler)
         }
         onMusicStateChanged()
-        if (c == null) { musicTitle.text = "no music playing"; musicIconView.setImageResource(R.drawable.ic_music); return }
+        if (c == null) { musicTitle.text = str(R.string.no_music_playing); musicIconView.setImageResource(R.drawable.ic_music); return }
         displayMeta(c.metadata)
         updatePlayIcon(c.playbackState)
         if (c.playbackState?.state == PlaybackState.STATE_PLAYING) showMusicTip()
     }
 
     private fun displayMeta(meta: MediaMetadata?) {
-        if (meta == null) { musicTitle.text = "no music playing"; return }
+        if (meta == null) { musicTitle.text = str(R.string.no_music_playing); return }
         val t = meta.getString(MediaMetadata.METADATA_KEY_TITLE) ?: meta.getString(MediaMetadata.METADATA_KEY_DISPLAY_TITLE) ?: "unknown"
         val a = meta.getString(MediaMetadata.METADATA_KEY_ARTIST) ?: meta.getString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST) ?: ""
         musicTitle.text = if (a.isNotEmpty()) "$t · $a" else t
@@ -1229,7 +1240,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
         // The app's own shortcuts first ("new chat", "navigate home"…), like other launchers show them
         // Each entry can be turned off in settings > extended menu > long press menu (MinimalSF Extended)
-        val shortcuts = if (!ext.shows("menu_shortcuts")) emptyList()
+        val shortcuts = if (!Prefs.menuShows(this, "menu_shortcuts")) emptyList()
             else AppShortcuts.forPackage(this, app.packageName, app.user).take(4)
         // Actions picked for the main menu (settings > extended menu > long press menu) sit next to app
         // info; the rest stay behind "extended…". Only then is the plugin asked for its actions here.
@@ -1238,14 +1249,14 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         val extActions = all.filter { it.id in ext.mainActions }
         val rest = all.filter { it.id !in ext.mainActions }
         val menu = listOfNotNull(
-            if (!ext.shows("menu_app_info")) null else Entry("app info", R.drawable.ic_info) { keepAllAppsOpen = showingAllApps; try { getSystemService(LauncherApps::class.java)?.startAppDetailsActivity(app.component, app.user, null, null) } catch (_: Exception) {} },
-            if (!app.canUninstall || !ext.shows("menu_uninstall")) null else Entry("uninstall", R.drawable.ic_uninstall) { keepAllAppsOpen = showingAllApps; try { startActivity(Intent(Intent.ACTION_DELETE, Uri.parse("package:${app.packageName}")).putExtra(Intent.EXTRA_USER, app.user)) } catch (_: Exception) {} },
-            if (!ext.shows("menu_keyword")) null else Entry("set keyword", R.drawable.ic_keyword, trailing = currentKeyword.ifEmpty { null }) { KeywordPrompt.show(this, app.key, app.label) },
+            if (!Prefs.menuShows(this, "menu_app_info")) null else Entry(str(R.string.app_info), R.drawable.ic_info) { keepAllAppsOpen = showingAllApps; try { getSystemService(LauncherApps::class.java)?.startAppDetailsActivity(app.component, app.user, null, null) } catch (_: Exception) {} },
+            if (!app.canUninstall || !Prefs.menuShows(this, "menu_uninstall")) null else Entry(str(R.string.uninstall), R.drawable.ic_uninstall) { keepAllAppsOpen = showingAllApps; try { startActivity(Intent(Intent.ACTION_DELETE, Uri.parse("package:${app.packageName}")).putExtra(Intent.EXTRA_USER, app.user)) } catch (_: Exception) {} },
+            if (!Prefs.menuShows(this, "menu_keyword")) null else Entry(str(R.string.set_keyword), R.drawable.ic_keyword, trailing = currentKeyword.ifEmpty { null }) { KeywordPrompt.show(this, app.key, app.label) },
         ) + extActions.map { a -> Entry(a.label, R.drawable.ic_extended, drawable = a.icon) { runExtended(app, a) } } + listOfNotNull(
             // Only with the optional MinimalSF Extended plugin installed, and some of its actions turned on
             if (!Extended.available(this) || !ext.anyAction || (split && rest.isEmpty())) null
-            else Entry("extended…", R.drawable.ic_extended) { showExtended(app, if (split) rest else null) },
-            if (!ext.shows("menu_hide")) null else Entry(if (isHidden) "show in search" else "hide from search", if (isHidden) R.drawable.ic_eye else R.drawable.ic_eye_off) {
+            else Entry(str(R.string.extended), R.drawable.ic_extended) { showExtended(app, if (split) rest else null) },
+            if (!Prefs.menuShows(this, "menu_hide")) null else Entry(if (isHidden) str(R.string.show_in_search) else str(R.string.hide_from_search), if (isHidden) R.drawable.ic_eye else R.drawable.ic_eye_off) {
                 Prefs.setAppHidden(this, app.key, !isHidden)
                 if (showingAllApps) { adapter.update(AppRepository.apps, "", Prefs.getHiddenApps(this)); updateScrubber() }
                 else filterApps(searchInput.text.toString(), allowAutoLaunch = false)
@@ -1264,7 +1275,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
             subtitle = details, trailing = trailing, iconDrawables = drawables) { picked ->
             if (picked < shortcuts.size) {
                 val s = shortcuts[picked]
-                if (!AppShortcuts.start(this, s.`package`, s.id, user = app.user)) Toast.makeText(this, "shortcut unavailable", Toast.LENGTH_SHORT).show()
+                if (!AppShortcuts.start(this, s.`package`, s.id, user = app.user)) Toast.makeText(this, str(R.string.shortcut_unavailable), Toast.LENGTH_SHORT).show()
                 return@options
             }
             menu[picked - shortcuts.size].run()
@@ -1277,21 +1288,21 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         val keyword = Prefs.getKeywords(this)[sc.key] ?: ""
         val refilter = { filterApps(searchInput.text.toString(), allowAutoLaunch = false) }
         val menu = listOfNotNull(
-            if (saved == null) null else Entry("set keyword", R.drawable.ic_keyword, trailing = keyword.ifEmpty { null }) {
+            if (saved == null) null else Entry(str(R.string.set_keyword), R.drawable.ic_keyword, trailing = keyword.ifEmpty { null }) {
                 KeywordPrompt.show(this, sc.key, sc.matchLabel, refilter)
             },
             AppRepository.apps.firstOrNull { it.key == sc.packageName }?.let { app ->
-                Entry("app info", R.drawable.ic_info) { try { getSystemService(LauncherApps::class.java)?.startAppDetailsActivity(app.component, app.user, null, null) } catch (_: Exception) {} }
+                Entry(str(R.string.app_info), R.drawable.ic_info) { try { getSystemService(LauncherApps::class.java)?.startAppDetailsActivity(app.component, app.user, null, null) } catch (_: Exception) {} }
             },
-            if (saved == null) null else Entry("remove saved shortcut", R.drawable.ic_close) {
-                MinimalDialog.confirm(this, title = "remove shortcut", message = "remove \"${sc.matchLabel}\" from saved shortcuts?",
-                    positiveText = "remove", negativeText = "cancel",
+            if (saved == null) null else Entry(str(R.string.remove_saved_shortcut), R.drawable.ic_close) {
+                MinimalDialog.confirm(this, title = str(R.string.remove_shortcut), message = str(R.string.remove_from_saved_shortcuts, sc.matchLabel),
+                    positiveText = str(R.string.remove), negativeText = str(R.string.cancel),
                     onPositive = { Prefs.removePinnedShortcut(this, saved); refilter() })
             },
         )
         MinimalDialog.options(this, title = sc.matchLabel,
-            subtitle = if (saved != null) "saved shortcut · ${AppRepository.labelFor(this, sc.packageName).lowercase()}"
-                       else "app shortcut · ${AppRepository.labelFor(this, sc.packageName).lowercase()}",
+            subtitle = if (saved != null) str(R.string.saved_shortcut, AppRepository.labelFor(this, sc.packageName).lowercase())
+                       else str(R.string.app_shortcut_2, AppRepository.labelFor(this, sc.packageName).lowercase()),
             items = menu.map { it.label }.toTypedArray(), icons = menu.map { it.icon }.toIntArray(),
             trailing = menu.map { it.trailing }.toTypedArray()) { menu[it].run() }
     }
@@ -1303,8 +1314,8 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
      */
     private fun showExtended(app: AppInfo, only: List<Extended.Action>? = null) {
         val actions = only ?: Extended.actions(this)
-        if (actions.isEmpty()) { Toast.makeText(this, "MinimalSF Extended has no actions to offer", Toast.LENGTH_SHORT).show(); return }
-        MinimalDialog.options(this, title = app.label, subtitle = "MinimalSF Extended",
+        if (actions.isEmpty()) { Toast.makeText(this, str(R.string.minimalsf_extended_has_no_actions), Toast.LENGTH_SHORT).show(); return }
+        MinimalDialog.options(this, title = app.label, subtitle = str(R.string.minimalsf_extended),
             items = actions.map { it.label }.toTypedArray(), iconDrawables = actions.map { it.icon }) { picked ->
             runExtended(app, actions[picked])
         }
@@ -1312,12 +1323,12 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
     /** Runs one of the plugin's actions on [app], asking first when the plugin says to. */
     private fun runExtended(app: AppInfo, action: Extended.Action) {
-        val run = { if (!Extended.run(this, action.id, app)) Toast.makeText(this, "MinimalSF Extended isn't available", Toast.LENGTH_SHORT).show() }
+        val run = { if (!Extended.run(this, action.id, app)) Toast.makeText(this, str(R.string.minimalsf_extended_isn_t_available), Toast.LENGTH_SHORT).show() }
         val confirm = action.confirm
         if (confirm == null) run()
         else MinimalDialog.confirm(this, title = confirm.title.replace("{app}", app.label),
             message = confirm.message.replace("{app}", app.label),
-            positiveText = confirm.button, negativeText = "cancel", onPositive = run)
+            positiveText = confirm.button, negativeText = str(R.string.cancel), onPositive = run)
     }
 
     /** One long press menu entry. [drawable] (an icon from the plugin) wins over [icon]. */
@@ -1339,7 +1350,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
             "com.oneplus.deskclock", "com.coloros.alarmclock", "com.motorola.timeweatherwidget")
         val intent = (listOfNotNull(handler) + known).firstNotNullOfOrNull { packageManager.getLaunchIntentForPackage(it) }
             ?: AppRepository.apps.firstOrNull { it.labelLower == "clock" }?.let { packageManager.getLaunchIntentForPackage(it.packageName) }
-        if (intent == null) { Toast.makeText(this, "no clock app found", Toast.LENGTH_SHORT).show(); return }
+        if (intent == null) { Toast.makeText(this, str(R.string.no_clock_app_found), Toast.LENGTH_SHORT).show(); return }
         try { startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (_: Exception) {}
     }
 
@@ -1352,10 +1363,10 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         screenTimeText.visibility = if (show) View.VISIBLE else View.GONE
         updatePanes()
         if (!show) return
-        if (!ScreenTime.hasAccess(this)) { screenTimeText.text = "tap to allow screen time"; return }
-        if (ScreenTime.today.isEmpty()) screenTimeText.text = "screen time …"
+        if (!ScreenTime.hasAccess(this)) { screenTimeText.text = str(R.string.tap_to_allow_screen_time); return }
+        if (ScreenTime.today.isEmpty()) screenTimeText.text = str(R.string.screen_time)
         ScreenTime.refresh(this) {
-            if (!isDestroyed) screenTimeText.text = "screen time ${ScreenTime.format(ScreenTime.totalToday)}"
+            if (!isDestroyed) screenTimeText.text = str(R.string.screen_time_2, ScreenTime.format(ScreenTime.totalToday))
         }
     }
 
@@ -1364,16 +1375,15 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         val byApp = AppRepository.mainApps().associateBy { it.packageName }
         val top = ScreenTime.today.entries.filter { it.key in byApp }.sortedByDescending { it.value }.take(8)
         val wellbeing = ScreenTime.wellbeingIntent(this)
-        val items = top.map { byApp.getValue(it.key).label } + listOfNotNull(wellbeing?.let { "open digital wellbeing" })
+        val items = top.map { byApp.getValue(it.key).label }
         val trailing = top.map { ScreenTime.format(it.value) }
-        if (items.isEmpty()) return
-        MinimalDialog.options(this, title = "screen time today",
+        if (items.isEmpty() && wellbeing == null) return
+        MinimalDialog.options(this, title = str(R.string.screen_time_today),
             subtitle = ScreenTime.format(ScreenTime.totalToday) + " total",
-            items = items.toTypedArray(), trailing = trailing.toTypedArray<String?>()) { which ->
-            // Tapping an app opens it; the last row opens Digital Wellbeing
-            if (which < top.size) byApp[top[which].key]?.let { launchApp(it) }
-            else wellbeing?.let { try { startActivity(it) } catch (_: Exception) {} }
-        }
+            items = items.toTypedArray(), trailing = trailing.toTypedArray<String?>(),
+            // Digital Wellbeing (or the phone's own screen time page) sits at the top right
+            button = wellbeing?.let { w -> MinimalDialog.TitleButton(str(R.string.digital_wellbeing)) { try { startActivity(w) } catch (_: Exception) {} } }
+        ) { which -> byApp[top[which].key]?.let { launchApp(it) } }
     }
 
     /** Line icon left of a text button, sized to the text so both nav buttons match. */
@@ -1393,7 +1403,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
             tv.contentDescription = label
             setNavIcon(tv, if (style == "text") null else icon)
         }
-        apply(allAppsBtn, if (showingAllApps) "close" else "all apps", if (showingAllApps) R.drawable.ic_close else R.drawable.ic_grid)
+        apply(allAppsBtn, if (showingAllApps) str(R.string.close) else str(R.string.all_apps), if (showingAllApps) R.drawable.ic_close else R.drawable.ic_grid)
         apply(settingsBtn, "settings", R.drawable.ic_settings)
     }
 
@@ -1451,7 +1461,10 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         fmt.timeZone = zone
         dateFormat.timeZone = zone
         val now = Date()
-        clockText.text = fmt.format(now)
+        // "am"/"pm" are the only letters, so the case setting can apply to the whole text
+        clockText.text = fmt.format(now).let { t ->
+            if (use24) t else when (Prefs.amPmCase(this)) { "lower" -> t.lowercase(); "upper" -> t.uppercase(); else -> t }
+        }
         dateText.text = dateFormat.format(now)
         fitClock()
     }
@@ -1577,7 +1590,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
         }
 
         // With auto-launch turned off (MinimalSF Extended) a single match is a normal row: tap or Enter opens it
-        val auto = if (ext.autoLaunch) autoLaunchTarget(appMatches, shortcutMatches) else null
+        val auto = if (Prefs.autoLaunchSingle(this)) autoLaunchTarget(appMatches, shortcutMatches) else null
         when {
             matches.isEmpty() -> { bestMatch = null; showResults(Results.NO_MATCH) }
             auto != null -> showAutoLaunch(auto, allowAutoLaunch)
@@ -1630,7 +1643,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
             launchCooldown = true
             if (!AppShortcuts.start(this, app.packageName, id, source?.takeIf { it.isShown && it.width > 0 })) {
                 launchCooldown = false
-                val msg = if (AppShortcuts.available(this)) "shortcut no longer available" else "set MinimalSF as your home app to open shortcuts"
+                val msg = if (AppShortcuts.available(this)) str(R.string.shortcut_no_longer_available) else str(R.string.set_minimalsf_as_your_home)
                 Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
                 return
             }
@@ -1649,7 +1662,7 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
             getSystemService(LauncherApps::class.java).startMainActivity(app.component, app.user, null, opts)
         } catch (_: Exception) {
             launchCooldown = false
-            Toast.makeText(this, "can't open ${app.label}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, str(R.string.can_t_open, app.label), Toast.LENGTH_SHORT).show()
             AppRepository.reload(this)
             return
         }
@@ -1722,8 +1735,8 @@ class LauncherActivity : AppCompatActivity(), GestureActions.Host {
 
     companion object {
         private val RED = Color.parseColor("#FF4444")
-        private val GREY = Color.parseColor("#888888")
-        private val FAINT = Color.parseColor("#808080")
+        private val GREY get() = if (Theme.light) Color.parseColor("#6B6B6B") else Color.parseColor("#888888")
+        private val FAINT get() = if (Theme.light) Color.parseColor("#707070") else Color.parseColor("#808080")
         private const val KEYBOARD_MIN_DOCKED_DP = 100f
         private const val MUSIC_PAUSE_GRACE_MS = 10 * 60_000L
         private const val FLOATING_KEYBOARD_DP = 345f

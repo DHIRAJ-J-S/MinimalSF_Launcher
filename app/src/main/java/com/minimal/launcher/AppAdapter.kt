@@ -96,7 +96,7 @@ class AppAdapter(
         val idx = if (query.isEmpty()) -1 else name.indexOf(query, ignoreCase = true)
         holder.name.text = if (idx >= 0) {
             SpannableString(name).apply {
-                setSpan(ForegroundColorSpan(Color.WHITE), idx, idx + query.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                setSpan(ForegroundColorSpan(Theme.fg), idx, idx + query.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                 setSpan(StyleSpan(Typeface.BOLD), idx, idx + query.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
         } else name
@@ -143,7 +143,7 @@ class AppAdapter(
         /** Soft dark edge on text, while the wallpaper shows behind the list. */
         var textShadow = false
         fun shadow(t: TextView) {
-            if (textShadow) t.setShadowLayer(t.resources.displayMetrics.density * 3f + 0.01f, 0f, 0f, Color.argb(230, 0, 0, 0))
+            if (textShadow) t.setShadowLayer(t.resources.displayMetrics.density * (if (Theme.light) 2.5f else 3f) + 0.01f, 0f, 0f, if (Theme.light) Color.WHITE else Color.argb(230, 0, 0, 0))
             else t.setShadowLayer(0f, 0f, 0f, 0)
         }
 
@@ -151,7 +151,10 @@ class AppAdapter(
         fun lift(c: Int): Int {
             if (!textShadow) return c
             val r = Color.red(c); val g = Color.green(c); val b = Color.blue(c)
-            if (maxOf(r, g, b) - minOf(r, g, b) > 12 || r > 250) return c
+            if (maxOf(r, g, b) - minOf(r, g, b) > 12) return c
+            // Greys move toward the text colour: white in the dark theme, black in the light one
+            if (Theme.light) { if (r < 5) return c; val v = (r * 0.4f).toInt(); return Color.argb(Color.alpha(c), v, v, v) }
+            if (r > 250) return c
             val v = (r + (255 - r) * 0.6f).toInt()
             return Color.argb(Color.alpha(c), v, v, v)
         }

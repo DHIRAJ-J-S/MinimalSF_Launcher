@@ -80,7 +80,7 @@ object Extended {
                 }
             }
         }.orEmpty().also { rows ->
-            mirror(c).edit().clear().apply { rows.filter { it.kind == TOGGLE }.forEach { putBoolean(it.id, it.on) } }.apply()
+            mirror(c).edit().apply { rows.filter { it.kind == TOGGLE }.forEach { putBoolean(it.id, it.on) } }.apply()
         }
     } catch (_: Exception) { emptyList() }
 
@@ -98,30 +98,25 @@ object Extended {
      */
     private fun mirror(c: Context) = c.getSharedPreferences("extended", Context.MODE_PRIVATE)
 
-    /** What the plugin's toggles change in MinimalSF. Without the plugin, everything is as it is out of the box. */
-    class Flags(val hideSearch: Boolean, val colourIcons: Boolean, val autoLaunch: Boolean,
-                private val hiddenMenu: Set<String>, val anyAction: Boolean, val mainActions: Set<String> = emptySet(),
-                val allShortcuts: Boolean = false) {
-        /** Whether MinimalSF's own long press entry [id] (e.g. "menu_app_info") is shown. */
-        fun shows(id: String) = id !in hiddenMenu
-    }
+    /**
+     * What the plugin's toggles change in MinimalSF: which of its actions are shown, which sit in the
+     * main long press menu, and apps' built-in shortcuts in search. (Coloured icons, the hidden search bar,
+     * auto-launch and MinimalSF's own long press entries moved into MinimalSF's settings.)
+     */
+    class Flags(val anyAction: Boolean, val mainActions: Set<String> = emptySet(), val allShortcuts: Boolean = false)
 
-    val DEFAULT = Flags(hideSearch = false, colourIcons = false, autoLaunch = true, hiddenMenu = emptySet(), anyAction = true)
+    val DEFAULT = Flags(anyAction = true)
 
     fun flags(c: Context): Flags {
         if (!available(c)) return DEFAULT
         val all = mirror(c).all.mapNotNull { (k, v) -> (v as? Boolean)?.let { k to it } }.toMap()
         val actions = all.filterKeys { it.startsWith("action_") }
         return Flags(
-            hideSearch = all["hide_search"] ?: false,
-            colourIcons = all["colour_icons"] ?: false,
-            autoLaunch = all["auto_launch"] ?: true,
-            hiddenMenu = all.filter { (k, v) -> k.startsWith("menu_") && !v }.keys,
             // Before the menu was ever opened nothing is copied yet: assume the actions are on
             anyAction = actions.isEmpty() || actions.values.any { it },
             // Actions shown next to app info instead of behind "extended…" (plugin 1.2+)
             mainActions = all.filter { (k, v) -> k.startsWith("main_") && v }.keys.map { it.removePrefix("main_") }.toSet(),
-            // Every app's built-in shortcuts in search results, not just saved ones (plugin 1.3+)
+            // Every app's built-in shortcuts in search results, not just saved ones (plugin 1.2+)
             allShortcuts = all["all_shortcuts"] ?: false)
     }
 
@@ -130,7 +125,7 @@ object Extended {
      * internet, so this is how it knows of updates: each MinimalSF release carries the plugin version
      * of that day. Bump it whenever a plugin release comes out (see .github/RELEASING.md).
      */
-    const val LATEST_VERSION_CODE = 4L // 1.2
+    const val LATEST_VERSION_CODE = 5L // 1.2.1
     const val RELEASES_URL = "https://github.com/DHIRAJ-J-S/MinimalSF_Extended/releases/latest"
 
     /** The installed plugin is older than [LATEST_VERSION_CODE]. Checked on the phone, no internet. */

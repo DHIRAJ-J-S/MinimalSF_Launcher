@@ -8,7 +8,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@android:color/black"
+    android:background="@color/bg"
     android:focusable="true"
     android:focusableInTouchMode="true">
 
@@ -22,7 +22,7 @@
         android:layout_height="wrap_content">
         <TextView android:id="@+id/clockText" android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal" android:layout_marginTop="32dp" android:paddingHorizontal="16dp"
-            android:gravity="center" android:textColor="@android:color/white" android:textSize="52sp"
+            android:gravity="center" android:textColor="@color/fg" android:textSize="52sp"
             android:fontFamily="monospace" android:textStyle="bold" android:letterSpacing="-0.04"
             android:background="@drawable/ripple_borderless"
             android:clickable="true" android:focusable="true" android:singleLine="true" android:text="00:00" />
@@ -56,14 +56,14 @@
         android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="20dp">
         <EditText android:id="@+id/searchInput" android:layout_width="match_parent" android:layout_height="46dp"
             android:background="@drawable/search_bg" android:hint="@string/search_hint" android:textColorHint="@color/grey_mid"
-            android:textColor="@android:color/white" android:textSize="16sp" android:fontFamily="monospace"
+            android:textColor="@color/fg" android:textSize="16sp" android:fontFamily="monospace"
             android:inputType="text|textNoSuggestions" android:imeOptions="actionGo|flagNoExtractUi|flagNoPersonalizedLearning"
             android:importantForAutofill="no" android:singleLine="true"
             android:paddingStart="16dp" android:paddingEnd="40dp" android:textCursorDrawable="@drawable/cursor" />
         <ImageView android:id="@+id/clearBtn" android:layout_width="44dp" android:layout_height="46dp"
             android:layout_gravity="end|center_vertical" android:padding="13dp"
             android:src="@drawable/ic_close" app:tint="@color/grey_dim" android:visibility="gone"
-            android:background="@drawable/ripple_borderless" android:contentDescription="clear"
+            android:background="@drawable/ripple_borderless" android:contentDescription="@string/clear"
             android:clickable="true" android:focusable="true" />
     </FrameLayout>
 
@@ -98,9 +98,9 @@
         <ImageView android:id="@+id/autoLaunchIcon" android:layout_width="52dp" android:layout_height="52dp"
             android:scaleType="fitCenter" android:importantForAccessibility="no" />
         <TextView android:id="@+id/autoLaunchName" android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:paddingTop="10dp" android:textColor="@android:color/white" android:textSize="15sp" android:fontFamily="monospace" />
+            android:paddingTop="10dp" android:textColor="@color/fg" android:textSize="15sp" android:fontFamily="monospace" />
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingTop="6dp"
-            android:text="auto-launching…" android:textColor="@color/grey_mid" android:textSize="11sp"
+            android:text="@string/auto_launching" android:textColor="@color/grey_mid" android:textSize="11sp"
             android:fontFamily="monospace" android:letterSpacing="0.06" />
     </LinearLayout>
 
@@ -123,13 +123,13 @@
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="«" android:textColor="@color/grey_faint" android:textSize="12sp" android:fontFamily="monospace" />
         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-            android:gravity="center" android:text="swipe to skip  ·  tap to play/pause  ·  hold to open"
+            android:gravity="center" android:text="@string/swipe_to_skip_tap_to"
             android:textColor="@color/grey_faint" android:textSize="10sp" android:fontFamily="monospace" />
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="»" android:textColor="@color/grey_faint" android:textSize="12sp" android:fontFamily="monospace" />
         <ImageView android:id="@+id/musicTipClose" android:layout_width="32dp" android:layout_height="32dp"
             android:padding="9dp" android:src="@drawable/ic_close" app:tint="@color/grey_faint"
-            android:background="@drawable/ripple_borderless" android:contentDescription="dismiss tip"
+            android:background="@drawable/ripple_borderless" android:contentDescription="@string/dismiss_tip"
             android:clickable="true" android:focusable="true" />
     </LinearLayout>
 
@@ -137,32 +137,32 @@
     <LinearLayout android:id="@+id/musicBar" android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="20dp"
         android:paddingVertical="14dp" android:background="@color/search_bg" android:visibility="gone"
-        android:clickable="true" android:focusable="true" android:contentDescription="now playing - tap to play or pause, hold to open">
+        android:clickable="true" android:focusable="true" android:contentDescription="@string/now_playing_tap_to_play">
         <!-- Drawn icon, not a ▶/⏸ character: some OEM fonts (e.g. Samsung) force ⏸ to colour emoji -->
         <ImageView android:id="@+id/musicIcon" android:layout_width="18dp" android:layout_height="18dp"
             android:layout_marginEnd="14dp" android:src="@drawable/ic_music" app:tint="@color/grey_dim"
             android:importantForAccessibility="no" />
         <TextView android:id="@+id/musicTitle" android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:textColor="@color/grey_text" android:textSize="14sp"
-            android:fontFamily="monospace" android:singleLine="true" android:ellipsize="end" android:text="no music playing" />
+            android:fontFamily="monospace" android:singleLine="true" android:ellipsize="end" android:text="@string/no_music_playing" />
     </LinearLayout>
 
     <!-- Todo (hidden while searching / in all apps, so results get the space) -->
     <View android:id="@+id/todoDivider" android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/grey_border" />
     <LinearLayout android:id="@+id/todoSection" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="vertical" android:background="@android:color/black">
+        android:orientation="vertical" android:background="@color/bg">
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal" android:gravity="center_vertical"
             android:paddingHorizontal="20dp" android:paddingTop="8dp" android:paddingBottom="4dp">
             <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                android:text="todo" android:textColor="@color/grey_mid" android:textSize="11sp"
+                android:text="@string/todo" android:textColor="@color/grey_mid" android:textSize="11sp"
                 android:fontFamily="monospace" android:letterSpacing="0.06" />
             <TextView android:id="@+id/todoCount" android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:textColor="@color/grey_mid" android:textSize="11sp" android:fontFamily="monospace" />
             <!-- Shown for a few seconds after a task is removed -->
             <TextView android:id="@+id/todoUndo" android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:layout_marginVertical="-8dp" android:paddingHorizontal="8dp" android:paddingVertical="8dp"
-                android:layout_marginEnd="-8dp" android:text="removed · undo" android:textColor="@color/grey_text"
+                android:layout_marginEnd="-8dp" android:text="@string/removed_undo" android:textColor="@color/grey_text"
                 android:textSize="11sp" android:fontFamily="monospace" android:background="@drawable/ripple_borderless"
                 android:clickable="true" android:focusable="true" android:visibility="gone" />
         </LinearLayout>
@@ -174,14 +174,14 @@
             android:orientation="horizontal" android:gravity="center_vertical"
             android:paddingStart="20dp" android:paddingEnd="12dp" android:paddingVertical="6dp">
             <EditText android:id="@+id/todoInput" android:layout_width="0dp" android:layout_height="36dp"
-                android:layout_weight="1" android:background="@drawable/todo_input_bg" android:hint="add task…"
-                android:textColorHint="@color/grey_mid" android:textColor="@android:color/white" android:textSize="12sp"
+                android:layout_weight="1" android:background="@drawable/todo_input_bg" android:hint="@string/add_task"
+                android:textColorHint="@color/grey_mid" android:textColor="@color/fg" android:textSize="12sp"
                 android:fontFamily="monospace" android:inputType="text" android:imeOptions="actionDone|flagNoExtractUi"
                 android:importantForAutofill="no" android:textCursorDrawable="@drawable/cursor"
                 android:singleLine="true" android:paddingHorizontal="10dp" />
             <ImageView android:id="@+id/addTodoBtn" android:layout_width="40dp" android:layout_height="36dp"
                 android:padding="9dp" android:src="@drawable/ic_add" app:tint="@color/grey_dim"
-                android:background="@drawable/ripple_borderless" android:contentDescription="add task"
+                android:background="@drawable/ripple_borderless" android:contentDescription="@string/add_task_2"
                 android:clickable="true" android:focusable="true" />
         </LinearLayout>
     </LinearLayout>
@@ -191,16 +191,16 @@
     <!-- Bottom nav -->
     <LinearLayout android:id="@+id/navGroup" android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="horizontal" android:gravity="end" android:paddingHorizontal="8dp" android:paddingVertical="4dp"
-        android:background="@android:color/black">
+        android:background="@color/bg">
         <TextView android:id="@+id/allAppsBtn" android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_weight="1" android:text="all apps" android:textColor="@color/grey_text"
+            android:layout_weight="1" android:text="@string/all_apps" android:textColor="@color/grey_text"
             android:textSize="13sp" android:fontFamily="monospace" android:letterSpacing="0.04"
             android:paddingVertical="12dp" android:paddingHorizontal="12dp"
             android:gravity="center_vertical" android:drawablePadding="10dp"
             android:background="@drawable/ripple_item"
             android:clickable="true" android:focusable="true" />
         <TextView android:id="@+id/settingsBtn" android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="settings" android:textColor="@color/grey_text" android:textSize="13sp"
+            android:text="@string/settings_2" android:textColor="@color/grey_text" android:textSize="13sp"
             android:fontFamily="monospace" android:letterSpacing="0.04"
             android:paddingVertical="12dp" android:paddingHorizontal="12dp"
             android:gravity="center_vertical" android:drawablePadding="10dp"

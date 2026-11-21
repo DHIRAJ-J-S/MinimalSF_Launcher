@@ -60,17 +60,17 @@ object GestureActions {
     private fun rest(code: String) = code.substringAfter(':')
 
     fun label(ctx: Context, code: String): String = when {
-        code.isEmpty() -> "none"
-        code == LOCK -> "lock screen"
-        code == NOTIFICATIONS -> "notifications"
-        code == QUICK_SETTINGS -> "quick settings"
-        code == ALL_APPS -> "all apps"
-        code == FLASHLIGHT -> "flashlight"
-        code == CAMERA -> "camera"
-        code == PLAY_PAUSE -> "play / pause"
-        code == NEXT_TRACK -> "next track"
-        code == SETTINGS -> "minimalsf settings"
-        code.startsWith("call:") -> "call ${rest(code).substringAfter('|')}"
+        code.isEmpty() -> str(R.string.none)
+        code == LOCK -> str(R.string.lock_screen)
+        code == NOTIFICATIONS -> str(R.string.notifications)
+        code == QUICK_SETTINGS -> str(R.string.quick_settings)
+        code == ALL_APPS -> str(R.string.all_apps)
+        code == FLASHLIGHT -> str(R.string.flashlight)
+        code == CAMERA -> str(R.string.camera)
+        code == PLAY_PAUSE -> str(R.string.play_pause)
+        code == NEXT_TRACK -> str(R.string.next_track)
+        code == SETTINGS -> str(R.string.minimalsf_settings)
+        code.startsWith("call:") -> str(R.string.call, rest(code).substringAfter('|'))
         code.startsWith("shortcut:") -> rest(code).split('|').let { "${AppRepository.labelFor(ctx, it[0])} · ${it.getOrElse(2) { "shortcut" }}" }
         code.startsWith("activity:") -> rest(code).let {
             val pkg = it.substringBefore('/')

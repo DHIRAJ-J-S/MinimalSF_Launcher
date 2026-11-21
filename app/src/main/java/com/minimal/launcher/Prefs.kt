@@ -23,6 +23,14 @@ object Prefs {
     fun autoDelay(c: Context) = p(c).getLong("auto_delay", 100L)
     fun setAutoDelay(c: Context, v: Long) { p(c).edit().putLong("auto_delay", v).apply() }
 
+    /** "phone" (as the language gives it), "lower" (pm) or "upper" (PM). 12 hour clock only. */
+    fun amPmCase(c: Context): String = p(c).getString("am_pm_case", "phone") ?: "phone"
+    fun setAmPmCase(c: Context, v: String) { p(c).edit().putString("am_pm_case", v).apply() }
+
+    /** "dark" (default), "light" or "system" (follows the phone's dark theme). */
+    fun theme(c: Context): String = p(c).getString("theme", "dark") ?: "dark"
+    fun setTheme(c: Context, v: String) { p(c).edit().putString("theme", v).apply() }
+
     fun use24hClock(c: Context) = p(c).getBoolean("use_24h", false)
     fun setUse24hClock(c: Context, v: Boolean) { p(c).edit().putBoolean("use_24h", v).apply() }
 
@@ -47,6 +55,26 @@ object Prefs {
     /** Hides the status bar on the home screen; a swipe from the top edge shows it for a moment. */
     fun hideStatusBar(c: Context) = p(c).getBoolean("hide_status_bar", false)
     fun setHideStatusBar(c: Context, v: Boolean) { p(c).edit().putBoolean("hide_status_bar", v).apply() }
+
+    // --- Options that used to be in MinimalSF Extended (moved into the launcher in 1.3.4) ---
+    // Until one is changed here, the value set in the plugin (MinimalSF's copy of it) is kept, so nobody
+    // loses a setting when updating.
+    private fun ext(c: Context) = c.getSharedPreferences("extended", Context.MODE_PRIVATE)
+    private fun moved(c: Context, key: String, old: String, def: Boolean) =
+        p(c).getBoolean(key, ext(c).getBoolean(old, def))
+
+    fun colourIcons(c: Context) = moved(c, "colour_icons", "colour_icons", false)
+    fun setColourIcons(c: Context, v: Boolean) { p(c).edit().putBoolean("colour_icons", v).apply() }
+    fun hideEmptySearch(c: Context) = moved(c, "hide_empty_search", "hide_search", false)
+    fun setHideEmptySearch(c: Context, v: Boolean) { p(c).edit().putBoolean("hide_empty_search", v).apply() }
+    fun autoLaunchSingle(c: Context) = moved(c, "auto_launch_single", "auto_launch", true)
+    fun setAutoLaunchSingle(c: Context, v: Boolean) { p(c).edit().putBoolean("auto_launch_single", v).apply() }
+
+    /** MinimalSF's own long press entries: "menu_shortcuts", "menu_app_info", "menu_uninstall", "menu_keyword", "menu_hide". */
+    val MENU_ENTRIES = listOf("menu_shortcuts" to "app shortcuts", "menu_app_info" to "app info",
+        "menu_uninstall" to "uninstall", "menu_keyword" to "set keyword", "menu_hide" to "hide from search")
+    fun menuShows(c: Context, id: String) = moved(c, "show_$id", id, true)
+    fun setMenuShows(c: Context, id: String, v: Boolean) { p(c).edit().putBoolean("show_$id", v).apply() }
 
     // --- Wallpaper behind the home screen (on by default; settings → home screen turns it off) ---
     fun showWallpaper(c: Context) = p(c).getBoolean("show_wallpaper", true)

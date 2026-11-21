@@ -29,7 +29,7 @@ class AlphabetScrubber @JvmOverloads constructor(ctx: Context, attrs: AttributeS
         textAlign = Paint.Align.CENTER
         textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 10f, resources.displayMetrics)
     }
-    private val idle = Color.parseColor("#FF808080")
+    private val idle get() = if (Theme.light) Color.parseColor("#FF707070") else Color.parseColor("#FF808080")
 
     init { contentDescription = "jump to letter" }
 
@@ -53,7 +53,7 @@ class AlphabetScrubber @JvmOverloads constructor(ctx: Context, attrs: AttributeS
         val step = rowHeight()
         val top = (height - step * letters.size) / 2f
         letters.forEachIndexed { i, c ->
-            paint.color = if (i == active) Color.WHITE else idle
+            paint.color = if (i == active) Theme.fg else idle
             paint.isFakeBoldText = i == active
             canvas.drawText(c.toString(), width / 2f, top + step * i + step / 2f - (paint.descent() + paint.ascent()) / 2f, paint)
         }

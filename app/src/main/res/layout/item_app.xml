@@ -37,7 +37,7 @@
         android:minHeight="24dp"
         android:gravity="center"
         android:background="@drawable/badge_bg"
-        android:textColor="@android:color/black"
+        android:textColor="@color/bg"
         android:textSize="13sp"
         android:textStyle="bold"
         android:fontFamily="monospace"

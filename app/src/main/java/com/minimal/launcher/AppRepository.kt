@@ -124,7 +124,7 @@ object AppRepository {
                 val canUninstall = flags and ApplicationInfo.FLAG_SYSTEM == 0 || flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP != 0
                 val label = when {
                     otherProfile -> "${info.label} · ${profileName(ctx, user)}"
-                    cn.packageName == ctx.packageName -> "${info.label} settings"
+                    cn.packageName == ctx.packageName -> str(R.string.settings, info.label)
                     else -> info.label.toString()
                 }
                 AppInfo(label, cn.packageName, info.getIcon(0), cn, user, key, otherProfile, canUninstall)
@@ -142,7 +142,7 @@ object AppRepository {
         } else null
         // Older versions have no public way to ask, but these makers use fixed user ids for it
         val dual = type?.let { it == USER_TYPE_CLONE } ?: (user.hashCode() in DUAL_APP_USER_IDS)
-        return if (dual) "dual" else "work"
+        return if (dual) str(R.string.dual) else str(R.string.work)
     }
 
     /** The app's main personal icon, for things that only know a package (screen time, shortcuts). */

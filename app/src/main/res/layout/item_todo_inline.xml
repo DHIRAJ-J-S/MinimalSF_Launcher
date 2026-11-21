@@ -16,7 +16,7 @@
         android:padding="7dp"
         android:src="@drawable/ic_check_off"
         android:background="@drawable/ripple_borderless"
-        android:contentDescription="done"
+        android:contentDescription="@string/done"
         android:clickable="true"
         android:focusable="true" />
 
@@ -40,7 +40,7 @@
         android:padding="7dp"
         android:src="@drawable/ic_important"
         android:background="@drawable/ripple_borderless"
-        android:contentDescription="important"
+        android:contentDescription="@string/important"
         android:clickable="true"
         android:focusable="true" />
 
@@ -51,7 +51,7 @@
         android:padding="8dp"
         android:src="@drawable/ic_close"
         android:background="@drawable/ripple_borderless"
-        android:contentDescription="remove"
+        android:contentDescription="@string/remove"
         android:clickable="true"
         android:focusable="true" />
 </LinearLayout>

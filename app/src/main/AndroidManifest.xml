@@ -16,6 +16,9 @@
     <queries>
         <!-- The optional MinimalSF Extended plugin -->
         <package android:name="io.github.dhiraj_j_s.minimalsf.extended" />
+        <!-- Screen time dialog: the "digital wellbeing" button, only when one of these is on the phone -->
+        <package android:name="com.google.android.apps.wellbeing" />
+        <package android:name="com.samsung.android.forest" />
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
@@ -58,7 +61,7 @@
             android:taskAffinity=""
             android:resumeWhilePausing="true"
             android:windowSoftInputMode="stateAlwaysHidden|adjustResize"
-            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize"
             android:exported="true"
             tools:ignore="UnusedAttribute">
             <intent-filter>

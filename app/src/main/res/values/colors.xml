@@ -7,4 +7,13 @@
     <color name="grey_faint">#FF808080</color>
     <color name="grey_border">#FF222222</color>
     <color name="search_bg">#FF0D0D0D</color>
+    <!-- Theme: these are the dark theme; values-notnight has the light one -->
+    <color name="fg">#FFFFFFFF</color>
+    <color name="bg">#FF000000</color>
+    <color name="fg_20">#33FFFFFF</color>
+    <color name="fg_13">#22FFFFFF</color>
+    <color name="fg_33">#55FFFFFF</color>
+    <color name="grey_444">#FF444444</color>
+    <color name="grey_333">#FF333333</color>
+    <bool name="light_bars">false</bool>
 </resources>
