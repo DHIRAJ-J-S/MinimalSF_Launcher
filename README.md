@@ -184,6 +184,12 @@ From the command line: `./gradlew assembleRelease`
 
 ---
 
+## 🌍 Translations
+
+MinimalSF is translated on [Hosted Weblate](https://hosted.weblate.org/engage/minimalsf/). Anyone can help, no coding needed: pick your language, or add a new one.
+
+<a href="https://hosted.weblate.org/engage/minimalsf/"><img src="https://hosted.weblate.org/widget/minimalsf/app/multi-auto.svg" alt="Translation status" /></a>
+
 ## 📄 License
 
 MIT License
