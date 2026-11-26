@@ -18,7 +18,7 @@ https://github.com/user-attachments/assets/63c2fac5-67a9-4997-858d-60da1021822d
 [![Downloads](https://img.shields.io/github/downloads/DHIRAJ-J-S/MinimalSF_Launcher/total?label=downloads)](https://github.com/DHIRAJ-J-S/MinimalSF_Launcher/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 ![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)
-[![VirusTotal: v1.3.3, 0 detections](https://img.shields.io/badge/VirusTotal-v1.3.3%20%C2%B7%200%20detections-brightgreen?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/e0f4a157321edaf5ecf18c64c0007eab92e67e1eddd80a5e8b3a596ac83cf0f7/detection)
+[![VirusTotal: v1.3.4, 0 detections](https://img.shields.io/badge/VirusTotal-v1.3.4%20%C2%B7%200%20detections-brightgreen?logo=virustotal&logoColor=white)](https://www.virustotal.com/gui/file/5b6eedec32be2d344e61ec73a7e75c87b429ae214d95aaf14c9a5caa84d8a905/detection)
 
 ⭐ **Like MinimalSF? Star the repo** - it helps more people find it.
 
@@ -119,21 +119,7 @@ https://github.com/user-attachments/assets/63c2fac5-67a9-4997-858d-60da1021822d
 - **am / pm** in lower or upper case, a **Digital Wellbeing** button in the screen time list, and the home tip can be closed
 - Ready for translations
 
-## What was new in 1.3.3
-
-- **Wallpaper:** your phone's wallpaper behind the home screen, dimmed so text stays readable (on by default, turn off in settings → home screen) ([#13](https://github.com/DHIRAJ-J-S/MinimalSF_Launcher/issues/13))
-- **Shortcuts in search:** saved shortcuts show up below apps and can have a keyword; apps' built-in shortcuts too with MinimalSF Extended ([#2](https://github.com/DHIRAJ-J-S/MinimalSF_Launcher/issues/2))
-- **Hide status bar**, a gesture to **open MinimalSF settings**, and a now playing bar that shows **only while music plays**
-
-## What was new in 1.3.2
-
-- **[MinimalSF Extended](https://github.com/DHIRAJ-J-S/MinimalSF_Extended) support:** an optional plugin for open in freeform, force stop, clear cache / data and freeze, through Shizuku or root
-- **Extended menu** (with the plugin): pick what the long press menu shows, coloured icons, hide the empty search bar, turn off auto-launch for a single match
-- **Keyword replaces app name:** an app with a keyword can be found by the keyword alone (off by default)
-- **Smaller:** about 0.81 MB, down from 0.87 MB
-
 See [CHANGELOG.md](CHANGELOG.md) for the full list.
-
 
 
 ---
@@ -161,7 +147,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the full list.
 - 🚫 **Zero location** - no GPS or location access
 - 💾 All data stored locally on device in SharedPreferences
 - 🔓 Full source code available for audit
-- 🧪 Release APKs scanned on [VirusTotal](https://www.virustotal.com/gui/file/e0f4a157321edaf5ecf18c64c0007eab92e67e1eddd80a5e8b3a596ac83cf0f7/detection): 0 detections (v1.3.3)
+- 🧪 Release APKs scanned on [VirusTotal](https://www.virustotal.com/gui/file/5b6eedec32be2d344e61ec73a7e75c87b429ae214d95aaf14c9a5caa84d8a905/detection): 0 detections (v1.3.4)
 
 ---
 
