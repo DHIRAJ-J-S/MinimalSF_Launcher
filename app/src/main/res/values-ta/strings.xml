@@ -1,3 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    </resources>
+    <string name="search_hint">தட்டச்சு செய்க…</string>
+    <string name="no_match">பொருத்தம் இல்லை</string>
+    <string name="accessibility_desc">MinimalSF இந்த வசதியை நீங்கள் தேர்ந்தெடுத்த சைகையைப் பயன்படுத்தி திரையைப் பூட்டுவதற்கு மட்டுமே பயன்படுத்துகிறது. எந்தத் தரவும் சேகரிக்கப்படுவதில்லை அல்லது படிக்கப்படுவதில்லை.</string>
+    <string name="extended_permission_desc">MinimalSF, செயலிகளை வலுக்கட்டாயமாக நிறுத்த, தரவுகளை அழிக்க, செயலிழக்கச் செய்ய அல்லது சாளரத்தில் திறக்க MinimalSF Extended-ஐப் பயன்படுத்த அனுமதிக்கிறது.</string>
+    <string name="settings">%1$s அமைப்புகள்</string>
+    <string name="dual">இரட்டை</string>
+    <string name="work">பணி</string>
+    <string name="none">எதுவுமில்லை</string>
+</resources>
